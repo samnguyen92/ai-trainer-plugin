@@ -1244,11 +1244,6 @@ add_action('wp_ajax_nopriv_ai_get_chatlog_by_id', function() {
     }
 });
 
-class Admin_Trading_Integration {
-
-}
-
-new Admin_Trading_Integration();
 
 class Exa_AI_Integration {
     private $exa_api_key = EXA_API_KEY;

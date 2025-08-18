@@ -34,7 +34,7 @@ jQuery(document).ready(function($) {
     ]);
 
     const MAX_LENGTH = 3000;
-    const CHATLOG_MAX_LENGTH = 50000; // Much higher limit for chatlog storage
+    const CHATLOG_MAX_LENGTH = 50000;
 
     // Initialize UI
     $exaQuestion.hide();
@@ -70,9 +70,6 @@ jQuery(document).ready(function($) {
         $psybrarianMainContent.hide();
         $psySearchAiContainer.addClass('active');
         $exaInput.val('').attr('placeholder', 'Ask follow up...');
-
-        // Debug: Log conversation history being sent
-        console.log('Sending conversation history:', conversationHistory);
         
         // Make AJAX request
         $.post(exa_ajax.ajaxurl, {
@@ -82,41 +79,6 @@ jQuery(document).ready(function($) {
         }, function(response) {
             handleSearchResponse(response, query);
         });
-    }
-
-    // Add this function to handle new chat functionality
-    function newChat() {
-        // Clear the conversation history properly
-        if (typeof conversationHistory !== 'undefined') {
-            conversationHistory = [];
-        }
-        
-        // Also clear any global conversation history
-        if (typeof window.conversationHistory !== 'undefined') {
-            window.conversationHistory = [];
-        }
-        
-        // Clear any stored conversation data in localStorage
-        if (typeof localStorage !== 'undefined') {
-            localStorage.removeItem('ai_conversation_history');
-            localStorage.removeItem('ai_search_results');
-        }
-        
-        // Reset the UI elements
-        $psybrarianMainContent.show();
-        $psySearchAiContainer.removeClass('active');
-        $exaInput.val('').attr('placeholder', 'Ask anything about psychedelics');
-        
-        $exaLoading.hide();
-        $exaAnswer.hide().empty(); // Hide and clear the content
-        $ticketWrapper.hide();
-        
-        // Scroll to top of the page
-        $('html, body').animate({ scrollTop: 0 }, 500);
-        
-        // Log for debugging
-        console.log('New chat started - conversation history cleared');
-        console.log('conversationHistory after clear:', conversationHistory);
     }
 
     // Handle search response
@@ -136,8 +98,6 @@ jQuery(document).ready(function($) {
         const chatlogId = data.chatlog_id || null;
         const conversationHistoryResp = data.conversation_history || conversationHistory;
         
-        // Debug: Log conversation history received
-        console.log('Received conversation history:', conversationHistoryResp);
 
         const questionID = 'answer-' + Date.now();
         const block = createAnswerBlock(questionID, query);
@@ -226,8 +186,6 @@ jQuery(document).ready(function($) {
     function submitBetaFeedback(chatlogId, feedback, form) {
         // Remove previous error messages
         form.find('span').remove();
-        // Debug log
-        console.log('Submitting beta feedback:', { chatlogId, feedback });
         $.post(exa_ajax.ajaxurl, {
             action: 'ai_update_chatlog_beta_feedback',
             id: chatlogId,
@@ -364,14 +322,6 @@ jQuery(document).ready(function($) {
             // Truncate if needed (only for display, not for chatlog storage)
             if (safe.length > MAX_LENGTH) {
                 safe = truncateHTML(safe);
-            }
-
-            // Debug: Check for table content
-            if (html.includes('<table') && !safe.includes('<table')) {
-                console.warn('Table content was removed during sanitization', {
-                    original: html.substring(0, 500),
-                    sanitized: safe.substring(0, 500)
-                });
             }
 
             return safe;
@@ -963,18 +913,21 @@ jQuery(document).ready(function($) {
         Only return valid, clean HTML.
         `.trim();
     }
-    function scrollToAnswer(container) {
-        const block = container.closest('.answer-block');
-        if (block) {
-            if (!block.querySelector('.scroll-spacer')) {
-                const spacer = document.createElement('div');
-                spacer.className = 'scroll-spacer';
-                spacer.style.height = '30px';
-                block.appendChild(spacer);
-            }
-            block.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        }
-    }
+
+    // Scroll while streaming
+    // This function scrolls the answer block into view when the answer is being streamed
+    // function scrollToAnswer(container) {
+    //     const block = container.closest('.answer-block');
+    //     if (block) {
+    //         if (!block.querySelector('.scroll-spacer')) {
+    //             const spacer = document.createElement('div');
+    //             spacer.className = 'scroll-spacer';
+    //             spacer.style.height = '30px';
+    //             block.appendChild(spacer);
+    //         }
+    //         block.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    //     }
+    // }
 
     // Optimized rewrite function
     function streamOpenAIRewrite(query, rawContent, container) {
@@ -1195,7 +1148,7 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // Optimized share handler with better event delegation
+    // Share  link
     $(document).on('click', '.reaction-share', function(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -1223,8 +1176,6 @@ jQuery(document).ready(function($) {
         
         const shareUrl = window.location.origin + window.location.pathname + 
             '?chatlog_id=' + id + '&title=' + encodeURIComponent(questionTitle);
-
-
 
         function showCopiedNotice() {
             let notice = btn.siblings('.share-notice');
@@ -1277,22 +1228,22 @@ jQuery(document).ready(function($) {
         }
     });
 
-            // Initialize page with URL parameters
-        $(function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const chatlogId = urlParams.get('chatlog_id');
-            const chatlogTitle = urlParams.get('title');
+    // Initialize page with URL parameters
+    $(function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const chatlogId = urlParams.get('chatlog_id');
+        const chatlogTitle = urlParams.get('title');
+        
+        if (chatlogId) {
+            const block = $("#answer-" + chatlogId);
             
-            if (chatlogId) {
-                const block = $("#answer-" + chatlogId);
-                
-                if (block.length) {
-                    $('html, body').animate({ scrollTop: block.offset().top - 100 }, 600);
-                } else {
-                    loadChatlogById(chatlogId, chatlogTitle);
-                }
+            if (block.length) {
+                $('html, body').animate({ scrollTop: block.offset().top - 100 }, 600);
+            } else {
+                loadChatlogById(chatlogId, chatlogTitle);
             }
-        });
+        }
+    });
 
 
 
