@@ -1,0 +1,46 @@
+.ai-trainer-container { display: flex;padding-left: 15px; padding-right: 15px; max-width: 1000px; }
+.ai-sidebar { width: 200px; }
+.ai-sidebar ul { list-style: none; padding: 0; }
+.ai-sidebar li { padding: 10px; cursor: pointer; border-bottom: 1px solid #ccc; }
+.ai-sidebar li.active { background: #eee; font-weight: bold; }
+.ai-content { flex: 1; padding-left: 20px; }
+.ai-tab { display: none; }
+.ai-tab.active { display: block; }
+
+/* Inline action buttons in admin tables */
+.actionsWrapper {width: 100px;}
+
+/* Simple style for pagination links in admin tables */
+.tablenav-pages {
+  margin-top: 10px;
+  text-align: right;
+  font-size: 14px;
+}
+.tablenav-pages .pagination-links a {
+  display: inline-block;
+  padding: 2px 8px;
+  margin: 0 2px;
+  border: 1px solid #2271b1;
+  border-radius: 3px;
+  color: #2271b1;
+  background: #fff;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+.tablenav-pages .pagination-links a:hover {
+  background: #2271b1;
+  color: #fff;
+}
+.tablenav-pages .pagination-links .tablenav-paging-text {
+  font-weight: bold;
+  color: #222;
+  background: #e5f1fb;
+  border-radius: 3px;
+  padding: 2px 8px;
+  margin: 0 2px;
+}
+.tablenav-pages .pagination-links .paging-input {
+  color: #888;
+  margin: 0 2px;
+}
+
