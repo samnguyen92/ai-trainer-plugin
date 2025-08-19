@@ -1,9 +1,4 @@
 <?php
-// Enable PHP error logging and display for debugging
-// ini_set('display_errors', 1);
-// ini_set('display_startup_errors', 1);
-// ini_set('log_errors', 1);
-// error_reporting(E_ALL);
 
 /**
  * Plugin Name: AI Trainer Dashboard
@@ -18,6 +13,9 @@ define('AI_TRAINER_PATH', plugin_dir_path(__FILE__));
 
 require_once AI_TRAINER_PATH . 'includes/openai.php';
 require_once AI_TRAINER_PATH . 'includes/utils.php';
+require_once AI_TRAINER_PATH . 'includes/autopage.php';
+
+AI_Trainer_Auto_Page::boot(__FILE__);
 
 if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     require_once __DIR__ . '/vendor/autoload.php';
