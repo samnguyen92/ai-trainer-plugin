@@ -780,7 +780,7 @@ jQuery(document).ready(function($) {
         1) First, Check the question and decide which contraindication subsections apply.
         - Use the keys from the Safety Section Library below.
         Allowed keys: mental-neuro | interactions | medical | repro | genetic | env-social | marginalized | spiritual | ALL
-        2) Then write the answer HTML.
+        2) Then write the answer HTML start with <h3>Contraindications</h3> and include ONLY the subsections that match your keys.
         3) In your HTML, paste ONLY the subsection blocks from the Safety Section Library that match the keys you listed. If you wrote NONE, paste nothing. If you wrote ALL, paste all subsections.
 
         Few-shot Guidance (follow exactly):
