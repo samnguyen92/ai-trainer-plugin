@@ -314,9 +314,12 @@ jQuery(document).ready(function($) {
 
             // Apply basic regex fixes only
             safe = safe
-                .replace(/href="([^"]+)"\s?>\s?/g, '<a href="$1">')
-                .replace(/<\/a>(\w)/g, '</a> $1')
-                .replace(/>\s+</g, '><')
+                .replace(REGEX_PATTERNS.hrefFix, '<a href="$1">')
+                .replace(REGEX_PATTERNS.linkText, '</a> $1')
+                .replace(REGEX_PATTERNS.emptyLi, '')
+                .replace(REGEX_PATTERNS.consecutiveUl, '')
+                .replace(REGEX_PATTERNS.consecutiveOl, '')
+                .replace(REGEX_PATTERNS.whitespace, '><')
                 .trim();
 
             // Truncate if needed (only for display, not for chatlog storage)
@@ -524,84 +527,112 @@ jQuery(document).ready(function($) {
     function streamOpenAIAnswer(query, sources, block, container, chatlogId, conversationHistory) {
         const contextBlock = buildContextBlock(conversationHistory);
         const prompt = buildPrompt(query, sources, block, contextBlock);
-        const url = exa_ajax.ajaxurl + '?action=openai_stream&prompt=' + encodeURIComponent(prompt);
-        
-        const eventSource = new EventSource(url);
+        const url = exa_ajax.ajaxurl + '?action=openai_stream';
         let buffer = '';
         container.innerHTML = '';
 
-        eventSource.onmessage = function(event) {
-            const chunk = event.data;
-            if (chunk && chunk !== '[DONE]') {
-                buffer += chunk;
-                container.innerHTML = buffer;
-                // scrollToAnswer(container);
-            }
-        };
-
-        eventSource.addEventListener('done', function() {
-            eventSource.close();
-            const cleanedHTML = sanitizeHTML(buffer);
-            container.innerHTML = cleanedHTML;
-
-            // Update conversation history with just the question (not the full answer)
-            const answerBlock = $(container).closest('.answer-block');
-            const questionText = answerBlock.find('.exa-user-question').text();
-            conversationHistory.push({ q: questionText, a: '' }); // Empty answer to keep structure
-            
-            // Limit conversation history to last 5 exchanges to prevent context overflow
-            if (conversationHistory.length > 5) {
-                conversationHistory = conversationHistory.slice(-5);
-            }
-
-            if (typeof saveStreamingAnswerToChatlog === 'function' && chatlogId) {
-                saveStreamingAnswerToChatlog(chatlogId, cleanedHTML);
+        // Use fetch with streaming for POST-based approach
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'prompt=' + encodeURIComponent(prompt)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             
-            // Add follow-up prompt after reaction bar
-            const reactionBar = answerBlock.find('.answer-reaction-bar');
-            if (reactionBar.length && !answerBlock.find('.follow-up-prompt').length) {
-                const followUpPrompt = $('<div class="follow-up-prompt" style="margin-top: 15px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; text-align: center; color: #fff; font-size: 16px;">Ask a follow up question and we can continue our conversation or <button class="new-chat-btn" style="background: #3bb273; color: white; border: none; padding: 7px 12px; border-radius: 4px; cursor: pointer; margin: 0 5px;">New chat</button> and we can discuss another topic.</div> <div class="follow-up-prompt" style="margin-top: 15px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; text-align: center; color: #fff; font-size: 16px;"> We’re still building and improving the Psybrary based on community feedback. See something missing, unclear, or off? <button class="beta-feedback-btn" style="background:#3bb273;color:#fff;border:none;padding:7px 12px;border-radius:4px;cursor:pointer;">Submit feedback</button><div class="beta-feedback-form" style="display:none;margin-top:10px;"><textarea class="beta-feedback-text" rows="3" style="width:90%;margin-bottom:8px;" placeholder="Your feedback..."></textarea><br><button class="beta-feedback-submit" style="background:#0C0012;color:#fff;border:none;padding:7px 12px;border-radius:4px;cursor:pointer;">Send</button></div></div>');
-                // Only bind feedback events once
-                if (!window._betaFeedbackBound) {
-                    window._betaFeedbackBound = true;
-                    $(document).on('click', '.beta-feedback-btn', function(e) {
-                        e.preventDefault();
-                        $(this).siblings('.beta-feedback-form').show();
-                        $(this).hide();
-                    });
-                    $(document).on('click', '.beta-feedback-submit', function(e) {
-                        e.preventDefault();
-                        const form = $(this).closest('.beta-feedback-form');
-                        const feedback = form.find('.beta-feedback-text').val().trim();
-                        const block = $(this).closest('.answer-block');
-                        let chatlogId = block.find('.reaction-like').data('id');
-                        // Fallback: try to get chatlogId from other elements if missing
-                        if (!chatlogId) {
-                            chatlogId = block.data('id') || block.attr('id')?.replace('answer-', '');
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            
+            function readStream() {
+                return reader.read().then(({ done, value }) => {
+                    if (done) {
+                        // Stream complete
+                        const cleanedHTML = sanitizeHTML(buffer);
+                        container.innerHTML = cleanedHTML;
+
+                        // Update conversation history with just the question (not the full answer)
+                        const answerBlock = $(container).closest('.answer-block');
+                        const questionText = answerBlock.find('.exa-user-question').text();
+                        conversationHistory.push({ q: questionText, a: '' }); // Empty answer to keep structure
+                        
+                        // Limit conversation history to last 5 exchanges to prevent context overflow
+                        if (conversationHistory.length > 5) {
+                            conversationHistory = conversationHistory.slice(-5);
                         }
-                        if (!feedback || !chatlogId) {
-                            form.append('<br><span style="color:#e74c3c;">Please enter feedback.</span>');
-                            return;
+
+                        if (typeof saveStreamingAnswerToChatlog === 'function' && chatlogId) {
+                            saveStreamingAnswerToChatlog(chatlogId, cleanedHTML);
                         }
-                        submitBetaFeedback(chatlogId, feedback, form);
-                    });
-                }
-                reactionBar.after(followUpPrompt);
-                // Add click handler for new chat button
-                answerBlock.find('.new-chat-btn').on('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    window.open('https://beta.psychedelics.com/#psybrary', '_blank');
-                    // newChat();
+                        
+                        // Add follow-up prompt after reaction bar
+                        const reactionBar = answerBlock.find('.answer-reaction-bar');
+                        if (reactionBar.length && !answerBlock.find('.follow-up-prompt').length) {
+                            const followUpPrompt = $('<div class="follow-up-prompt" style="margin-top: 15px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; text-align: center; color: #fff; font-size: 16px;">Ask a follow up question and we can continue our conversation or <button class="new-chat-btn" style="background: #3bb273; color: white; border: none; padding: 7px 12px; border-radius: 4px; cursor: pointer; margin: 0 5px;">New chat</button> and we can discuss another topic.</div> <div class="follow-up-prompt" style="margin-top: 15px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; text-align: center; color: #fff; font-size: 16px;"> We\'re still building and improving the Psybrary based on community feedback. See something missing, unclear, or off? <button class="beta-feedback-btn" style="background:#3bb273;color:#fff;border:none;padding:7px 12px;border-radius:4px;cursor:pointer;">Submit feedback</button><div class="beta-feedback-form" style="display:none;margin-top:10px;"><textarea class="beta-feedback-text" rows="3" style="width:90%;margin-bottom:8px;" placeholder="Your feedback..."></textarea><br><button class="beta-feedback-submit" style="background:#0C0012;color:#fff;border:none;padding:7px 12px;border-radius:4px;cursor:pointer;">Send</button></div></div>');
+                            // Only bind feedback events once
+                            if (!window._betaFeedbackBound) {
+                                window._betaFeedbackBound = true;
+                                $(document).on('click', '.beta-feedback-btn', function(e) {
+                                    e.preventDefault();
+                                    $(this).siblings('.beta-feedback-form').show();
+                                    $(this).hide();
+                                });
+                                $(document).on('click', '.beta-feedback-submit', function(e) {
+                                    e.preventDefault();
+                                    const form = $(this).closest('.beta-feedback-form');
+                                    const feedback = form.find('.beta-feedback-text').val().trim();
+                                    const block = $(this).closest('.answer-block');
+                                    let chatlogId = block.find('.reaction-like').data('id');
+                                    // Fallback: try to get chatlogId from other elements if missing
+                                    if (!chatlogId) {
+                                        chatlogId = block.data('id') || block.attr('id')?.replace('answer-', '');
+                                    }
+                                    if (!feedback || !chatlogId) {
+                                        form.append('<br><span style="color:#e74c3c;">Please enter feedback.</span>');
+                                        return;
+                                    }
+                                    submitBetaFeedback(chatlogId, feedback, form);
+                                });
+                            }
+                            reactionBar.after(followUpPrompt);
+                            // Add click handler for new chat button
+                            answerBlock.find('.new-chat-btn').on('click', function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                window.open('https://beta.psychedelics.com/#psybrary', '_blank');
+                                // newChat();
+                            });
+                        }
+                        return;
+                    }
+                    
+                    // Process the chunk
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data && data !== '[DONE]') {
+                                buffer += data;
+                                // Update the container in real-time for streaming effect
+                                container.innerHTML = sanitizeHTML(buffer);
+                            }
+                        }
+                    }
+                    
+                    // Continue reading
+                    return readStream();
                 });
             }
+            
+            return readStream();
+        })
+        .catch(error => {
+            console.error('Streaming error:', error);
+            container.insertAdjacentHTML('beforeend', '<p><em>⚠️ Error: ' + error.message + '</em></p>');
         });
-
-        eventSource.onerror = function() {
-            eventSource.close();
-            container.insertAdjacentHTML('beforeend', '<p><em>⚠️ Connection closed.</em></p>');
-        };
     }
 
     // Build context block
@@ -615,137 +646,7 @@ jQuery(document).ready(function($) {
         return contextBlock;
     }
 
-    // Build prompt
-    // function buildPrompt(query, sources, block, contextBlock) {
-    //     return `
-    //         You are a psychedelic expert and content writer.
-            
-    //         ${contextBlock}
-            
-    //         Answer the following question clearly, accurately, and safely using ONLY the information from the trusted sources below.
-            
-    //         Question: "${query}"
-            
-    //         Trusted Sources (use ONLY these):
-    //         ${sources}
 
-    //         🚫 BLOCKED DOMAINS (DO NOT mention or reference these websites):
-    //         ${block}
-            
-    //         ⚠️ Content Rules:
-    //         - Your answer MUST be based strictly on the provided trusted sources. Do NOT invent facts or use knowledge not included in the sources.
-    //         - NEVER combine or re-answer previous questions unless the current one directly depends on them.
-    //         - Ensure all responses are helpful, direct, and use clear language.
-    //         - If the sources are limited, respond conservatively and avoid speculation.
-    //         - NEVER mention, reference, or link to any of the blocked domains listed above.
-    //         - Do not include any information from blocked domains in your response.
-            
-    //         📐 Formatting Rules:
-    //         - Output ONLY valid HTML using the following tags: <h2>, <h3>, <p>, <ul>, <ol>, <li>, <a href="...">, <table>, <thead>, <tbody>, <tr>, <td>, <th>.
-    //         - Use <h2> once at the top for the main title with an emoji (e.g., <h2>🧠 How to Use LSD</h2>).
-    //         - Use <h3> for sub-sections with relevant emojis (e.g., <h3>⚠️ Risks and Warnings</h3>).
-    //         - NEVER place <p>, <h2>, or <h3> inside a <ul> or <ol>. Always close lists before adding headings or paragraphs.
-    //         - For tables, use proper structure: <table><thead><tr><th>Header</th></tr></thead><tbody><tr><td>Data</td></tr></tbody></table>
-    //         - NEVER break HTML tags across chunks. Send full tags like <h3>...</h3> or <p>...</p> in one complete piece.
-    //         - Do NOT use Markdown (**bold**, > quotes), escape brackets (&lt;, &gt;), or code blocks.
-            
-    //         ✅ End every response with this section:
-    //         <h3>📚 Sources</h3>
-    //         <ul>
-    //         <li><a href="https://example1.com" target="_blank">Source Name 1</a></li>
-    //         <li><a href="https://example2.com" target="_blank">Source Name 2</a></li>
-    //         </ul>
-            
-    //         Only return valid, clean HTML. Do not explain anything outside the answer.
-    //     `.trim();
-    // }
-
-    // function buildPrompt(query, sources, block, contextBlock) {
-    //     return `
-    //         You are a psychedelic expert and content writer.
-    
-    //         ${contextBlock}
-    
-    //         Answer the following question clearly, accurately, and safely using ONLY the information from the trusted sources below.
-    
-    //         Question: "${query}"
-    
-    //         🧾 Question Summary  
-    //         ${query}
-    
-    //         🔍 Core Insight  
-    //         Provide a concise, 1–2 sentence key takeaway that gives the most essential information someone should know about the topic before reading the rest of the answer.
-    
-    //         Trusted Sources (use ONLY these):
-    //         ${sources}
-    
-    //         🚫 BLOCKED DOMAINS (DO NOT mention or reference these websites):
-    //         ${block}
-    
-    //         ⚠️ Core Guardrails:
-    //         1. **Source Integrity** – Your answer MUST be based strictly on the provided trusted sources. Do NOT invent facts or use knowledge not included in the sources.
-    //         2. **No Question Merging** – NEVER combine or re-answer previous questions unless the current one directly depends on them.
-    //         3. **Blocked Sources** – NEVER mention, reference, or link to any of the blocked domains.
-    //         4. **Conservative If Limited Data** – If the sources are limited, respond conservatively and avoid speculation.
-    
-    //         🛡 Guardrail 1: Contraindications for All Drug/Psychoactive Use
-    //         - If the question involves any drug or psychoactive substance, always include a clearly labeled <h3>🚫 Contraindications</h3> section.
-    //         - Wrap the entire Contraindications block in <section class="contra-card">…</section>.
-    //         - Insert <hr class="contra-sep"> between each category group.
-    //         - Organize by these categories (emoji + heading for each):
-    //             🧠 Mental Health & Neurological Risks  
-    //             💊 Drug Interactions  
-    //             ❤️ Medical Conditions  
-    //             🤰 Reproductive & Hormonal Considerations  
-    //             🧬 Genetic / Family History  
-    //             🏠 Environmental & Social Factors  
-    //             🌈 Marginalized Populations  
-    //             🧘 Spiritual & Existential Risks  
-    //         - For each category, summarize in **two lines**:  
-    //             Risk: Plain-language description of the concern.  
-    //             Action: Clear recommended next step.
-    
-    //         🛡 Guardrail 2: Sexual-Nature Questions
-    //         - If the question involves sexual activity, intimacy, or consent:
-    //             - Affirm that **all sexual activity requires explicit, informed, and enthusiastic consent**.
-    //             - State clearly that sexual contact without consent is sexual assault or abuse, and is unethical and illegal in most jurisdictions.
-    //             - Discourage unsafe, coercive, or non-consensual behavior in all contexts, including when substances are involved.
-    //             - Highlight safety, respect, and mutual agreement, especially in altered states.
-    //             - Encourage readers to seek help from trusted individuals, hotlines, or authorities if they have experienced or are at risk of sexual harm.
-    //             - Include this example block:  
-    //               <h3>⚠️ Critical Warning on Sex, Safety & Intoxicated Decision-Making</h3>  
-    //               <p>Psychedelics can lower inhibitions and blur boundaries. Under no circumstance is it safe, ethical, or legal to initiate sexual contact with someone under the influence without their clear, sober, and ongoing consent. If you are unsure—don’t do it.</p>
-    
-    //         🛡 Guardrail 3: Non-Consensual Dosing
-    //         - If the question involves giving someone psychedelics without their knowledge or consent, include:  
-    //           <h3>⚠️ Non-Consensual Psychedelic Use Is Never Okay</h3>  
-    //           <p>Being given a psychedelic substance without your knowledge or consent is a serious violation of autonomy and safety. It is unethical, unsafe, potentially illegal, and can be traumatic or medically dangerous.</p>  
-    //           <ul>
-    //             <li>🛑 Never a harmless prank, “healing shortcut,” or romantic gesture — it can be assault or abuse, with serious legal consequences.</li>
-    //             <li>💥 Altered states increase vulnerability; drug interactions can be dangerous; psychological harm may be long-term.</li>
-    //             <li>💡 If this happened to you: prioritize safety, seek trusted support, and consider medical/legal help.</li>
-    //           </ul>
-    //           <p>✅ Bottom Line: No one should ever be given psychedelics without their full, informed, and enthusiastic consent.</p>
-    
-    //         📐 Formatting Rules:
-    //         - Output ONLY valid HTML using: <h2>, <h3>, <p>, <ul>, <ol>, <li>, <a>, <table>, <thead>, <tbody>, <tr>, <td>, <th>.
-    //         - Use <h2> once at the top for the main title with an emoji.
-    //         - Use <h3> for sub-sections with relevant emojis.
-    //         - NEVER place <p>, <h2>, or <h3> inside a <ul> or <ol>.
-    //         - For tables, use correct structure.
-    //         - NEVER break HTML tags across chunks.
-    //         - Do NOT use Markdown or escape brackets.
-    
-    //         ✅ End every response with:
-    //         <h3>📚 Sources</h3>
-    //         <ul>
-    //         <li><a href="https://example1.com" target="_blank">Source Name 1</a></li>
-    //         <li><a href="https://example2.com" target="_blank">Source Name 2</a></li>
-    //         </ul>
-    
-    //         Only return valid, clean HTML. Do not explain anything outside the answer.
-    //     `.trim();
-    // }
 
     function buildPrompt(query, sources, block, contextBlock) {
         return `
@@ -950,30 +851,58 @@ jQuery(document).ready(function($) {
             - Do not include filenames or timestamps.
         `.trim();
 
-        const url = exa_ajax.ajaxurl + '?action=openai_stream&prompt=' + encodeURIComponent(prompt);
-        const eventSource = new EventSource(url);
-
+        const url = exa_ajax.ajaxurl + '?action=openai_stream';
         let buffer = '';
-        let renderTimeout = null;
         container.innerHTML = '';
 
-        eventSource.onmessage = function(event) {
-            const chunk = event.data;
-            buffer += chunk;
-
-            if (renderTimeout) clearTimeout(renderTimeout);
-            renderTimeout = setTimeout(() => {
-                container.innerHTML = sanitizeHTML(buffer);
-            }, 50);
-        };
-
-        eventSource.onerror = function() {
-            container.insertAdjacentHTML('beforeend', '<p><em>⚠️ Connection closed.[rewriting]</em></p>');
-            eventSource.close();
-        };
-
-        eventSource.addEventListener('done', function() {
-            eventSource.close();
+        // Use fetch with streaming for POST-based approach
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'prompt=' + encodeURIComponent(prompt)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            
+            function readStream() {
+                return reader.read().then(({ done, value }) => {
+                    if (done) {
+                        // Stream complete
+                        container.innerHTML = sanitizeHTML(buffer);
+                        return;
+                    }
+                    
+                    // Process the chunk
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data && data !== '[DONE]') {
+                                buffer += data;
+                                
+                                // Update immediately for real-time streaming
+                                container.innerHTML = sanitizeHTML(buffer);
+                            }
+                        }
+                    }
+                    
+                    // Continue reading
+                    return readStream();
+                });
+            }
+            
+            return readStream();
+        })
+        .catch(error => {
+            console.error('Streaming error:', error);
+            container.insertAdjacentHTML('beforeend', '<p><em>⚠️ Error: ' + error.message + '</em></p>');
         });
     }
 
@@ -1244,7 +1173,6 @@ jQuery(document).ready(function($) {
             }
         }
     });
-
 
 
     // Load chatlog by ID

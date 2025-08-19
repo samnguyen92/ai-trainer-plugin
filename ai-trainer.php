@@ -1328,7 +1328,7 @@ class Exa_AI_Integration {
         error_log('openai_stream: after flush');
 
         $api_key = defined('OPENAI_API_KEY') ? $this->openai_api_key : get_option('openai_api_key');
-        $prompt = isset($_GET['prompt']) ? trim($_GET['prompt']) : '';
+        $prompt = isset($_POST['prompt']) ? trim($_POST['prompt']) : '';
 
         if (!$prompt) {
             error_log('openai_stream: missing prompt');
