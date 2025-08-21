@@ -27,7 +27,7 @@ We use [LocalWP](https://localwp.com/) to run local instances of WordPress.
 
 1. Install and activate Local WordPress.
 2. Create a new site using LocalWP.
-![Image 1](images/readme1.png)
+![Image 1](assets/images/readme/1.png)
    - Name the site whatever you like (example: **Local Psybrary**)
    - Choose preferred settings
    - Create a simple username/password and use your primary email address
