@@ -20,8 +20,6 @@ This repository contains the **RAG-EXA Plugin** for WordPress. Follow the steps 
 
 ## Installation
 
-3. Download or clone this repo into your `wp-content/plugins/` directory:
-
 ### 1. Local WordPress Environment
 We use [LocalWP](https://localwp.com/) to run local instances of WordPress.
 
@@ -92,30 +90,41 @@ Save the file.
 ### 6. Activate the Plugin
 From your WordPress Dashboard:
 **Plugins → Installed Plugins → Activate RAG-EXA Plugin**
+   - ![Image 16](assets/images/readme/16.png)
 
 
 ### 7. Import the Preconfigured Site
 1. Go to **All-in-One WP Migration → Import**
+   - ![Image 17](assets/images/readme/17.png)
 2. [Download .wpress Backup](https://drive.google.com/file/d/10rFN5wcDccXvQ4lAJjlygMMf-Cj2uFq7/view?usp=drive_link)
 3. Upload the `.wpress` backup file.
 4. Follow the prompts to restore the site.
    - This will replicate the beta setup.
+      - ![Image 18](assets/images/readme/18.png)
 
 ### 8. Login Credentials
 ⚠️ **Note:** Your LocalWP credentials will be overwritten after the restore.
    - Use your beta credentials to log in
    - Or enable auto-login in LocalWP
+      - ![Image 19](assets/images/readme/19.png)
 
 ### 9. Add the AI-Trainer Plugin
 1. [Download AI-Trainer Plugin](https://drive.google.com/file/d/10rFN5wcDccXvQ4lAJjlygMMf-Cj2uFq7/view?usp=drive_link)
 2. Go to **Plugins → Add New → Upload Plugin**
+   - ![Image 20](assets/images/readme/20.png)
+   - ![Image 21](assets/images/readme/21.png)
 3. Upload the file, click **Install Now**, then **Replace Current** if prompted
+   - ![Image 22](assets/images/readme/22.png)
+   - ![Image 23](assets/images/readme/23.png)
 4. Activate the plugin
 
 ### ✅ Test Installation
 1. Go to **Pages**
+   - ![Image 24](assets/images/readme/24.png)
 2. Search for **Psybrarian**
+   - ![Image 25](assets/images/readme/25.png)
 3. View the page
+   - ![Image 26](assets/images/readme/26.png)
 4. Run a query
    - If you get both sources and a summary → ✅ Success!
 
