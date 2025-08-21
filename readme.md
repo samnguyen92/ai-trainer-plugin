@@ -46,13 +46,22 @@ We use [LocalWP](https://localwp.com/) to run local instances of WordPress.
 
 ### 3. Required Plugins
 1. Go to **Plugins → Add Plugin**
+   - ![Image 7](assets/images/readme/7.png)
+   - ![Image 8](assets/images/readme/8.png)
 2. Search for **All-in-One WP Migration**
+   - ![Image 9](assets/images/readme/9.png)
 3. Install and activate the plugin: [All-in-One WP Migration](https://wordpress.org/plugins/all-in-one-wp-migration/)
 4. Manually install the paid extension (Psybrarian Resources in Google Drive).
    - Download `all-in-one-wp-migration-unlimited-extension`
    - Go to **Plugins → Add New → Upload Plugin**
+      - ![Image 10](assets/images/readme/10.png)
+      - ![Image 11](assets/images/readme/11.png)
    - Upload the file, click **Install Now**, then **Activate Plugin**
+      - ![Image 12](assets/images/readme/12.png)
+      - ![Image 13](assets/images/readme/13.png)
    - Check for updates and click **Update Now** if available
+      - ![Image 14](assets/images/readme/14.png)
+      - ![Image 15](assets/images/readme/15.png)
 
 
 ### 4. Install the RAG-EXA Plugin
