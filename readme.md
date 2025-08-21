@@ -29,11 +29,15 @@ We use [LocalWP](https://localwp.com/) to run local instances of WordPress.
 2. Create a new site using LocalWP.
    - ![Image 1](assets/images/readme/1.png)
    - Name the site whatever you like (example: **Local Psybrary**)
-   ![Image 2](assets/images/readme/2.png)
+      - ![Image 2](assets/images/readme/2.png)
    - Choose preferred settings
+      - ![Image 3](assets/images/readme/3.png)
    - Create a simple username/password and use your primary email address
+      - ![Image 4](assets/images/readme/4.png)
    - Turn on **OneClick Admin**
+      - ![Image 5](assets/images/readme/5.png)
 3. Go to your WordPress Admin Dashboard.
+   - ![Image 6](assets/images/readme/6.png)
 
 
 ### 2. Request Access to Google Drive Assets
