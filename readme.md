@@ -20,10 +20,6 @@ This repository contains the **RAG-EXA Plugin** for WordPress. Follow the steps 
 
 ## Installation
 
-1. Install and activate **Local WP**.
-2. Install and activate the required plugins:
-   - GreenShift Animation and Page Builder
-   - Psychedelic Plugin (for advanced interface support)
 3. Download or clone this repo into your `wp-content/plugins/` directory:
 
 ### 1. Local WordPress Environment
@@ -54,7 +50,7 @@ We use [LocalWP](https://localwp.com/) to run local instances of WordPress.
 
 
 ### 4. Install the RAG-EXA Plugin
-Navigate to your plugins folder in your IDE:
+Download or clone this repo into your `wp-content/plugins/` directory:
 
 ```bash
 cd app/public/wp-content/plugins/
@@ -62,7 +58,7 @@ git clone https://github.com/samnguyen92/rag-exa-plugin.git
 ```
 
 ### 5. Configure API Keys
-Navigate into the plugin folder:
+From the plugin folder:
 
 ```bash
 cd rag-exa-plugin
@@ -85,7 +81,7 @@ From your WordPress Dashboard:
 
 ### 7. Import the Preconfigured Site
 1. Go to **All-in-One WP Migration → Import**
-2. [Download `.wpress` Backup](https://drive.google.com/file/d/10rFN5wcDccXvQ4lAJjlygMMf-Cj2uFq7/view?usp=drive_link)
+2. [Download .wpress Backup](https://drive.google.com/file/d/10rFN5wcDccXvQ4lAJjlygMMf-Cj2uFq7/view?usp=drive_link)
 3. Upload the `.wpress` backup file.
 4. Follow the prompts to restore the site.
    - This will replicate the beta setup.
@@ -119,28 +115,6 @@ From your WordPress Dashboard:
   ```
 - You can manage **Q&A, Files, and Text** training data directly in the AI Trainer Dashboard plugin.
 - For advanced styling, use the provided **Psybrarian Page Template**.
-
----
-
-## 📂 Project Structure
-
-```
-ai-trainer-dashboard/
-│── includes/
-│   ├── openai.php         # OpenAI integration
-│   ├── utils.php          # Helper functions
-│   ├── autopage.php       # Auto-create page with template
-│── assets/
-│   ├── css/
-│   └── js/
-│── templates/
-│   └── template-psybrarian.php
-│── vendor/                # Composer packages
-│── .env.example           # Example environment variables
-│── .gitignore
-│── README.md
-│── ai-trainer-dashboard.php   # Main plugin file
-```
 
 ---
 
