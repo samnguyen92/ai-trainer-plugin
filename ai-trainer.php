@@ -1460,7 +1460,7 @@ class Exa_AI_Integration {
         }
         usort($chunk_scores, function($a, $b) { return $b['score'] <=> $a['score']; });
         $threshold = 0.90;
-        $top_chunks = array_filter(array_slice($chunk_scores, 0, 3), function($x) use ($threshold) { return $x['score'] >= $threshold; });
+        $top_chunks = array_filter(array_slice($chunk_scores, 0, 5), function($x) use ($threshold) { return $x['score'] >= $threshold; });
         $best_match = null;
         if (!empty($top_chunks)) {
             $best_match = $top_chunks[0]['chunk'];
@@ -1624,7 +1624,7 @@ class Exa_AI_Integration {
         }
         $sources = [];
         if (!empty($data['results']) && is_array($data['results'])) {
-            foreach (array_slice($data['results'], 0, 6) as $result) {
+            foreach (array_slice($data['results'], 0, 20) as $result) {
                 if (isset($result['url'])) {
                     $sources[] = esc_url_raw($result['url']);
                 }

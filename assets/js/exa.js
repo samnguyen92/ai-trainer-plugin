@@ -154,14 +154,18 @@ jQuery(document).ready(function($) {
             </div>`;
         }).join('');
 
+        const sourceCount = results.length;
         block.find('.exa-results').html(`
+            <div class="sources-header" style="margin-bottom: 15px; text-align: center; color: #fff; font-size: 14px;">
+                <span>📚 ${sourceCount} source${sourceCount !== 1 ? 's' : ''} found</span>
+            </div>
             <button class="slider-btn prev-btn">&#10094;</button>
             <div class="top-sources-wrapper">${cards}</div>
             <button class="slider-btn next-btn">&#10095;</button>
         `);
     }
 
-    // Setup slider buttons
+    // Setup slider buttons with enhanced scrolling for more sources
     function setupSliderButtons() {
         document.querySelectorAll('.exa-results').forEach(block => {
             const wrapper = block.querySelector('.top-sources-wrapper');
@@ -170,13 +174,28 @@ jQuery(document).ready(function($) {
 
             if (prevBtn && wrapper) {
                 prevBtn.addEventListener('click', () => {
-                    wrapper.scrollBy({ left: -300, behavior: 'smooth' });
+                    // Scroll by 4 source cards (4 * 200px + 3 * 16px gaps = 848px)
+                    const scrollAmount = -848;
+                    wrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                 });
             }
 
             if (nextBtn && wrapper) {
                 nextBtn.addEventListener('click', () => {
-                    wrapper.scrollBy({ left: 300, behavior: 'smooth' });
+                    // Scroll by 4 source cards (4 * 200px + 3 * 16px gaps = 848px)
+                    const scrollAmount = 848;
+                    wrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                });
+            }
+
+            // Show/hide navigation buttons based on scroll position
+            if (wrapper) {
+                wrapper.addEventListener('scroll', () => {
+                    const isAtStart = wrapper.scrollLeft <= 0;
+                    const isAtEnd = wrapper.scrollLeft >= wrapper.scrollWidth - wrapper.clientWidth;
+                    
+                    if (prevBtn) prevBtn.style.opacity = isAtStart ? '0.5' : '1';
+                    if (nextBtn) nextBtn.style.opacity = isAtEnd ? '0.5' : '1';
                 });
             }
         });
