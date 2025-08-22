@@ -13,6 +13,10 @@ jQuery(document).ready(function($) {
     const likeSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="none" class="tabler-icon tabler-icon-thumb-up-filled reaction-like-svg" style="vertical-align:middle;"><path d="M13 3a3 3 0 0 1 2.995 2.824l.005 .176v4h2a3 3 0 0 1 2.98 2.65l.015 .174l.005 .176l-.02 .196l-1.006 5.032c-.381 1.626 -1.502 2.796 -2.81 2.78l-.164 -.008h-8a1 1 0 0 1 -.993 -.883l-.007 -.117l.001 -9.536a1 1 0 0 1 .5 -.865a2.998 2.998 0 0 0 1.492 -2.397l.007 -.202v-1a3 3 0 0 1 3 -3z" fill="currentColor"></path><path d="M5 10a1 1 0 0 1 .993 .883l.007 .117v9a1 1 0 0 1 -.883 .993l-.117 .007h-1a2 2 0 0 1 -1.995 -1.85l-.005 -.15v-7a2 2 0 0 1 1.85 -1.995l.15 -.005h1z" fill="currentColor"></path></svg>`;
     const dislikeSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="none" class="tabler-icon tabler-icon-thumb-down-filled reaction-dislike-svg" style="vertical-align:middle;transform:scaleY(-1);"><path d="M13 3a3 3 0 0 1 2.995 2.824l.005 .176v4h2a3 3 0 0 1 2.98 2.65l.015 .174l.005 .176l-.02 .196l-1.006 5.032c-.381 1.626 -1.502 2.796 -2.81 2.78l-.164 -.008h-8a1 1 0 0 1 -.993 -.883l-.007 -.117l.001 -9.536a1 1 0 0 1 .5 -.865a2.998 2.998 0 0 0 1.492 -2.397l.007 -.202v-1a3 3 0 0 1 3 -3z" fill="currentColor"></path><path d="M5 10a1 1 0 0 1 .993 .883l.007 .117v9a1 1 0 0 1 -.883 .993l-.117 .007h-1a2 2 0 0 1 -1.995 -1.85l-.005 -.15v-7a2 2 0 0 1 1.85 -1.995l.15 -.005h1z" fill="currentColor"></path></svg>`;
     const shareSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7999999999999998" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-share-3 "><path d="M13 4v4c-6.575 1.028 -9.02 6.788 -10 12c-.037 .206 5.384 -5.962 10 -6v4l8 -7l-8 -7z"></path></svg>`;
+    const exportSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7,10 12,15 17,10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
+    const rewriteSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M3 21v-5h5"></path></svg>`;
+    const saveSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17,21 17,13 7,13 7,21"></polyline><polyline points="7,3 7,8 15,8"></polyline></svg>`;
+    const moreSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>`;
 
     // Pre-compile regex patterns for better performance
     const REGEX_PATTERNS = {
@@ -83,59 +87,130 @@ jQuery(document).ready(function($) {
 
     // Handle search response
     function handleSearchResponse(response, query) {
-        $exaLoading.hide();
-        $exaAnswer.show();
+        try {
+            $exaLoading.hide();
+            $exaAnswer.show();
 
-        if (!response.success) {
-            $exaAnswer.append('<p>⚠️ Search error.</p>');
-            return;
-        }
-
-        const data = response.data;
-        const sources = data.sources;
-        const blockedDomains = data.block_domains;
-        const results = (data.search && data.search.results) ? data.search.results : [];
-        const chatlogId = data.chatlog_id || null;
-        const conversationHistoryResp = data.conversation_history || conversationHistory;
-        
-
-        const questionID = 'answer-' + Date.now();
-        const block = createAnswerBlock(questionID, query);
-        $exaAnswer.append(block);
-
-        if (results.length) {
-            createSourceCards(block, results);
-        }
-
-        setupSliderButtons();
-
-        if (data.local_answer) {
-            handleLocalAnswer(data.local_answer, block, chatlogId);
-        } else {
-            // Update the global conversation history with the response from server
-            if (data.conversation_history && Array.isArray(data.conversation_history)) {
-                conversationHistory = data.conversation_history;
+            if (!response.success) {
+                $exaAnswer.append('<p>⚠️ Search error.</p>');
+                return;
             }
-            streamOpenAIAnswer(query, sources, blockedDomains, block.find('.exa-answer-streaming')[0], chatlogId, conversationHistory);
-            addReactionBar(block, chatlogId);
-        }
 
-        $ticketWrapper.show();
+            const data = response.data || {};
+            const sources = data.sources || '';
+            const blockedDomains = data.block_domains || '';
+            const results = (data.search && data.search.results) ? data.search.results : [];
+            const chatlogId = data.chatlog_id || null;
+            const conversationHistoryResp = data.conversation_history || conversationHistory;
+            
+
+            const questionID = 'answer-' + Date.now();
+            const block = createModernAnswerBlock(questionID, query, results);
+            $exaAnswer.append(block);
+
+            if (results && results.length) {
+                createModernSourceCards(block, results);
+            }
+
+            setupModernSliderButtons();
+
+            if (data.local_answer) {
+                handleLocalAnswer(data.local_answer, block, chatlogId);
+            } else {
+                // Update the global conversation history with the response from server
+                if (data.conversation_history && Array.isArray(data.conversation_history)) {
+                    conversationHistory = data.conversation_history;
+                }
+                
+                const streamingContainer = block.find('.exa-answer-streaming')[0];
+                if (streamingContainer) {
+                    streamOpenAIAnswer(query, sources, block, streamingContainer, chatlogId, conversationHistory);
+                } else {
+                    console.error('Streaming container not found');
+                }
+                
+                addModernReactionBar(block, chatlogId);
+            }
+
+            $ticketWrapper.show();
+        } catch (error) {
+            console.error('Error in handleSearchResponse:', error);
+            $exaAnswer.append(`<p>⚠️ Error processing response: ${error.message}</p>`);
+        }
     }
 
-    // Create answer block
-    function createAnswerBlock(questionID, query) {
-        return $(`<div class="answer-block" id="${questionID}">
-            <h1 class="exa-user-question">${query}</h1>
-            <div class="exa-results"></div>
-            <div class="exa-answer-streaming space-owl-m"></div>
+    // Create modern answer block with tabs
+    function createModernAnswerBlock(questionID, query, results = []) {
+        return $(`<div class="answer-block modern-ui" id="${questionID}">
+            <div class="answer-header">
+                <h1 class="exa-user-question">${query}</h1>
+                <div class="answer-tabs">
+                    <button class="tab-btn active" data-tab="answer">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M12 1v6m0 6v6"></path>
+                        </svg>
+                        Answer
+                    </button>
+                    <button class="tab-btn" data-tab="images">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21,15 16,10 5,21"></polyline>
+                        </svg>
+                        Images
+                    </button>
+                    <button class="tab-btn" data-tab="sources">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"></polygon>
+                        </svg>
+                        Sources ${results ? results.length : 0}
+                    </button>
+                    <button class="tab-btn" data-tab="steps">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9,11 12,14 22,4"></polyline>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                        </svg>
+                        Steps
+                    </button>
+                </div>
+            </div>
+            <div class="tab-content active" data-tab="answer">
+                <div class="exa-results"></div>
+                <div class="exa-answer-streaming space-owl-m"></div>
+            </div>
+            <div class="tab-content" data-tab="images">
+                <div class="images-placeholder">Images will appear here</div>
+            </div>
+            <div class="tab-content" data-tab="sources">
+                <div class="sources-placeholder">Sources will appear here</div>
+            </div>
+            <div class="tab-content" data-tab="steps">
+                <div class="steps-placeholder">Steps will appear here</div>
+            </div>
         </div>`);
     }
 
-    // Create source cards
-    function createSourceCards(block, results) {
+    // Create modern source cards with horizontal scrolling
+    function createModernSourceCards(block, results) {
+        if (!results || !Array.isArray(results) || results.length === 0) {
+            block.find('.exa-results').html(`
+                <div class="sources-header">
+                    <span>📚 No sources found</span>
+                </div>
+            `);
+            return;
+        }
+        
         const cards = results.map(item => {
-            const domain = new URL(item.url).hostname.replace('www.', '');
+            let domain = 'unknown';
+            try {
+                if (item.url) {
+                    domain = new URL(item.url).hostname.replace('www.', '');
+                }
+            } catch (e) {
+                console.warn('Invalid URL:', item.url);
+            }
             const isBadFavicon = !item.favicon || item.favicon === "data:," || item.favicon === "about:blank";
             
             // Use Google favicon API as fallback when Exa doesn't provide a favicon
@@ -146,7 +221,8 @@ jQuery(document).ready(function($) {
                 faviconUrl = item.favicon;
             }
             
-            const image = `<img src="${faviconUrl}" alt="favicon" class="exa-favicon" onerror="this.src='${exaSettings.fallbackIcon}'">`;
+            const fallbackIcon = (typeof exaSettings !== 'undefined' && exaSettings.fallbackIcon) ? exaSettings.fallbackIcon : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiByeD0iNCIgZmlsbD0iIzY2NjY2NiIvPgo8L3N2Zz4K';
+            const image = `<img src="${faviconUrl}" alt="favicon" class="exa-favicon" onerror="this.src='${fallbackIcon}'">`;
             
             return `<div class="source-card">
                 <div class="source-card-header">${image}<span class="exa-domain">${domain}</span></div>
@@ -157,17 +233,19 @@ jQuery(document).ready(function($) {
         const sourceCount = results.length;
         const displayCount = Math.min(sourceCount, 50); // Cap display at 50
         block.find('.exa-results').html(`
-            <div class="sources-header" style="margin-bottom: 15px; text-align: center; color: #fff; font-size: 14px;">
+            <div class="sources-header">
                 <span>📚 ${displayCount} source${displayCount !== 1 ? 's' : ''} found${sourceCount > 50 ? ` (showing top 50 of ${sourceCount})` : ''}</span>
             </div>
-            <button class="slider-btn prev-btn">&#10094;</button>
-            <div class="top-sources-wrapper">${cards}</div>
-            <button class="slider-btn next-btn">&#10095;</button>
+            <div class="sources-container">
+                <button class="slider-btn prev-btn">&#10094;</button>
+                <div class="top-sources-wrapper">${cards}</div>
+                <button class="slider-btn next-btn">&#10095;</button>
+            </div>
         `);
     }
 
-    // Setup slider buttons with enhanced scrolling for 50 sources
-    function setupSliderButtons() {
+    // Setup modern slider buttons
+    function setupModernSliderButtons() {
         document.querySelectorAll('.exa-results').forEach(block => {
             const wrapper = block.querySelector('.top-sources-wrapper');
             const prevBtn = block.querySelector('.prev-btn');
@@ -175,7 +253,6 @@ jQuery(document).ready(function($) {
 
             if (prevBtn && wrapper) {
                 prevBtn.addEventListener('click', () => {
-                    // Scroll by 6 source cards (6 * 200px + 5 * 16px gaps = 1280px)
                     const scrollAmount = -1280;
                     wrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                 });
@@ -183,7 +260,6 @@ jQuery(document).ready(function($) {
 
             if (nextBtn && wrapper) {
                 nextBtn.addEventListener('click', () => {
-                    // Scroll by 6 source cards (6 * 200px + 5 * 16px gaps = 1280px)
                     const scrollAmount = 1280;
                     wrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                 });
@@ -200,6 +276,248 @@ jQuery(document).ready(function($) {
                 });
             }
         });
+    }
+
+    // Tab switching functionality
+    $(document).on('click', '.tab-btn', function(e) {
+        e.preventDefault();
+        const tabName = $(this).data('tab');
+        const answerBlock = $(this).closest('.answer-block');
+        
+        // Update active tab button
+        answerBlock.find('.tab-btn').removeClass('active');
+        $(this).addClass('active');
+        
+        // Update active tab content
+        answerBlock.find('.tab-content').removeClass('active');
+        answerBlock.find(`[data-tab="${tabName}"]`).addClass('active');
+    });
+
+    // Add modern reaction bar with action buttons
+    function addModernReactionBar(block, chatlogId) {
+        const reactionBar = $(`
+            <div class="answer-reaction-bar modern" style="margin-top:20px;">
+                <div class="action-buttons">
+                    <button class="action-btn share-btn" data-id="${chatlogId}">
+                        ${shareSVG}
+                        Share
+                    </button>
+                    <button class="action-btn export-btn" data-id="${chatlogId}">
+                        ${exportSVG}
+                        Export
+                    </button>
+                    <button class="action-btn rewrite-btn" data-id="${chatlogId}">
+                        ${rewriteSVG}
+                        Rewrite
+                    </button>
+                </div>
+                <div class="reaction-buttons">
+                    <span class="reaction-like" data-id="${chatlogId}">${likeSVG}</span>
+                    <span class="like-count" id="like-count-${chatlogId}">0</span>
+                    <span class="reaction-dislike" data-id="${chatlogId}">${dislikeSVG}</span>
+                    <span class="dislike-count" id="dislike-count-${chatlogId}">0</span>
+                    <span class="reaction-save" data-id="${chatlogId}">${saveSVG}</span>
+                    <span class="reaction-more" data-id="${chatlogId}">${moreSVG}</span>
+                </div>
+            </div>
+        `);
+        block.append(reactionBar);
+        
+        // Fetch initial counts from backend
+        $.post(exa_ajax.ajaxurl, {
+            action: 'ai_get_chatlog_reaction_counts',
+            id: chatlogId
+        }, function(resp) {
+            if (resp && resp.success && resp.data) {
+                $(`#like-count-${chatlogId}`).text(resp.data.like || 0);
+                $(`#dislike-count-${chatlogId}`).text(resp.data.dislike || 0);
+            }
+        });
+
+        // Add event handlers for action buttons
+        reactionBar.find('.export-btn').on('click', function() {
+            exportAnswer(block, chatlogId);
+        });
+
+        reactionBar.find('.rewrite-btn').on('click', function() {
+            rewriteAnswer(block, chatlogId);
+        });
+
+        reactionBar.find('.reaction-save').on('click', function() {
+            saveAnswer(block, chatlogId);
+        });
+
+        reactionBar.find('.reaction-more').on('click', function() {
+            showMoreOptions(block, chatlogId);
+        });
+    }
+
+    // Export answer functionality
+    function exportAnswer(block, chatlogId) {
+        const question = block.find('.exa-user-question').text();
+        const answer = block.find('.exa-answer-streaming').html();
+        
+        // Create a formatted text version
+        const exportText = `Question: ${question}\n\nAnswer:\n${answer.replace(/<[^>]*>/g, '')}`;
+        
+        // Create and download file
+        const blob = new Blob([exportText], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `psybrary-answer-${chatlogId}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }
+
+    // Rewrite answer functionality
+    function rewriteAnswer(block, chatlogId) {
+        const question = block.find('.exa-user-question').text();
+        const answer = block.find('.exa-answer-streaming').html();
+        const container = block.find('.exa-answer-streaming')[0];
+        
+        // Show rewriting indicator
+        container.innerHTML = '<div style="text-align: center; padding: 40px; color: rgba(255,255,255,0.7);">🔄 Rewriting answer...</div>';
+        
+        // Call the rewrite function
+        streamOpenAIRewrite(question, answer, container);
+    }
+
+    // Save answer functionality
+    function saveAnswer(block, chatlogId) {
+        const saveBtn = block.find('.reaction-save');
+        const originalHTML = saveBtn.html();
+        
+        // Visual feedback
+        saveBtn.html(`${saveSVG} Saved!`);
+        saveBtn.css('color', '#3bb273');
+        
+        // Reset after 2 seconds
+        setTimeout(() => {
+            saveBtn.html(originalHTML);
+            saveBtn.css('color', 'rgba(255, 255, 255, 0.7)');
+        }, 2000);
+        
+        // TODO: Implement actual save functionality to backend
+        console.log('Saving answer for chatlog:', chatlogId);
+    }
+
+    // Show more options functionality
+    function showMoreOptions(block, chatlogId) {
+        const moreBtn = block.find('.reaction-more');
+        const optionsContainer = block.find('.more-options-container');
+        
+        if (optionsContainer.length === 0) {
+            const options = $(`
+                <div class="more-options-container" style="position: absolute; top: 100%; right: 0; background: #1a0024; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 8px; margin-top: 8px; z-index: 1000; min-width: 150px;">
+                    <div class="more-option" style="padding: 8px 12px; cursor: pointer; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">Copy Link</div>
+                    <div class="more-option" style="padding: 8px 12px; cursor: pointer; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">Report Issue</div>
+                    <div class="more-option" style="padding: 8px 12px; cursor: pointer; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">View History</div>
+                </div>
+            `);
+            
+            moreBtn.css('position', 'relative');
+            moreBtn.append(options);
+            
+            // Add click handlers for options
+            options.find('.more-option').eq(0).on('click', function() {
+                copyAnswerLink(block, chatlogId);
+                options.remove();
+            });
+            
+            options.find('.more-option').eq(1).on('click', function() {
+                reportIssue(block, chatlogId);
+                options.remove();
+            });
+            
+            options.find('.more-option').eq(2).on('click', function() {
+                viewHistory(block, chatlogId);
+                options.remove();
+            });
+        } else {
+            optionsContainer.remove();
+        }
+    }
+
+    // Copy answer link functionality
+    function copyAnswerLink(block, chatlogId) {
+        const url = window.location.origin + window.location.pathname + '?chatlog_id=' + chatlogId;
+        
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(() => {
+                showNotification('Link copied to clipboard!', 'success');
+            });
+        } else {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = url;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showNotification('Link copied to clipboard!', 'success');
+        }
+    }
+
+    // Report issue functionality
+    function reportIssue(block, chatlogId) {
+        const reportForm = $(`
+            <div class="report-form" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1a0024; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 24px; z-index: 10000; min-width: 400px; max-width: 500px;">
+                <h3 style="margin: 0 0 16px 0; color: #fff;">Report an Issue</h3>
+                <textarea placeholder="Describe the issue..." style="width: 100%; height: 100px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; padding: 12px; margin-bottom: 16px; resize: vertical;"></textarea>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button class="cancel-btn" style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Cancel</button>
+                    <button class="submit-btn" style="background: #e74c3c; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Submit Report</button>
+                </div>
+            </div>
+        `);
+        
+        $('body').append(reportForm);
+        
+        // Add event handlers
+        reportForm.find('.cancel-btn').on('click', function() {
+            reportForm.remove();
+        });
+        
+        reportForm.find('.submit-btn').on('click', function() {
+            const issue = reportForm.find('textarea').val();
+            if (issue.trim()) {
+                // TODO: Send report to backend
+                console.log('Reporting issue:', issue, 'for chatlog:', chatlogId);
+                showNotification('Issue reported successfully!', 'success');
+                reportForm.remove();
+            }
+        });
+    }
+
+    // View history functionality
+    function viewHistory(block, chatlogId) {
+        // TODO: Implement history view
+        showNotification('History feature coming soon!', 'info');
+    }
+
+    // Show notification functionality
+    function showNotification(message, type = 'info') {
+        const notification = $(`
+            <div class="notification ${type}" style="position: fixed; top: 20px; right: 20px; background: ${type === 'success' ? '#3bb273' : type === 'error' ? '#e74c3c' : '#3498db'}; color: #fff; padding: 12px 20px; border-radius: 8px; z-index: 10001; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transform: translateX(400px); transition: transform 0.3s ease;">
+                ${message}
+            </div>
+        `);
+        
+        $('body').append(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.css('transform', 'translateX(0)');
+        }, 100);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            notification.css('transform', 'translateX(400px)');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
     }
 
     // Dedicated function for beta feedback submission (like reaction custom submit)
@@ -231,7 +549,7 @@ jQuery(document).ready(function($) {
     function handleLocalAnswer(localAnswer, block, chatlogId) {
         const html = `<div>${localAnswer.content}</div>`;
         streamLocalAnswer(html, block.find('.exa-answer-streaming')[0]);
-        addReactionBar(block, chatlogId);
+        addModernReactionBar(block, chatlogId);
         conversationHistory.push({ q: block.find('.exa-user-question').text(), a: '' }); // Empty answer to keep structure
         
         // Limit conversation history to last 5 exchanges to prevent context overflow
@@ -282,7 +600,7 @@ jQuery(document).ready(function($) {
         }, 100); // Small delay to ensure reaction bar is added
     }
 
-    // Add reaction bar
+    // Add reaction bar (legacy)
     function addReactionBar(block, chatlogId) {
         const reactionBar = $(`
             <div class="answer-reaction-bar" style="margin-top:10px; display:flex; align-items:center; gap:12px;">
@@ -589,7 +907,7 @@ jQuery(document).ready(function($) {
                         // Add follow-up prompt after reaction bar
                         const reactionBar = answerBlock.find('.answer-reaction-bar');
                         if (reactionBar.length && !answerBlock.find('.follow-up-prompt').length) {
-                            const followUpPrompt = $('<div class="follow-up-prompt" style="margin-top: 15px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; text-align: center; color: #fff; font-size: 16px;">Ask a follow up question and we can continue our conversation or <button class="new-chat-btn" style="background: #3bb273; color: white; border: none; padding: 7px 12px; border-radius: 4px; cursor: pointer; margin: 0 5px;">New chat</button> and we can discuss another topic.</div> <div class="follow-up-prompt" style="margin-top: 15px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; text-align: center; color: #fff; font-size: 16px;"> We\'re still building and improving the Psybrary based on community feedback. See something missing, unclear, or off? <button class="beta-feedback-btn" style="background:#3bb273;color:#fff;border:none;padding:7px 12px;border-radius:4px;cursor:pointer;">Submit feedback</button><div class="beta-feedback-form" style="display:none;margin-top:10px;"><textarea class="beta-feedback-text" rows="3" style="width:90%;margin-bottom:8px;" placeholder="Your feedback..."></textarea><br><button class="beta-feedback-submit" style="background:#0C0012;color:#fff;border:none;padding:7px 12px;border-radius:4px;cursor:pointer;">Send</button></div></div>');
+                            const followUpPrompt = $('<div class="follow-up-prompt modern" style="margin-top: 20px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; text-align: center; color: #fff; font-size: 16px; border: 1px solid rgba(255, 255, 255, 0.1);">Ask a follow up question and we can continue our conversation or <button class="new-chat-btn modern" style="background: #3bb273; color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; margin: 0 8px; font-weight: 500; transition: all 0.2s;">New chat</button> and we can discuss another topic.</div> <div class="follow-up-prompt modern" style="margin-top: 15px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; text-align: center; color: #fff; font-size: 16px; border: 1px solid rgba(255, 255, 255, 0.1);"> We\'re still building and improving the Psybrary based on community feedback. See something missing, unclear, or off? <button class="beta-feedback-btn modern" style="background:#3bb273;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:500;transition:all 0.2s;">Submit feedback</button><div class="beta-feedback-form" style="display:none;margin-top:15px;"><textarea class="beta-feedback-text" rows="3" style="width:90%;margin-bottom:10px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:#fff;padding:12px;" placeholder="Your feedback..."></textarea><br><button class="beta-feedback-submit modern" style="background:#0C0012;color:#fff;border:1px solid rgba(255,255,255,0.2);padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:500;transition:all 0.2s;">Send</button></div></div>');
                             // Only bind feedback events once
                             if (!window._betaFeedbackBound) {
                                 window._betaFeedbackBound = true;
