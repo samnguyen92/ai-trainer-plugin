@@ -155,9 +155,10 @@ jQuery(document).ready(function($) {
         }).join('');
 
         const sourceCount = results.length;
+        const displayCount = Math.min(sourceCount, 50); // Cap display at 50
         block.find('.exa-results').html(`
             <div class="sources-header" style="margin-bottom: 15px; text-align: center; color: #fff; font-size: 14px;">
-                <span>📚 ${sourceCount} source${sourceCount !== 1 ? 's' : ''} found</span>
+                <span>📚 ${displayCount} source${displayCount !== 1 ? 's' : ''} found${sourceCount > 50 ? ` (showing top 50 of ${sourceCount})` : ''}</span>
             </div>
             <button class="slider-btn prev-btn">&#10094;</button>
             <div class="top-sources-wrapper">${cards}</div>
@@ -165,7 +166,7 @@ jQuery(document).ready(function($) {
         `);
     }
 
-    // Setup slider buttons with enhanced scrolling for more sources
+    // Setup slider buttons with enhanced scrolling for 50 sources
     function setupSliderButtons() {
         document.querySelectorAll('.exa-results').forEach(block => {
             const wrapper = block.querySelector('.top-sources-wrapper');
@@ -174,16 +175,16 @@ jQuery(document).ready(function($) {
 
             if (prevBtn && wrapper) {
                 prevBtn.addEventListener('click', () => {
-                    // Scroll by 4 source cards (4 * 200px + 3 * 16px gaps = 848px)
-                    const scrollAmount = -848;
+                    // Scroll by 6 source cards (6 * 200px + 5 * 16px gaps = 1280px)
+                    const scrollAmount = -1280;
                     wrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                 });
             }
 
             if (nextBtn && wrapper) {
                 nextBtn.addEventListener('click', () => {
-                    // Scroll by 4 source cards (4 * 200px + 3 * 16px gaps = 848px)
-                    const scrollAmount = 848;
+                    // Scroll by 6 source cards (6 * 200px + 5 * 16px gaps = 1280px)
+                    const scrollAmount = 1280;
                     wrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                 });
             }

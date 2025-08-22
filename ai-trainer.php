@@ -1459,7 +1459,7 @@ class Exa_AI_Integration {
             ];
         }
         usort($chunk_scores, function($a, $b) { return $b['score'] <=> $a['score']; });
-        $threshold = 0.90;
+        $threshold = 0.90; // Back to 90% for higher quality filtering
         $top_chunks = array_filter(array_slice($chunk_scores, 0, 5), function($x) use ($threshold) { return $x['score'] >= $threshold; });
         $best_match = null;
         if (!empty($top_chunks)) {
@@ -1489,6 +1489,7 @@ class Exa_AI_Integration {
         $body = json_encode([
             'query' => $conversational_prompt,
             'contents' => [ 'text' => true ],
+            'numResults' => 60, // Request 60 results to ensure we get 50 after filtering
             'include_domains' => array_values($cleaned_domains),
             // 'exclude_domains' => array_values($cleaned_blocked_domains),
             'domainPriorities' => [
@@ -1508,6 +1509,12 @@ class Exa_AI_Integration {
         $data = json_decode(wp_remote_retrieve_body($response), true);
         if (!is_array($data)) {
             $data = [];
+        }
+        
+        // Debug logging
+        error_log('Exa API response - Total results: ' . (isset($data['results']) ? count($data['results']) : 0));
+        if (isset($data['results']) && is_array($data['results'])) {
+            error_log('Exa API results URLs: ' . implode(', ', array_slice(array_column($data['results'], 'url'), 0, 5)));
         }
         // Filter and sort Exa results
         if (!empty($data['results']) && is_array($data['results'])) {
@@ -1566,20 +1573,20 @@ class Exa_AI_Integration {
                 // Fill with other sources
                 $other_count = 0;
                 foreach ($other_results as $result) {
-                    if ($other_count < 4) {
+                    if ($other_count < 49) { // Increased to 49 to allow up to 50 total
                         $results_ordered[] = $result;
                         $other_count++;
                     }
                 }
-                // If less than 5, add more psychedelics.com results
+                // If less than 50, add more psychedelics.com results
                 $i = count($results_ordered);
-                for ($j = 1; $j < count($psychedelics_results) && $i < 5; $j++) {
+                for ($j = 1; $j < count($psychedelics_results) && $i < 50; $j++) {
                     $results_ordered[] = $psychedelics_results[$j];
                     $i++;
                 }
             }
-            // Always show at least 5 results
-            $data['results'] = array_slice($results_ordered, 0, max(5, count($results_ordered)));
+            // Always show at least 5 results, but allow up to 50
+            $data['results'] = array_slice($results_ordered, 0, max(5, min(50, count($results_ordered))));
             
             // If no result from www.psychedelics.com, make a second Exa call
             $has_psy = false;
@@ -1594,6 +1601,7 @@ class Exa_AI_Integration {
                 $psy_body = json_encode([
                     'query' => $conversational_prompt,
                     'contents' => [ 'text' => true ],
+                    'numResults' => 10, // Request 10 psychedelics.com results
                     'include_domains' => ['www.psychedelics.com'],
                     // 'exclude_domains' => array_values($cleaned_blocked_domains),
                     'domainPriorities' => ['www.psychedelics.com' => 20]
@@ -1624,12 +1632,16 @@ class Exa_AI_Integration {
         }
         $sources = [];
         if (!empty($data['results']) && is_array($data['results'])) {
-            foreach (array_slice($data['results'], 0, 20) as $result) {
+            foreach (array_slice($data['results'], 0, 50) as $result) {
                 if (isset($result['url'])) {
                     $sources[] = esc_url_raw($result['url']);
                 }
             }
         }
+        
+        // Debug logging for final sources
+        error_log('Final sources count: ' . count($sources));
+        error_log('Final sources URLs: ' . implode(', ', array_slice($sources, 0, 5)));
         // Update conversation history with current question
         $updated_conversation_history = $conversation_history;
         $updated_conversation_history[] = ['q' => $query, 'a' => ''];
