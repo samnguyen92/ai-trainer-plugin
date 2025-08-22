@@ -97,6 +97,207 @@
     border: 1px dashed rgba(255, 255, 255, 0.1);
 }
 
+/* Sources Tab Styling */
+.modern-ui .sources-tab-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modern-ui .sources-count {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.modern-ui .count-number {
+    font-size: 32px;
+    font-weight: 700;
+    color: #3bb273;
+}
+
+.modern-ui .count-label {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+.modern-ui .sources-filters {
+    display: flex;
+    gap: 8px;
+}
+
+.modern-ui .filter-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.modern-ui .filter-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+.modern-ui .filter-btn.active {
+    background: #3bb273;
+    border-color: #3bb273;
+    color: #fff;
+}
+
+.modern-ui .source-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: all 0.2s ease;
+}
+
+.modern-ui .source-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.modern-ui .source-item-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.modern-ui .source-favicon {
+    flex-shrink: 0;
+}
+
+.modern-ui .source-favicon img {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.modern-ui .source-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.modern-ui .source-domain {
+    color: #3bb273;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.modern-ui .source-title {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 8px;
+}
+
+.modern-ui .source-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.modern-ui .source-action-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.modern-ui .source-action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    transform: scale(1.05);
+}
+
+.modern-ui .source-action-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+}
+
+.modern-ui .source-item-details {
+    padding-left: 64px;
+}
+
+.modern-ui .source-url {
+    margin-bottom: 8px;
+}
+
+.modern-ui .source-url a {
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    font-size: 14px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    word-break: break-all;
+    transition: color 0.2s ease;
+}
+
+.modern-ui .source-url a:hover {
+    color: #3bb273;
+}
+
+.modern-ui .source-snippet {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    line-height: 1.5;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 12px;
+    border-radius: 8px;
+    border-left: 3px solid #3bb273;
+}
+
+.modern-ui .sources-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.modern-ui .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.modern-ui .sources-empty-state h3 {
+    color: #fff;
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+.modern-ui .sources-empty-state p {
+    font-size: 16px;
+    margin: 0;
+}
+
 /* Modern Source Cards */
 .modern-ui .sources-header {
     margin-bottom: 20px;
@@ -448,6 +649,38 @@
     .modern-ui .source-card {
         min-width: 180px;
         padding: 12px;
+    }
+}
+
+/* Responsive design for Sources tab */
+@media (max-width: 768px) {
+    .modern-ui .sources-tab-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+    }
+    
+    .modern-ui .sources-filters {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .modern-ui .source-item-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .modern-ui .source-actions {
+        align-self: flex-end;
+    }
+    
+    .modern-ui .source-item-details {
+        padding-left: 0;
+    }
+    
+    .modern-ui .source-favicon img {
+        width: 40px;
+        height: 40px;
     }
 }
 

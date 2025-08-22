@@ -175,7 +175,85 @@
             </div>
             
             <div class="tab-content" data-tab="sources">
-                <div class="sources-placeholder">Sources will appear here</div>
+                <div class="sources-content">
+                    <div class="sources-tab-header">
+                        <div class="sources-count">
+                            <span class="count-number">10</span>
+                            <span class="count-label">Sources Found</span>
+                        </div>
+                        <div class="sources-filters">
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn" data-filter="recent">Recent</button>
+                            <button class="filter-btn" data-filter="relevance">Relevance</button>
+                        </div>
+                    </div>
+                    
+                    <div class="source-item" data-index="0">
+                        <div class="source-item-header">
+                            <div class="source-favicon">
+                                <img src="https://www.google.com/s2/favicons?sz=64&domain=wikipedia.org" alt="favicon">
+                            </div>
+                            <div class="source-info">
+                                <div class="source-domain">wikipedia.org</div>
+                                <div class="source-title">Psychedelic drug - Wikipedia</div>
+                            </div>
+                            <div class="source-actions">
+                                <button class="source-action-btn" onclick="window.open('https://wikipedia.org', '_blank')" title="Open Source">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                        <polyline points="15,3 21,3 21,9"></polyline>
+                                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                                    </svg>
+                                </button>
+                                <button class="source-action-btn" onclick="copyToClipboard('https://wikipedia.org')" title="Copy URL">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="source-item-details">
+                            <div class="source-url">
+                                <a href="https://wikipedia.org" target="_blank" rel="noopener noreferrer">https://wikipedia.org</a>
+                            </div>
+                            <div class="source-snippet">Comprehensive information about psychedelic substances, their effects, and history.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="source-item" data-index="1">
+                        <div class="source-item-header">
+                            <div class="source-favicon">
+                                <img src="https://www.google.com/s2/favicons?sz=64&domain=adf.org.au" alt="favicon">
+                            </div>
+                            <div class="source-info">
+                                <div class="source-domain">adf.org.au</div>
+                                <div class="source-title">Alcohol and Drug Foundation - Psychedelics</div>
+                            </div>
+                            <div class="source-actions">
+                                <button class="source-action-btn" onclick="window.open('https://adf.org.au', '_blank')" title="Open Source">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                        <polyline points="15,3 21,3 21,9"></polyline>
+                                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                                    </svg>
+                                </button>
+                                <button class="source-action-btn" onclick="copyToClipboard('https://adf.org.au')" title="Copy URL">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="source-item-details">
+                            <div class="source-url">
+                                <a href="https://adf.org.au" target="_blank" rel="noopener noreferrer">https://adf.org.au</a>
+                            </div>
+                            <div class="source-snippet">Evidence-based information about psychedelics and harm reduction approaches.</div>
+                        </div>
+                    </div>
+                </div>
             </div>
             
 
@@ -276,6 +354,24 @@
                 alert('Share functionality would copy a link to the clipboard.');
             }
         });
+
+        // Copy URL to clipboard function
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('URL copied to clipboard!');
+                });
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('URL copied to clipboard!');
+            }
+        }
     </script>
 </body>
 </html>

@@ -110,6 +110,8 @@ jQuery(document).ready(function($) {
 
             if (results && results.length) {
                 createModernSourceCards(block, results);
+                // Also populate the Sources tab
+                populateSourcesTab(block, results);
             }
 
             setupModernSliderButtons();
@@ -177,7 +179,7 @@ jQuery(document).ready(function($) {
                 <div class="images-placeholder">Images will appear here</div>
             </div>
             <div class="tab-content" data-tab="sources">
-                <div class="sources-placeholder">Sources will appear here</div>
+                <div class="sources-content"></div>
             </div>
 
         </div>`);
@@ -234,6 +236,121 @@ jQuery(document).ready(function($) {
                 <button class="slider-btn next-btn">&#10095;</button>
             </div>
         `);
+    }
+
+    // Populate Sources tab with detailed source information
+    function populateSourcesTab(block, results) {
+        if (!results || !Array.isArray(results) || results.length === 0) {
+            block.find('.sources-content').html(`
+                <div class="sources-empty-state">
+                    <div class="empty-icon">📚</div>
+                    <h3>No Sources Found</h3>
+                    <p>No sources were found for this query.</p>
+                </div>
+            `);
+            return;
+        }
+
+        const sourcesHtml = results.map((item, index) => {
+            let domain = 'unknown';
+            try {
+                if (item.url) {
+                    domain = new URL(item.url).hostname.replace('www.', '');
+                }
+            } catch (e) {
+                console.warn('Invalid URL:', item.url);
+            }
+
+            const isBadFavicon = !item.favicon || item.favicon === "data:," || item.favicon === "about:blank";
+            const fallbackIcon = (typeof exaSettings !== 'undefined' && exaSettings.fallbackIcon) ? exaSettings.fallbackIcon : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiByeD0iNCIgZmlsbD0iIzY2NjY2NiIvPgo8L3N2Zz4K';
+            const faviconUrl = isBadFavicon ? `https://www.google.com/s2/favicons?sz=64&domain=${domain}` : item.favicon;
+
+            return `
+                <div class="source-item" data-index="${index}">
+                    <div class="source-item-header">
+                        <div class="source-favicon">
+                            <img src="${faviconUrl}" alt="favicon" onerror="this.src='${fallbackIcon}'">
+                        </div>
+                        <div class="source-info">
+                            <div class="source-domain">${domain}</div>
+                            <div class="source-title">${item.title || 'Untitled'}</div>
+                        </div>
+                        <div class="source-actions">
+                            <button class="source-action-btn" onclick="window.open('${item.url}', '_blank')" title="Open Source">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                    <polyline points="15,3 21,3 21,9"></polyline>
+                                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                                </svg>
+                            </button>
+                            <button class="source-action-btn" onclick="copyToClipboard('${item.url}')" title="Copy URL">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="source-item-details">
+                        <div class="source-url">
+                            <a href="${item.url}" target="_blank" rel="noopener noreferrer">${item.url}</a>
+                        </div>
+                        ${item.snippet ? `<div class="source-snippet">${item.snippet}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        const sourcesHeader = `
+            <div class="sources-tab-header">
+                <div class="sources-count">
+                    <span class="count-number">${results.length}</span>
+                    <span class="count-label">Sources Found</span>
+                </div>
+                <div class="sources-filters">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="recent">Recent</button>
+                    <button class="filter-btn" data-filter="relevance">Relevance</button>
+                </div>
+            </div>
+        `;
+
+        block.find('.sources-content').html(sourcesHeader + sourcesHtml);
+        
+        // Add filter functionality
+        setupSourceFilters(block);
+    }
+
+    // Setup source filtering functionality
+    function setupSourceFilters(block) {
+        block.find('.filter-btn').on('click', function() {
+            const filterType = $(this).data('filter');
+            
+            // Update active filter button
+            block.find('.filter-btn').removeClass('active');
+            $(this).addClass('active');
+            
+            // Apply filter logic (placeholder for now)
+            console.log('Filtering by:', filterType);
+        });
+    }
+
+    // Copy URL to clipboard function
+    function copyToClipboard(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('URL copied to clipboard!', 'success');
+            });
+        } else {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showNotification('URL copied to clipboard!', 'success');
+        }
     }
 
     // Setup modern slider buttons
