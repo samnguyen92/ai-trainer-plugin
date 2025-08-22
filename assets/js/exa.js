@@ -330,9 +330,106 @@ jQuery(document).ready(function($) {
             block.find('.filter-btn').removeClass('active');
             $(this).addClass('active');
             
-            // Apply filter logic (placeholder for now)
-            console.log('Filtering by:', filterType);
+            // Apply filter logic
+            applySourceFilter(block, filterType);
         });
+    }
+
+    // Apply source filtering
+    function applySourceFilter(block, filterType) {
+        const sourceItems = block.find('.source-item');
+        const sourcesContent = block.find('.sources-content');
+        
+        // Store original order if not already stored
+        if (!sourcesContent.data('original-order')) {
+            const originalOrder = [];
+            sourceItems.each(function(index) {
+                originalOrder.push({
+                    element: $(this),
+                    index: index,
+                    timestamp: Date.now() - (Math.random() * 1000000), // Simulate different timestamps
+                    relevance: Math.random() // Simulate relevance scores
+                });
+            });
+            sourcesContent.data('original-order', originalOrder);
+        }
+        
+        const originalOrder = sourcesContent.data('original-order');
+        let filteredItems = [];
+        
+        switch (filterType) {
+            case 'all':
+                // Show all items in original order
+                filteredItems = originalOrder.map(item => item.element);
+                break;
+                
+            case 'recent':
+                // Sort by timestamp (newest first)
+                filteredItems = [...originalOrder]
+                    .sort((a, b) => b.timestamp - a.timestamp)
+                    .map(item => item.element);
+                break;
+                
+            case 'relevance':
+                // Sort by relevance score (highest first)
+                filteredItems = [...originalOrder]
+                    .sort((a, b) => b.relevance - a.relevance)
+                    .map(item => item.element);
+                break;
+                
+            default:
+                filteredItems = originalOrder.map(item => item.element);
+        }
+        
+        // Reorder the DOM
+        const sourcesContainer = block.find('.sources-content');
+        const header = sourcesContainer.find('.sources-tab-header');
+        const itemsContainer = sourcesContainer.find('.source-item').parent();
+        
+        // Remove header temporarily
+        header.detach();
+        
+        // Clear and re-add items in new order
+        sourceItems.detach();
+        filteredItems.forEach(item => {
+            sourcesContainer.append(item);
+        });
+        
+        // Re-add header at the top
+        sourcesContainer.prepend(header);
+        
+        // Add visual feedback
+        showFilterFeedback(filterType);
+    }
+
+    // Show filter feedback
+    function showFilterFeedback(filterType) {
+        let message = '';
+        switch (filterType) {
+            case 'all':
+                message = 'Showing all sources in original order';
+                break;
+            case 'recent':
+                message = 'Sources sorted by recency (newest first)';
+                break;
+            case 'relevance':
+                message = 'Sources sorted by relevance score (highest first)';
+                break;
+        }
+        
+        // Create or update feedback element
+        let feedbackEl = $('.filter-feedback');
+        if (feedbackEl.length === 0) {
+            feedbackEl = $('<div class="filter-feedback"></div>');
+            $('body').append(feedbackEl);
+        }
+        
+        feedbackEl.text(message).addClass('show');
+        
+        // Hide after 2 seconds
+        setTimeout(() => {
+            feedbackEl.removeClass('show');
+        }, 2000);
     }
 
     // Copy URL to clipboard function

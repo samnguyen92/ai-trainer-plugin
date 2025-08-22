@@ -177,10 +177,10 @@
             <div class="tab-content" data-tab="sources">
                 <div class="sources-content">
                     <div class="sources-tab-header">
-                        <div class="sources-count">
-                            <span class="count-number">10</span>
-                            <span class="count-label">Sources Found</span>
-                        </div>
+                                            <div class="sources-count">
+                        <span class="count-number">4</span>
+                        <span class="count-label">Sources Found</span>
+                    </div>
                         <div class="sources-filters">
                             <button class="filter-btn active" data-filter="all">All</button>
                             <button class="filter-btn" data-filter="recent">Recent</button>
@@ -251,6 +251,72 @@
                                 <a href="https://adf.org.au" target="_blank" rel="noopener noreferrer">https://adf.org.au</a>
                             </div>
                             <div class="source-snippet">Evidence-based information about psychedelics and harm reduction approaches.</div>
+                        </div>
+                    </div>
+
+                    <div class="source-item" data-index="2">
+                        <div class="source-item-header">
+                            <div class="source-favicon">
+                                <img src="https://www.google.com/s2/favicons?sz=64&domain=erowid.org" alt="favicon">
+                            </div>
+                            <div class="source-info">
+                                <div class="source-domain">erowid.org</div>
+                                <div class="source-title">Erowid - Psychedelic Information</div>
+                            </div>
+                            <div class="source-actions">
+                                <button class="source-action-btn" onclick="window.open('https://erowid.org', '_blank')" title="Open Source">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                        <polyline points="15,3 21,3 21,9"></polyline>
+                                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                                    </svg>
+                                </button>
+                                <button class="source-action-btn" onclick="copyToClipboard('https://erowid.org')" title="Copy URL">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="source-item-details">
+                            <div class="source-url">
+                                <a href="https://erowid.org" target="_blank" rel="noopener noreferrer">https://erowid.org</a>
+                            </div>
+                            <div class="source-snippet">Comprehensive database of psychoactive substances and their effects.</div>
+                        </div>
+                    </div>
+
+                    <div class="source-item" data-index="3">
+                        <div class="source-item-header">
+                            <div class="source-favicon">
+                                <img src="https://www.google.com/s2/favicons?sz=64&domain=psychedelicscience.org" alt="favicon">
+                            </div>
+                            <div class="source-info">
+                                <div class="source-domain">psychedelicscience.org</div>
+                                <div class="source-title">Multidisciplinary Association for Psychedelic Studies</div>
+                            </div>
+                            <div class="source-actions">
+                                <button class="source-action-btn" onclick="window.open('https://psychedelicscience.org', '_blank')" title="Open Source">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                        <polyline points="15,3 21,3 21,9"></polyline>
+                                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                                    </svg>
+                                </button>
+                                <button class="source-action-btn" onclick="copyToClipboard('https://psychedelicscience.org')" title="Copy URL">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="source-item-details">
+                            <div class="source-url">
+                                <a href="https://psychedelicscience.org" target="_blank" rel="noopener noreferrer">https://psychedelicscience.org</a>
+                            </div>
+                            <div class="source-snippet">Research and education about psychedelics and their therapeutic potential.</div>
                         </div>
                     </div>
                 </div>
@@ -372,6 +438,122 @@
                 alert('URL copied to clipboard!');
             }
         }
+
+        // Setup source filtering functionality
+        function setupSourceFilters(block) {
+            block.find('.filter-btn').on('click', function() {
+                const filterType = $(this).data('filter');
+                
+                // Update active filter button
+                block.find('.filter-btn').removeClass('active');
+                $(this).addClass('active');
+                
+                // Apply filter logic
+                applySourceFilter(block, filterType);
+            });
+        }
+
+        // Apply source filtering
+        function applySourceFilter(block, filterType) {
+            const sourceItems = block.find('.source-item');
+            const sourcesContent = block.find('.sources-content');
+            
+            // Store original order if not already stored
+            if (!sourcesContent.data('original-order')) {
+                const originalOrder = [];
+                sourceItems.each(function(index) {
+                    originalOrder.push({
+                        element: $(this),
+                        index: index,
+                        timestamp: Date.now() - (Math.random() * 1000000), // Simulate different timestamps
+                        relevance: Math.random() // Simulate relevance scores
+                    });
+                });
+                sourcesContent.data('original-order', originalOrder);
+            }
+            
+            const originalOrder = sourcesContent.data('original-order');
+            let filteredItems = [];
+            
+            switch (filterType) {
+                case 'all':
+                    // Show all items in original order
+                    filteredItems = originalOrder.map(item => item.element);
+                    break;
+                    
+                case 'recent':
+                    // Sort by timestamp (newest first)
+                    filteredItems = [...originalOrder]
+                        .sort((a, b) => b.timestamp - a.timestamp)
+                        .map(item => item.element);
+                    break;
+                    
+                case 'relevance':
+                    // Sort by relevance score (highest first)
+                    filteredItems = [...originalOrder]
+                        .sort((a, b) => b.relevance - a.relevance)
+                        .map(item => item.element);
+                    break;
+                    
+                default:
+                    filteredItems = originalOrder.map(item => item.element);
+            }
+            
+            // Reorder the DOM
+            const sourcesContainer = block.find('.sources-content');
+            const header = sourcesContainer.find('.sources-tab-header');
+            const itemsContainer = sourcesContainer.find('.source-item').parent();
+            
+            // Remove header temporarily
+            header.detach();
+            
+            // Clear and re-add items in new order
+            sourceItems.detach();
+            filteredItems.forEach(item => {
+                sourcesContainer.append(item);
+            });
+            
+            // Re-add header at the top
+            sourcesContainer.prepend(header);
+            
+            // Add visual feedback
+            showFilterFeedback(filterType);
+        }
+
+        // Show filter feedback
+        function showFilterFeedback(filterType) {
+            let message = '';
+            switch (filterType) {
+                case 'all':
+                    message = 'Showing all sources in original order';
+                    break;
+                case 'recent':
+                    message = 'Sources sorted by recency (newest first)';
+                    break;
+                case 'relevance':
+                    message = 'Sources sorted by relevance score (highest first)';
+                    break;
+            }
+            
+            // Create or update feedback element
+            let feedbackEl = $('.filter-feedback');
+            if (feedbackEl.length === 0) {
+                feedbackEl = $('<div class="filter-feedback"></div>');
+                $('body').append(feedbackEl);
+            }
+            
+            feedbackEl.text(message).addClass('show');
+            
+            // Hide after 2 seconds
+            setTimeout(() => {
+                feedbackEl.removeClass('show');
+            }, 2000);
+        }
+
+        // Initialize filters when page loads
+        $(document).ready(function() {
+            setupSourceFilters($('.answer-block'));
+        });
     </script>
 </body>
 </html>
