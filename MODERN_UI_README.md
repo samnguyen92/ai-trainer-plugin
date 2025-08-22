@@ -11,7 +11,7 @@ The Psybrary plugin has been updated with a modern, dark-themed user interface t
 - **Color Scheme**: Consistent use of white text with green accents (#3bb273)
 
 ### 2. Tabbed Interface
-The new interface includes four main tabs:
+The new interface includes three main tabs:
 
 #### Answer Tab (Default)
 - Displays the main answer content
@@ -25,10 +25,6 @@ The new interface includes four main tabs:
 #### Sources Tab
 - Placeholder for detailed source information
 - Will show expanded source details when implemented
-
-#### Steps Tab
-- Placeholder for step-by-step guides
-- Will display procedural information when implemented
 
 ### 3. Enhanced Source Cards
 - **Horizontal Scrolling**: Smooth scrolling through multiple sources
@@ -174,7 +170,6 @@ The modern UI is designed to work with:
 Planned features for upcoming releases:
 - Image gallery integration
 - Advanced source filtering
-- Step-by-step guide generation
 - Enhanced export formats (PDF, Markdown)
 - Collaborative features
 - Advanced search filters
