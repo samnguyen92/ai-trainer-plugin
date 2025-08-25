@@ -2111,6 +2111,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         { re: /\b(interaction|interact|contraindicat\w*)\b/, w: 3 },
         { re: /\b(ssri|maoi|lithium)\b/, w: 3 },
         { re: /\b(drug\s+combo|mix\s+with|with\s+\w+)\b/, w: 1 },
+        { re: /\b(combine|combining|mix|mixing|take\s+with|use\s+with)\b/, w: 3 },
       ],
       safety: [
         { re: /\b(safe|safety|first\s+aid|overdose|bad\s+trip|emergency)\b/, w: 3 },
@@ -2170,6 +2171,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
       stacking: [
         { re: /\b(stack|combo|combine)\b/, w: 3 },
         { re: /\b(with\s+cacao|with\s+caffeine|lemon\s+tek)\b/, w: 3 },
+        { re: /\b(together|pair(?:ing)?)\b/, w: 2 },
       ],
       set_setting_planning: [
         { re: /\b(set\s+and\s+setting\s+plan|music|playlist|lighting|sitter)\b/, w: 3 },
@@ -2202,6 +2204,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
       'protocol',
       'microdosing',
       'interactions',
+      'stacking',
       'safety',
       'therapy',
       'legality',
@@ -2246,6 +2249,14 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     // If therapy mentions clinical trials strongly, down-weight event's generic trial
     if (scores.therapy >= 4) {
       scores.event = Math.max(0, scores.event - 2);
+    }
+
+    // If combination/mixing cues are present, boost interactions/stacking and down-weight safety
+    const combineCue = /\b(combine|combining|mix|mixing|stack|together|pair(?:ing)?|with\s+\w+)\b/;
+    if (combineCue.test(s)) {
+      scores.interactions = (scores.interactions || 0) + 2;
+      scores.stacking = (scores.stacking || 0) + 2;
+      scores.safety = Math.max(0, (scores.safety || 0) - 2);
     }
 
     // Determine best match
@@ -2401,7 +2412,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
   // Optional Safety Snapshot, injected only when addSafety=true
   function safetySnapshot() {
     return `
-  <h3>Safety Snapshot (30 seconds)</h3>
+  <h3>Safety Tips</h3>
   <ul>
     <li><strong>Medications:</strong> <!-- Note any risky drug interactions (e.g., SSRIs, MAOIs, lithium). --></li>
     <li><strong>Mental health:</strong> <!-- Note mental health precautions (e.g., risk of psychosis or severe anxiety). --></li>
