@@ -37,7 +37,7 @@ jQuery(document).ready(function($) {
         'TABLE', 'TR', 'TD', 'TH', 'TBODY', 'THEAD', 'TFOOT'
     ]);
 
-    const MAX_LENGTH = 3000;
+    const MAX_LENGTH = 15000; // Increased to ensure related questions are not truncated
     const CHATLOG_MAX_LENGTH = 50000;
 
     // Initialize UI
@@ -1208,7 +1208,16 @@ jQuery(document).ready(function($) {
 function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     const safeSources = String(sources || '').trim();
     if (safeSources.length < 3) {
-      return `<h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>`;
+      return `<h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>
+      
+<h3>Related Questions</h3>
+<ul>
+<li>What specific information about this topic would be most helpful to you?</li>
+<li>Are there related topics you'd like to explore instead?</li>
+<li>Would you like to learn about similar substances or experiences?</li>
+<li>What aspects of this topic are you most curious about?</li>
+<li>How can I help you find the information you're looking for?</li>
+</ul>`;
     }
     const safeBlock = String(block || '').trim();
     const safeContext = contextBlock ? String(contextBlock) : '';
@@ -1223,7 +1232,13 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     const promptHeader = `
   You are the Psybrarian — an evidence-first, harm-reduction librarian for psychedelic topics.
 
+  MANDATORY: Every response you generate MUST include a "Related Questions" section at the end with exactly 5 questions. This is non-negotiable.
+
   Provide a concise, trustworthy answer (6–8 sentences) to the question using only the trusted sources listed below. Use clear, neutral language suitable for a broad audience.
+
+  CRITICAL: You MUST include exactly 5 related questions at the end of every response. These questions should help users explore different aspects of the topic and continue the conversation.
+
+  FAILURE TO INCLUDE RELATED QUESTIONS WILL RESULT IN AN INCOMPLETE RESPONSE.
 
   Do not use any blocked or unreliable domains.
 
@@ -1243,9 +1258,25 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
   - Output valid HTML only (no Markdown).
   - Prefer <h2>, <h3>, <p>, <ul>, <ol>, <li>, <table>, <thead>, <tbody>, <tr>, <td>, <th>, <a>.
   - Keep it concise and avoid repetition.
+  - ALWAYS include the "Related Questions" section with exactly 5 relevant follow-up questions.
+  - Related questions must be specific, actionable, and directly related to the topic discussed.
+  - Each question should explore a different aspect or angle of the subject matter.
+
+  REMINDER: The "Related Questions" section is MANDATORY and must appear in every single response with exactly 5 questions.
+
+  FINAL INSTRUCTION: Replace all placeholder comments in the Related Questions section with actual, specific questions. Do not leave any <!-- --> comments in the final output.
+
+  CRITICAL OUTPUT REQUIREMENT: Your response MUST end with the Related Questions section. If you do not include this section, your response is incomplete and will be rejected.
+
+  DEBUG: If you see this instruction, you must include the Related Questions section. Failure to do so means you are not following instructions.
+
+  FINAL WARNING: Your response will be considered incomplete and rejected if it does not end with the Related Questions section. This is your last chance to follow instructions.
   `.trim();
   
     // Standardized HTML skeleton (template-specific content slotted in)
+    // IMPORTANT: The Related Questions section below is MANDATORY and must be filled with actual questions, not placeholder comments
+    
+    // CRITICAL: The AI MUST replace all placeholder comments with actual questions. The Related Questions section is REQUIRED.
     const htmlSkeleton = `
   <h2>${escapeHtml(title)}</h2>
   
@@ -1266,12 +1297,13 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
   ${body.extra || ''}
   
   <h3>Related Questions</h3>
+  <p><strong>MANDATORY: You MUST replace all placeholder comments below with actual questions. This section is required.</strong></p>
   <ul>
-    <li><!-- Q1 --></li>
-    <li><!-- Q2 --></li>
-    <li><!-- Q3 --></li>
-    <li><!-- Q4 --></li>
-    <li><!-- Q5 --></li>
+    <li><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></li>
+    <li><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></li>
+    <li><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></li>
+    <li><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></li>
+    <li><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></li>
   </ul>`;
   
     return `${promptHeader}\n\n${htmlSkeleton}`.trim();
