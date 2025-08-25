@@ -27,6 +27,12 @@ $dotenv->safeLoad();
 define('EXA_API_KEY', isset($_ENV['EXA_API_KEY']) ? $_ENV['EXA_API_KEY'] : '');
 define('OPENAI_API_KEY', isset($_ENV['OPENAI_API_KEY']) ? $_ENV['OPENAI_API_KEY'] : '');
 
+// ENHANCED: Configuration for psychedelics.com guarantee
+define('PSYCHEDELICS_COM_GUARANTEE', true); // Set to false to disable the guarantee
+define('PSYCHEDELICS_COM_FALLBACK_ENABLED', true); // Set to false to disable fallback search
+define('PSYCHEDELICS_COM_MIN_RESULTS', 3); // Minimum psychedelics.com results to include
+define('PSYCHEDELICS_COM_MAX_RESULTS', 8); // Maximum psychedelics.com results to include
+
 register_activation_hook(__FILE__, function () {
     global $wpdb;
     $table = $wpdb->prefix . 'ai_knowledge';
@@ -101,6 +107,21 @@ register_activation_hook(__FILE__, function () {
     if (empty($columns_beta)) {
         $wpdb->query("ALTER TABLE $chatlog_table ADD COLUMN beta_feedback LONGTEXT NULL");
     }
+    // Add psychedelics.com guarantee tracking columns
+    $psychedelics_columns = [
+        'psychedelics_com_included' => 'TINYINT(1) DEFAULT 0',
+        'psychedelics_com_count' => 'INT DEFAULT 0',
+        'psychedelics_com_guarantee_status' => 'VARCHAR(50) DEFAULT "Unknown"',
+        'psychedelics_com_guarantee_details' => 'TEXT NULL'
+    ];
+    
+    foreach ($psychedelics_columns as $column => $definition) {
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $chatlog_table LIKE '$column'");
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE $chatlog_table ADD COLUMN $column $definition");
+        }
+    }
+    
     // Add tier column to domains table if not exists
     $tier_column = $wpdb->get_results("SHOW COLUMNS FROM $domains_table LIKE 'tier'");
     if (empty($tier_column)) {
@@ -141,6 +162,7 @@ register_activation_hook(__FILE__, function () {
 add_action('admin_menu', function () {
     add_menu_page('AI Trainer', 'AI Trainer', 'manage_options', 'ai-trainer', 'ai_trainer_admin_page', '', 80);
     add_submenu_page('ai-trainer', 'Chat Log', 'Chat Log', 'manage_options', 'ai-trainer-chatlog', 'ai_trainer_chatlog_page');
+    add_submenu_page('ai-trainer', 'Psychedelics.com Monitor', 'Psychedelics.com Monitor', 'manage_options', 'ai-trainer-psychedelics-monitor', 'ai_trainer_psychedelics_monitor_page');
 });
 
 function ai_trainer_admin_page() {
@@ -149,6 +171,10 @@ function ai_trainer_admin_page() {
 
 function ai_trainer_chatlog_page() {
     include AI_TRAINER_PATH . 'admin/tabs/chatlog.php';
+}
+
+function ai_trainer_psychedelics_monitor_page() {
+    include AI_TRAINER_PATH . 'admin/tabs/psychedelics-monitor.php';
 }
 
 function ai_trainer_insert_chat_log($user_id, $question, $answer) {
@@ -1498,7 +1524,6 @@ class Exa_AI_Integration {
         $wpdb->insert($wpdb->prefix . 'ai_chat_log', [
             'user_id' => $user_id,
             'question' => $query,
-            'answer' => '...',
             'created_at' => current_time('mysql')
         ]);
         $chatlog_id = $wpdb->insert_id;
@@ -1523,11 +1548,129 @@ class Exa_AI_Integration {
         if (!empty($top_chunks)) {
             $best_match = $top_chunks[0]['chunk'];
         }
-        // Run Exa API search
+        
+        // ENHANCED: Dual-query strategy to ensure psychedelics.com content
+        $all_results = [];
+        $psychedelics_com_results = [];
+        
+        // Primary Query: Current EXA search with domain priorities
+        $primary_results = $this->execute_exa_search($conversational_prompt, $query);
+        if (!empty($primary_results)) {
+            $all_results = array_merge($all_results, $primary_results);
+        }
+        
+        // Check if we have psychedelics.com results in primary search
+        $has_psychedelics_com = $this->has_domain_results($all_results, 'psychedelics.com');
+        
+        // Fallback Query: If no psychedelics.com results, run specific search
+        if (!$has_psychedelics_com) {
+            error_log('No psychedelics.com results found in primary search, running fallback query');
+            $fallback_results = $this->execute_psychedelics_com_fallback($conversational_prompt, $query);
+            if (!empty($fallback_results)) {
+                $psychedelics_com_results = $fallback_results;
+                // Merge fallback results with primary results, prioritizing psychedelics.com
+                $all_results = $this->merge_results_with_psychedelics_priority($all_results, $psychedelics_com_results);
+            }
+        }
+        
+        // Enhanced tier-based reordering with psychedelics.com guarantee
+        if (!empty($all_results)) {
+            $all_results = $this->enhanced_reorder_with_psychedelics_guarantee($all_results);
+        }
+        
+        // ENHANCED: Verify psychedelics.com guarantee compliance
+        $final_psychedelics_count = $this->count_domain_results($all_results, 'psychedelics.com');
+        $guarantee_status = $this->check_psychedelics_com_guarantee($all_results, $final_psychedelics_count);
+        
+        error_log('Psychedelics.com guarantee status: ' . $guarantee_status['status'] . ' - ' . $final_psychedelics_count . ' results included');
+        
+        // Filter and prepare final sources
+        $sources = [];
+        if (!empty($all_results) && is_array($all_results)) {
+            foreach (array_slice($all_results, 0, 50) as $result) {
+                if (isset($result['url'])) {
+                    $sources[] = esc_url_raw($result['url']);
+                }
+            }
+        }
+        
+        // Debug logging for final sources
+        error_log('Final sources count: ' . count($sources));
+        error_log('Final sources URLs: ' . implode(', ', array_slice($sources, 0, 5)));
+        error_log('Psychedelics.com results included: ' . $this->count_domain_results($all_results, 'psychedelics.com'));
+        
+        // Update conversation history with current question
+        $updated_conversation_history = $conversation_history;
+        $updated_conversation_history[] = ['q' => $query, 'a' => ''];
+        
+        // Limit conversation history to last 5 exchanges
+        if (count($updated_conversation_history) > 5) {
+            $updated_conversation_history = array_slice($updated_conversation_history, -5);
+        }
+        
+        $result = [
+            'search' => ['results' => $all_results], // Wrap results in expected format
+            'sources' => is_array($sources) ? implode("\n", $sources) : '',
+            'block_domains' => ai_trainer_get_blocked_domains(),
+            'chatlog_id' => $chatlog_id,
+            'include_domains' => ai_trainer_get_allowed_domains(), // for debugging
+            'conversation_history' => $updated_conversation_history,
+            'psychedelics_com_included' => $this->has_domain_results($all_results, 'psychedelics.com'),
+            'psychedelics_com_count' => $final_psychedelics_count,
+            'psychedelics_com_guarantee_status' => $guarantee_status
+        ];
+        
+        if ($exact_match) {
+            $meta = json_decode($exact_match['metadata'], true);
+            $answer = $meta['answer'] ?? $exact_match['content'];
+            $result['local_answer'] = [
+                'title' => $exact_match['title'],
+                'content' => $answer,
+                'score' => 1.0,
+            ];
+            // Update chat log with the actual answer and psychedelics.com guarantee status
+            $wpdb->update($wpdb->prefix . 'ai_chat_log', [
+                'answer' => $answer,
+                'psychedelics_com_included' => $this->has_domain_results($all_results, 'psychedelics.com') ? 1 : 0,
+                'psychedelics_com_count' => $final_psychedelics_count,
+                'psychedelics_com_guarantee_status' => $guarantee_status['status'],
+                'psychedelics_com_guarantee_details' => $guarantee_status['details']
+            ], ['id' => $chatlog_id]);
+        } elseif ($best_match) {
+            $result['local_answer'] = [
+                'title' => $best_match['parent_id'],
+                'content' => $best_match['content'],
+                'score' => $top_chunks[0]['score'],
+            ];
+            // Update chat log with the best match content and psychedelics.com guarantee status
+            $wpdb->update($wpdb->prefix . 'ai_chat_log', [
+                'answer' => $best_match['content'],
+                'psychedelics_com_included' => $this->has_domain_results($all_results, 'psychedelics.com') ? 1 : 0,
+                'psychedelics_com_count' => $final_psychedelics_count,
+                'psychedelics_com_guarantee_status' => $guarantee_status['status'],
+                'psychedelics_com_guarantee_details' => $guarantee_status['details']
+            ], ['id' => $chatlog_id]);
+        } else {
+            // No local answer found, still update the psychedelics.com guarantee status
+            $wpdb->update($wpdb->prefix . 'ai_chat_log', [
+                'psychedelics_com_included' => $this->has_domain_results($all_results, 'psychedelics.com') ? 1 : 0,
+                'psychedelics_com_count' => $final_psychedelics_count,
+                'psychedelics_com_guarantee_status' => $guarantee_status['status'],
+                'psychedelics_com_guarantee_details' => $guarantee_status['details']
+            ], ['id' => $chatlog_id]);
+        }
+        
+        set_transient('exa_stream_' . md5($query), $result, HOUR_IN_SECONDS);
+        wp_send_json_success($result);
+    }
+    
+    // NEW: Execute primary EXA search with domain priorities
+    private function execute_exa_search($conversational_prompt, $query) {
         $headers = [
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $this->exa_api_key
         ];
+        
         $allowed_domains = ai_trainer_get_allowed_domains();
         $tiered_domains = ai_trainer_get_domains_with_tiers();
         $blocked_domains = ai_trainer_get_blocked_domains();
@@ -1565,108 +1708,248 @@ class Exa_AI_Integration {
             'domainPriorities' => $domain_priorities,
             'type' => 'neural'
         ]);
+        
         $response = wp_remote_post('https://api.exa.ai/search', [
             'headers' => $headers,
             'body' => $body,
             'timeout' => 20
         ]);
+        
         error_log('Exa request sent to: https://api.exa.ai/search');
         if (is_wp_error($response)) {
             error_log('Exa API error: ' . $response->get_error_message());
-            wp_send_json_error(['message' => 'Exa API error: ' . $response->get_error_message()]);
+            return [];
         }
+        
         $data = json_decode(wp_remote_retrieve_body($response), true);
-        if (!is_array($data)) {
-            $data = [];
+        if (!is_array($data) || empty($data['results'])) {
+            return [];
         }
         
         // Debug logging
-        error_log('Exa API response - Total results: ' . (isset($data['results']) ? count($data['results']) : 0));
-        if (isset($data['results']) && is_array($data['results'])) {
+        error_log('Exa API response - Total results: ' . count($data['results']));
+        if (is_array($data['results'])) {
             error_log('Exa API results URLs: ' . implode(', ', array_slice(array_column($data['results'], 'url'), 0, 5)));
         }
-        // Filter and sort Exa results
-        if (!empty($data['results']) && is_array($data['results'])) {
-            // Filter to allowed domains only
-            $data['results'] = array_filter($data['results'], function($result) use ($cleaned_domains) {
-                if (empty($result['url'])) return false;
-                $host = parse_url($result['url'], PHP_URL_HOST);
-                $host = strtolower($host);
-                $host_nw = preg_replace('/^www\./', '', $host);
-                return in_array($host, $cleaned_domains) || in_array($host_nw, $cleaned_domains);
-            });
-            
-            // Apply tier-based reordering to ensure results respect our priority system
-            $data['results'] = $this->reorder_results_by_tier($data['results'], $tiered_domains);
-            
-            // Log the first few results after reordering
-            if (!empty($data['results'])) {
-                $first_results = array_slice($data['results'], 0, 5);
-                $first_domains = [];
-                foreach ($first_results as $result) {
-                    if (isset($result['url'])) {
-                        $host = parse_url($result['url'], PHP_URL_HOST);
-                        $host_nw = preg_replace('/^www\./', '', strtolower($host));
-                        $first_domains[] = $host_nw;
-                    }
-                }
-                error_log('First 5 results after tier reordering: ' . implode(', ', $first_domains));
-            }
-            
-            // Limit to 50 results
-            $data['results'] = array_slice($data['results'], 0, 50);
-        }
-        $sources = [];
-        if (!empty($data['results']) && is_array($data['results'])) {
-            foreach (array_slice($data['results'], 0, 50) as $result) {
-                if (isset($result['url'])) {
-                    $sources[] = esc_url_raw($result['url']);
-                }
-            }
-        }
         
-        // Debug logging for final sources
-        error_log('Final sources count: ' . count($sources));
-        error_log('Final sources URLs: ' . implode(', ', array_slice($sources, 0, 5)));
-        // Update conversation history with current question
-        $updated_conversation_history = $conversation_history;
-        $updated_conversation_history[] = ['q' => $query, 'a' => ''];
+        // Filter to allowed domains only
+        $filtered_results = array_filter($data['results'], function($result) use ($cleaned_domains) {
+            if (empty($result['url'])) return false;
+            $host = parse_url($result['url'], PHP_URL_HOST);
+            $host = strtolower($host);
+            $host_nw = preg_replace('/^www\./', '', $host);
+            return in_array($host, $cleaned_domains) || in_array($host_nw, $cleaned_domains);
+        });
         
-        // Limit conversation history to last 5 exchanges
-        if (count($updated_conversation_history) > 5) {
-            $updated_conversation_history = array_slice($updated_conversation_history, -5);
-        }
-        
-        $result = [
-            'search' => $data,
-            'sources' => is_array($sources) ? implode("\n", $sources) : '',
-            'block_domains' => $blocked_domains,
-            'chatlog_id' => $chatlog_id,
-            'include_domains' => $allowed_domains, // for debugging
-            'conversation_history' => $updated_conversation_history
-        ];
-        if ($exact_match) {
-            $meta = json_decode($exact_match['metadata'], true);
-            $answer = $meta['answer'] ?? $exact_match['content'];
-            $result['local_answer'] = [
-                'title' => $exact_match['title'],
-                'content' => $answer,
-                'score' => 1.0,
-            ];
-            // Update chat log with the actual answer
-            $wpdb->update($wpdb->prefix . 'ai_chat_log', ['answer' => $answer], ['id' => $chatlog_id]);
-        } elseif ($best_match) {
-            $result['local_answer'] = [
-                'title' => $best_match['parent_id'],
-                'content' => $best_match['content'],
-                'score' => $top_chunks[0]['score'],
-            ];
-            // Update chat log with the best match content
-            $wpdb->update($wpdb->prefix . 'ai_chat_log', ['answer' => $best_match['content']], ['id' => $chatlog_id]);
-        }
-        set_transient('exa_stream_' . md5($query), $result, HOUR_IN_SECONDS);
-        wp_send_json_success($result);
+        return array_values($filtered_results);
     }
+    
+    // NEW: Execute fallback search specifically for psychedelics.com
+    private function execute_psychedelics_com_fallback($conversational_prompt, $query) {
+        // Check if fallback is enabled
+        if (!defined('PSYCHEDELICS_COM_FALLBACK_ENABLED') || !PSYCHEDELICS_COM_FALLBACK_ENABLED) {
+            error_log('Psychedelics.com fallback search is disabled');
+            return [];
+        }
+        
+        $headers = [
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $this->exa_api_key
+        ];
+        
+        // Create a more specific query for psychedelics.com
+        $enhanced_query = $conversational_prompt . " site:psychedelics.com";
+        
+        $body = json_encode([
+            'query' => $enhanced_query,
+            'contents' => [ 'text' => true ],
+            'numResults' => PSYCHEDELICS_COM_MAX_RESULTS * 3, // Request more to ensure quality
+            'include_domains' => ['psychedelics.com'],
+            'type' => 'neural'
+        ]);
+        
+        error_log('Executing psychedelics.com fallback search with query: ' . substr($enhanced_query, 0, 100) . '...');
+        
+        $response = wp_remote_post('https://api.exa.ai/search', [
+            'headers' => $headers,
+            'body' => $body,
+            'timeout' => 15
+        ]);
+        
+        if (is_wp_error($response)) {
+            error_log('Psychedelics.com fallback search failed: ' . $response->get_error_message());
+            return [];
+        }
+        
+        $data = json_decode(wp_remote_retrieve_body($response), true);
+        if (!is_array($data) || empty($data['results'])) {
+            error_log('Psychedelics.com fallback search returned no results');
+            return [];
+        }
+        
+        error_log('Psychedelics.com fallback search returned ' . count($data['results']) . ' results');
+        
+        // Filter to only psychedelics.com results
+        $psychedelics_results = array_filter($data['results'], function($result) {
+            if (empty($result['url'])) return false;
+            $host = parse_url($result['url'], PHP_URL_HOST);
+            $host = strtolower($host);
+            $host_nw = preg_replace('/^www\./', '', $host);
+            return $host === 'psychedelics.com' || $host_nw === 'psychedelics.com';
+        });
+        
+        $filtered_count = count($psychedelics_results);
+        error_log('Psychedelics.com fallback search filtered to ' . $filtered_count . ' valid results');
+        
+        return array_values($psychedelics_results);
+    }
+    
+    // NEW: Check if results contain specific domain
+    private function has_domain_results($results, $domain) {
+        if (empty($results) || !is_array($results)) return false;
+        
+        foreach ($results as $result) {
+            if (empty($result['url'])) continue;
+            $host = parse_url($result['url'], PHP_URL_HOST);
+            $host = strtolower($host);
+            $host_nw = preg_replace('/^www\./', '', $host);
+            if ($host === $domain || $host_nw === $domain) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    // NEW: Count results from specific domain
+    private function count_domain_results($results, $domain) {
+        if (empty($results) || !is_array($results)) return 0;
+        
+        $count = 0;
+        foreach ($results as $result) {
+            if (empty($result['url'])) continue;
+            $host = parse_url($result['url'], PHP_URL_HOST);
+            $host = strtolower($host);
+            $host_nw = preg_replace('/^www\./', '', $host);
+            if ($host === $domain || $host_nw === $domain) {
+                $count++;
+            }
+        }
+        return $count;
+    }
+    
+    // NEW: Merge results with psychedelics.com priority
+    private function merge_results_with_psychedelics_priority($primary_results, $psychedelics_results) {
+        if (empty($psychedelics_results)) {
+            return $primary_results;
+        }
+        
+        // Use configuration constants for result limits
+        $min_results = defined('PSYCHEDELICS_COM_MIN_RESULTS') ? PSYCHEDELICS_COM_MIN_RESULTS : 3;
+        $max_results = defined('PSYCHEDELICS_COM_MAX_RESULTS') ? PSYCHEDELICS_COM_MAX_RESULTS : 8;
+        
+        // Ensure we have at least the minimum number of psychedelics.com results
+        $psychedelics_count = count($psychedelics_results);
+        if ($psychedelics_count < $min_results) {
+            error_log('Warning: Only ' . $psychedelics_count . ' psychedelics.com results available (minimum: ' . $min_results . ')');
+        }
+        
+        // Take top psychedelics.com results within the configured range
+        $top_psychedelics = array_slice($psychedelics_results, 0, $max_results);
+        
+        // Merge: psychedelics.com results first, then primary results
+        $merged_results = array_merge($top_psychedelics, $primary_results);
+        
+        // Remove duplicates based on URL
+        $seen_urls = [];
+        $deduplicated_results = [];
+        
+        foreach ($merged_results as $result) {
+            if (empty($result['url'])) continue;
+            $url = $result['url'];
+            if (!in_array($url, $seen_urls)) {
+                $seen_urls[] = $url;
+                $deduplicated_results[] = $result;
+            }
+        }
+        
+        error_log('Merged results: ' . count($top_psychedelics) . ' psychedelics.com + ' . count($primary_results) . ' primary = ' . count($deduplicated_results) . ' total');
+        
+        return $deduplicated_results;
+    }
+    
+    // ENHANCED: Reorder results with psychedelics.com guarantee
+    private function enhanced_reorder_with_psychedelics_guarantee($results) {
+        if (empty($results)) return $results;
+        
+        $tiered_domains = ai_trainer_get_domains_with_tiers();
+        
+        // Group results by tier
+        $tiered_results = [
+            1 => [], // Highest priority (psychedelics.com, etc.)
+            2 => [],
+            3 => [],
+            4 => []
+        ];
+        
+        foreach ($results as $result) {
+            if (empty($result['url'])) continue;
+            
+            $host = parse_url($result['url'], PHP_URL_HOST);
+            $host = strtolower($host);
+            $host_nw = preg_replace('/^www\./', '', $host);
+            
+            // Find the tier for this domain
+            $tier = 4; // Default to lowest tier
+            if (isset($tiered_domains[$host])) {
+                $tier = $tiered_domains[$host];
+            } elseif (isset($tiered_domains[$host_nw])) {
+                $tier = $tiered_domains[$host_nw];
+            }
+            
+            $tiered_results[$tier][] = $result;
+        }
+        
+        // ENHANCED: Ensure psychedelics.com results are always at the very top
+        $psychedelics_com_results = [];
+        $other_tier1_results = [];
+        
+        // Separate psychedelics.com from other tier 1 results
+        foreach ($tiered_results[1] as $result) {
+            $host = parse_url($result['url'], PHP_URL_HOST);
+            $host = strtolower($host);
+            $host_nw = preg_replace('/^www\./', '', $host);
+            
+            if ($host === 'psychedelics.com' || $host_nw === 'psychedelics.com') {
+                $psychedelics_com_results[] = $result;
+            } else {
+                $other_tier1_results[] = $result;
+            }
+        }
+        
+        // Reorder results: psychedelics.com first, then other tier 1, then tier 2, etc.
+        $reordered_results = [];
+        
+        // 1. Psychedelics.com results first (guaranteed)
+        $reordered_results = array_merge($reordered_results, $psychedelics_com_results);
+        
+        // 2. Other tier 1 results
+        $reordered_results = array_merge($reordered_results, $other_tier1_results);
+        
+        // 3. Tier 2, 3, 4 results
+        for ($tier = 2; $tier <= 4; $tier++) {
+            $reordered_results = array_merge($reordered_results, $tiered_results[$tier]);
+        }
+        
+        // Log the enhanced reordering for debugging
+        error_log('Enhanced reordering - Psychedelics.com: ' . count($psychedelics_com_results) . 
+                 ', Other Tier 1: ' . count($other_tier1_results) . 
+                 ', Tier 2: ' . count($tiered_results[2]) . 
+                 ', Tier 3: ' . count($tiered_results[3]) . 
+                 ', Tier 4: ' . count($tiered_results[4]));
+        
+        return $reordered_results;
+    }
+
     //Getting Embedding of query
     private function get_openai_embedding($text) {
         $api_key = $this->openai_api_key;
@@ -1698,45 +1981,78 @@ class Exa_AI_Integration {
         }
         return $dot / (sqrt($magA) * sqrt($magB) + 1e-8);
     }
-    
-    // Reorder search results by tier priority
-    private function reorder_results_by_tier($results, $tiered_domains) {
-        // Group results by tier
-        $tiered_results = [
-            1 => [], // Highest priority
-            2 => [],
-            3 => [],
-            4 => []
-        ];
+
+    // Check psychedelics.com guarantee compliance
+    private function check_psychedelics_com_guarantee($results, $final_psychedelics_count) {
+        if (!defined('PSYCHEDELICS_COM_GUARANTEE') || !PSYCHEDELICS_COM_GUARANTEE) {
+            return ['status' => 'Disabled', 'message' => 'Psychedelics.com guarantee is disabled'];
+        }
         
-        foreach ($results as $result) {
+        $min_results = defined('PSYCHEDELICS_COM_MIN_RESULTS') ? PSYCHEDELICS_COM_MIN_RESULTS : 3;
+        $max_results = defined('PSYCHEDELICS_COM_MAX_RESULTS') ? PSYCHEDELICS_COM_MAX_RESULTS : 8;
+        
+        // Check if we have any psychedelics.com results
+        if ($final_psychedelics_count === 0) {
+            return [
+                'status' => 'Failed', 
+                'message' => 'No psychedelics.com results found',
+                'details' => 'Primary search and fallback search both failed to return psychedelics.com content'
+            ];
+        }
+        
+        // Check if we have the minimum required results
+        if ($final_psychedelics_count < $min_results) {
+            return [
+                'status' => 'Warning', 
+                'message' => 'Below minimum psychedelics.com results',
+                'details' => "Found {$final_psychedelics_count} results, minimum required: {$min_results}"
+            ];
+        }
+        
+        // Check if we're within the acceptable range
+        if ($final_psychedelics_count > $max_results) {
+            return [
+                'status' => 'Warning', 
+                'message' => 'Above maximum psychedelics.com results',
+                'details' => "Found {$final_psychedelics_count} results, maximum allowed: {$max_results}"
+            ];
+        }
+        
+        // Check if psychedelics.com results are properly positioned
+        $psychedelics_positions = [];
+        foreach ($results as $index => $result) {
             if (empty($result['url'])) continue;
-            
             $host = parse_url($result['url'], PHP_URL_HOST);
             $host = strtolower($host);
             $host_nw = preg_replace('/^www\./', '', $host);
-            
-            // Find the tier for this domain
-            $tier = 4; // Default to lowest tier
-            if (isset($tiered_domains[$host])) {
-                $tier = $tiered_domains[$host];
-            } elseif (isset($tiered_domains[$host_nw])) {
-                $tier = $tiered_domains[$host_nw];
+            if ($host === 'psychedelics.com' || $host_nw === 'psychedelics.com') {
+                $psychedelics_positions[] = $index;
             }
-            
-            $tiered_results[$tier][] = $result;
         }
         
-        // Reorder results: Tier 1 first, then Tier 2, etc.
-        $reordered_results = [];
-        foreach ($tiered_results as $tier => $results_for_tier) {
-            $reordered_results = array_merge($reordered_results, $results_for_tier);
+        // Check if psychedelics.com results are in the top positions
+        $top_positions = array_slice($psychedelics_positions, 0, 3);
+        $all_in_top_10 = true;
+        foreach ($top_positions as $pos) {
+            if ($pos >= 10) {
+                $all_in_top_10 = false;
+                break;
+            }
         }
         
-        // Log the reordering for debugging
-        error_log('Results reordered by tier - Tier 1: ' . count($tiered_results[1]) . ', Tier 2: ' . count($tiered_results[2]) . ', Tier 3: ' . count($tiered_results[3]) . ', Tier 4: ' . count($tiered_results[4]));
+        if (!$all_in_top_10) {
+            return [
+                'status' => 'Warning', 
+                'message' => 'Psychedelics.com results not optimally positioned',
+                'details' => "Top psychedelics.com results at positions: " . implode(', ', $top_positions)
+            ];
+        }
         
-        return $reordered_results;
+        return [
+            'status' => 'Passed', 
+            'message' => 'Psychedelics.com guarantee fully met',
+            'details' => "Found {$final_psychedelics_count} results, properly positioned in top results"
+        ];
     }
 }
 
