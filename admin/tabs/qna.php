@@ -261,7 +261,7 @@ jQuery(document).ready(function($) {
         REBIND_DELAY: 500,
         TINYMCE_HEIGHT: 500,
         TINYMCE_PLUGINS: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table code help wordcount',
-        TINYMCE_TOOLBAR: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
+        TINYMCE_TOOLBAR: 'undo redo | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
         TINYMCE_CONTENT_STYLE: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
     };
     
@@ -331,7 +331,13 @@ jQuery(document).ready(function($) {
                 license_key: 'gpl',
                 base_url: tinymcePaths.baseUrl,
                 skin_url: tinymcePaths.skinUrl,
-                content_style: CONFIG.TINYMCE_CONTENT_STYLE
+                content_style: CONFIG.TINYMCE_CONTENT_STYLE,
+                formats: {
+                    superscript: { inline: 'sup', remove: 'all' },
+                    subscript: { inline: 'sub', remove: 'all' }
+                },
+                extended_valid_elements: '-sup,-sub',
+                invalid_elements: 'sup,sub'
             });
         },
         
@@ -347,7 +353,13 @@ jQuery(document).ready(function($) {
                 license_key: 'gpl',
                 base_url: tinymcePaths.baseUrl,
                 skin_url: tinymcePaths.skinUrl,
-                content_style: CONFIG.TINYMCE_CONTENT_STYLE
+                content_style: CONFIG.TINYMCE_CONTENT_STYLE,
+                formats: {
+                    superscript: { inline: 'sup', remove: 'all' },
+                    subscript: { inline: 'sub', remove: 'all' }
+                },
+                extended_valid_elements: '-sup,-sub',
+                invalid_elements: 'sup,sub'
             });
         },
         

@@ -226,6 +226,24 @@ function ai_editor_styles()
 }
 add_action('admin_init', 'ai_editor_styles');
 
+// Global TinyMCE configuration to disable superscript and subscript
+function ai_tinymce_config($init) {
+    // Remove superscript and subscript formats
+    $init['formats'] = isset($init['formats']) ? $init['formats'] : '';
+    $init['formats'] .= 'superscript: { inline: "sup", remove: "all" },subscript: { inline: "sub", remove: "all" },';
+    
+    // Add to extended valid elements to exclude sup and sub tags
+    $init['extended_valid_elements'] = isset($init['extended_valid_elements']) ? $init['extended_valid_elements'] : '';
+    $init['extended_valid_elements'] .= ',-sup,-sub';
+    
+    // Add to invalid elements
+    $init['invalid_elements'] = isset($init['invalid_elements']) ? $init['invalid_elements'] : '';
+    $init['invalid_elements'] .= ',sup,sub';
+    
+    return $init;
+}
+add_filter('tiny_mce_before_init', 'ai_tinymce_config');
+
 // AJAX handlers for text operations
 add_action('wp_ajax_ai_add_text', function() {
     check_ajax_referer('ai_trainer_nonce', 'nonce');
@@ -1744,15 +1762,15 @@ class Exa_AI_Integration {
             error_log('Exa API results URLs: ' . implode(', ', array_slice(array_column($data['results'], 'url'), 0, 5)));
         }
         
-        // Filter to allowed domains only
+            // Filter to allowed domains only
         $filtered_results = array_filter($data['results'], function($result) use ($cleaned_domains) {
-            if (empty($result['url'])) return false;
-            $host = parse_url($result['url'], PHP_URL_HOST);
-            $host = strtolower($host);
-            $host_nw = preg_replace('/^www\./', '', $host);
-            return in_array($host, $cleaned_domains) || in_array($host_nw, $cleaned_domains);
-        });
-        
+                if (empty($result['url'])) return false;
+                $host = parse_url($result['url'], PHP_URL_HOST);
+                $host = strtolower($host);
+                $host_nw = preg_replace('/^www\./', '', $host);
+                return in_array($host, $cleaned_domains) || in_array($host_nw, $cleaned_domains);
+            });
+            
         return array_values($filtered_results);
     }
     
@@ -1804,7 +1822,7 @@ class Exa_AI_Integration {
         // Filter to only psychedelics.com results
         $psychedelics_results = array_filter($data['results'], function($result) {
             if (empty($result['url'])) return false;
-            $host = parse_url($result['url'], PHP_URL_HOST);
+                        $host = parse_url($result['url'], PHP_URL_HOST);
             $host = strtolower($host);
             $host_nw = preg_replace('/^www\./', '', $host);
             return $host === 'psychedelics.com' || $host_nw === 'psychedelics.com';
@@ -2148,7 +2166,7 @@ class Exa_AI_Integration {
         }
         return $dot / (sqrt($magA) * sqrt($magB) + 1e-8);
     }
-
+    
     // Check psychedelics.com guarantee compliance
     private function check_psychedelics_com_guarantee($results, $final_psychedelics_count) {
         if (!defined('PSYCHEDELICS_COM_GUARANTEE') || !PSYCHEDELICS_COM_GUARANTEE) {

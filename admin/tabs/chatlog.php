@@ -187,11 +187,17 @@ jQuery(document).ready(function($){
                     height: 500,
                     menubar: 'file edit view insert format tools table help',
                     plugins: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table code help wordcount',
-                    toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
+                    toolbar: 'undo redo | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
                     license_key: 'gpl',
                     base_url: tinymcePaths.baseUrl,
                     skin_url: tinymcePaths.skinUrl,
-                    content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+                    content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                    formats: {
+                        superscript: { inline: 'sup', remove: 'all' },
+                        subscript: { inline: 'sub', remove: 'all' }
+                    },
+                    extended_valid_elements: '-sup,-sub',
+                    invalid_elements: 'sup,sub'
                 });
             }, CONFIG.TINYMCE_DELAY);
         }

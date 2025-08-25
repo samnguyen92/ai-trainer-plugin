@@ -1200,8 +1200,6 @@ jQuery(document).ready(function($) {
       
       Curate a list of the most relevant, foundational, and interesting resources for deeper exploration, as a librarian would. Include different perspectives when available, explaining any notable differences of opinion.
       
-      Use numbered superscript citations in the text that map to the "Citations" section.
-      
       Exclude content from any blocked or unreliable domains.
       
       ${contextBlock}
@@ -1234,27 +1232,27 @@ jQuery(document).ready(function($) {
       <p><!-- Restate the question in your own words, clarifying focus and scope. --></p>
       
       <h3>Quick Overview</h3>
-      <p><!-- A 2–3 sentence direct answer, including a key takeaway and why it matters. --> <sup>[1][2]</sup></p>
+      <p><!-- A 2–3 sentence direct answer, including a key takeaway and why it matters. --></p>
       
       <h3>What to Know at a Glance</h3>
       <ul>
-        <li><strong>What it is:</strong> <!-- One sentence defining the topic or substance. --> <sup>[1]</sup></li>
-        <li><strong>How it works:</strong> <!-- One sentence on its mechanism or process in plain language. --> <sup>[2]</sup></li>
-        <li><strong>Potential benefits:</strong> <!-- A few words or a short phrase (e.g., mood improvement, anxiety relief). --> <sup>[1][3]</sup></li>
-        <li><strong>Key risks:</strong> <!-- A few words or a short phrase (e.g., anxiety spikes, legal issues). --> <sup>[2][4]</sup></li>
-        <li><strong>Legal status:</strong> <!-- One sentence on current legal status (note regional differences if any). --> <sup>[5]</sup></li>
+        <li><strong>What it is:</strong> <!-- One sentence defining the topic or substance. --></li>
+        <li><strong>How it works:</strong> <!-- One sentence on its mechanism or process in plain language. --></li>
+        <li><strong>Potential benefits:</strong> <!-- A few words or a short phrase (e.g., mood improvement, anxiety relief). --></li>
+        <li><strong>Key risks:</strong> <!-- A few words or a short phrase (e.g., anxiety spikes, legal issues). --></li>
+        <li><strong>Legal status:</strong> <!-- One sentence on current legal status (note regional differences if any). --></li>
       </ul>
       
       <h3>Why It Matters</h3>
-      <p><!-- 1–2 sentences on the significance or real-world context of this topic. --> <sup>[1][2]</sup></p>
+      <p><!-- 1–2 sentences on the significance or real-world context of this topic. --></p>
       
       
       
       <h3>Safety Snapshot (30 seconds)</h3>
       <ul>
-        <li><strong>Medications:</strong> <!-- Note any risky drug interactions (e.g., SSRIs, MAOIs, lithium). --> <sup>[3]</sup></li>
-        <li><strong>Mental health:</strong> <!-- Note any mental health precautions (e.g., risk of psychosis or severe anxiety). --> <sup>[3]</sup></li>
-        <li><strong>Physical health:</strong> <!-- Note any physical health precautions (e.g., heart or neurological risks). --> <sup>[4]</sup></li>
+        <li><strong>Medications:</strong> <!-- Note any risky drug interactions (e.g., SSRIs, MAOIs, lithium). --></li>
+        <li><strong>Mental health:</strong> <!-- Note any mental health precautions (e.g., risk of psychosis or severe anxiety). --></li>
+        <li><strong>Physical health:</strong> <!-- Note any physical health precautions (e.g., heart or neurological risks). --></li>
         <li><strong>Set & Setting:</strong> <!-- If relevant, remind that mindset and environment can influence experiences. --></li>
       </ul>
       
@@ -1267,13 +1265,6 @@ jQuery(document).ready(function($) {
         <li><!-- Q4 --></li>
         <li><!-- Q5 --></li>
       </ul>
-      
-      <h3>Citations</h3>
-      <ol>
-        <!-- List 3–10 sources used in the answer, in the order of appearance. Use the source's title or domain as the link text. Avoid duplicates and exclude any blocked domains. -->
-        <li><a href="https://example.com" target="_blank">Source Title or Domain</a></li>
-        <!-- ... -->
-      </ol>
       `.trim();
       }
       

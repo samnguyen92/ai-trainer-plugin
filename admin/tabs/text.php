@@ -214,7 +214,7 @@ jQuery(document).ready(function($) {
         NOTICE_TIMEOUT: 3000,
         TINYMCE_HEIGHT: 400,
         TINYMCE_PLUGINS: 'lists link image paste',
-        TINYMCE_TOOLBAR: 'bold italic | bullist numlist | link image | formatselect',
+        TINYMCE_TOOLBAR: 'bold italic | bullist numlist | link image',
         TINYMCE_CONTENT_STYLE: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
     };
     
@@ -288,6 +288,12 @@ jQuery(document).ready(function($) {
                 base_url: tinymcePaths.baseUrl,
                 skin_url: tinymcePaths.skinUrl,
                 content_style: CONFIG.TINYMCE_CONTENT_STYLE,
+                formats: {
+                    superscript: { inline: 'sup', remove: 'all' },
+                    subscript: { inline: 'sub', remove: 'all' }
+                },
+                extended_valid_elements: '-sup,-sub',
+                invalid_elements: 'sup,sub',
                 setup: function(editor) {
                     editor.on('init', function() {
                         console.log('TinyMCE text editor initialized successfully');
@@ -315,6 +321,12 @@ jQuery(document).ready(function($) {
                 base_url: tinymcePaths.baseUrl,
                 skin_url: tinymcePaths.skinUrl,
                 content_style: CONFIG.TINYMCE_CONTENT_STYLE,
+                formats: {
+                    superscript: { inline: 'sup', remove: 'all' },
+                    subscript: { inline: 'sub', remove: 'all' }
+                },
+                extended_valid_elements: '-sup,-sub',
+                invalid_elements: 'sup,sub',
                 setup: function(editor) {
                     editor.on('init', function() {
                         console.log('TinyMCE text edit modal editor initialized successfully');
