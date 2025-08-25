@@ -1,3 +1,49 @@
+// Global copyToClipboard function - must be defined before DOM is ready
+function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            if (window.showNotification) {
+                window.showNotification('URL copied to clipboard!', 'success');
+            } else {
+                // Fallback notification if showNotification isn't available yet
+                alert('URL copied to clipboard!');
+            }
+        }).catch(() => {
+            // Fallback for clipboard API failure
+            fallbackCopyToClipboard(text);
+        });
+    } else {
+        // Fallback for older browsers
+        fallbackCopyToClipboard(text);
+    }
+}
+
+// Fallback copy function for older browsers
+function fallbackCopyToClipboard(text) {
+    try {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        if (successful && window.showNotification) {
+            window.showNotification('URL copied to clipboard!', 'success');
+        } else if (successful) {
+            alert('URL copied to clipboard!');
+        } else {
+            alert('Copy failed. Please copy manually: ' + text);
+        }
+    } catch (err) {
+        alert('Copy failed. Please copy manually: ' + text);
+    }
+}
+
 jQuery(document).ready(function($) {
 
     // Cache frequently used DOM elements
@@ -425,23 +471,7 @@ jQuery(document).ready(function($) {
         }, 2000);
     }
 
-    // Copy URL to clipboard function
-    function copyToClipboard(text) {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(() => {
-                showNotification('URL copied to clipboard!', 'success');
-            });
-        } else {
-            // Fallback for older browsers
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            showNotification('URL copied to clipboard!', 'success');
-        }
-    }
+    // copyToClipboard function is now defined globally above
 
     // Setup modern slider buttons
     function setupModernSliderButtons() {
@@ -718,6 +748,9 @@ jQuery(document).ready(function($) {
             setTimeout(() => notification.remove(), 300);
         }, 3000);
     }
+    
+    // Make showNotification globally accessible
+    window.showNotification = showNotification;
 
     // Dedicated function for beta feedback submission (like reaction custom submit)
     function submitBetaFeedback(chatlogId, feedback, form) {
