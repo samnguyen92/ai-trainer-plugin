@@ -47,16 +47,19 @@ jQuery(function ($) {
     $(document).on('submit', '#add-website-form', function (e) {
         e.preventDefault();
         var data = {
-            action: 'ai_add_website',
+            action: 'ai_add_domain_with_tier',
             title: $(this).find('[name="website_title"]').val(),
             url: $(this).find('[name="website_url"]').val(),
+            tier: $(this).find('[name="website_tier"]').val(),
             nonce: ai_trainer_ajax.nonce
         };
         $.post(ai_trainer_ajax.ajaxurl, data, function (response) {
-            if (response.notice) {
-                $('#website-notices').html(response.notice).show();
-                setTimeout(function() { $('#website-notices').fadeOut(); }, 3000);
+            if (response.success) {
+                $('#website-notices').html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>').show();
+            } else {
+                $('#website-notices').html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>').show();
             }
+            setTimeout(function() { $('#website-notices').fadeOut(); }, 3000);
             reloadWebsiteTable();
             $('#add-website-form')[0].reset();
         }, 'json');
@@ -67,6 +70,7 @@ jQuery(function ($) {
         $('#edit-website-id').val($(this).data('id'));
         $('#edit-website-title').val($(this).data('title'));
         $('#edit-website-url').val($(this).data('url'));
+        $('#edit-website-tier').val($(this).data('tier'));
         $('#website-edit-modal').show();
     });
     // Close Edit Modal
@@ -81,6 +85,7 @@ jQuery(function ($) {
             id: $('#edit-website-id').val(),
             title: $('#edit-website-title').val(),
             url: $('#edit-website-url').val(),
+            tier: $('#edit-website-tier').val(),
             nonce: ai_trainer_ajax.nonce
         };
         $.post(ai_trainer_ajax.ajaxurl, data, function (response) {
@@ -92,6 +97,9 @@ jQuery(function ($) {
             $('#website-edit-modal').hide();
         }, 'json');
     });
+    
+
+    
     // Delete Website
     $(document).on('click', '.delete-website', function (e) {
         e.preventDefault();

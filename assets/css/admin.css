@@ -44,3 +44,11 @@
   margin: 0 2px;
 }
 
+
+
+/* Tier color coding */
+.tier-1 { color: #d63384; font-weight: bold; }
+.tier-2 { color: #fd7e14; font-weight: bold; }
+.tier-3 { color: #198754; font-weight: bold; }
+.tier-4 { color: #6c757d; font-weight: bold; }
+

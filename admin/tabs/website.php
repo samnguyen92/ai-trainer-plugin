@@ -10,8 +10,15 @@ if (!function_exists('wp_nonce_field')) require_once(ABSPATH . 'wp-includes/func
 <p>Add allowed websites (domains) for Exa search. When you add a URL, its domain is added to the allowed list.</p>
 <div id="website-notices"></div>
 <form id="add-website-form" method="post" style="margin-bottom: 16px;">
-    <input type="text" name="website_title" placeholder="Website Title" style="width: 30%; margin-right: 8px;" required>
-    <input type="url" name="website_url" placeholder="https://example.com" style="width: 40%; margin-right: 8px;" required>
+    <input type="text" name="website_title" placeholder="Website Title" style="width: 25%; margin-right: 8px;" required>
+    <input type="url" name="website_url" placeholder="https://example.com" style="width: 35%; margin-right: 8px;" required>
+    <select name="website_tier" style="width: 15%; margin-right: 8px;" required>
+        <option value="">Select Tier</option>
+        <option value="1">Tier 1 (Highest Priority)</option>
+        <option value="2">Tier 2 (High Priority)</option>
+        <option value="3">Tier 3 (Medium Priority)</option>
+        <option value="4">Tier 4 (Low Priority)</option>
+    </select>
     <button type="submit" class="button button-primary">Add Website</button>
 </form>
 <div id="website-sources-table"></div>
@@ -29,6 +36,15 @@ if (!function_exists('wp_nonce_field')) require_once(ABSPATH . 'wp-includes/func
             <p>
                 <label for="edit-website-url">URL:</label>
                 <input type="url" id="edit-website-url" name="website_url" style="width: 100%; margin-bottom: 10px;" required>
+            </p>
+            <p>
+                <label for="edit-website-tier">Tier:</label>
+                <select id="edit-website-tier" name="website_tier" style="width: 100%; margin-bottom: 10px;" required>
+                    <option value="1">Tier 1 (Highest Priority)</option>
+                    <option value="2">Tier 2 (High Priority)</option>
+                    <option value="3">Tier 3 (Medium Priority)</option>
+                    <option value="4">Tier 4 (Low Priority)</option>
+                </select>
             </p>
             <button type="submit" class="button button-primary">Save Changes</button>
             <button type="button" class="button close-website-modal" style="margin-left: 8px;">Cancel</button>

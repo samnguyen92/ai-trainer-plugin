@@ -66,6 +66,7 @@ register_activation_hook(__FILE__, function () {
         title VARCHAR(255),
         url VARCHAR(255),
         domain VARCHAR(255),
+        tier INT DEFAULT 3,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) $charset;";
     $sql5 = "CREATE TABLE $blocked_domains_table (
@@ -99,6 +100,40 @@ register_activation_hook(__FILE__, function () {
     $columns_beta = $wpdb->get_results("SHOW COLUMNS FROM $chatlog_table LIKE 'beta_feedback'");
     if (empty($columns_beta)) {
         $wpdb->query("ALTER TABLE $chatlog_table ADD COLUMN beta_feedback LONGTEXT NULL");
+    }
+    // Add tier column to domains table if not exists
+    $tier_column = $wpdb->get_results("SHOW COLUMNS FROM $domains_table LIKE 'tier'");
+    if (empty($tier_column)) {
+        $wpdb->query("ALTER TABLE $domains_table ADD COLUMN tier INT DEFAULT 3");
+        
+        // Set default tiers for existing domains based on user specifications
+        $default_tiers = [
+            // Tier 1 (Highest Priority)
+            'psychedelics.com' => 1,
+            'doubleblindmag.com' => 1,
+            'psychedelicstoday.com' => 1,
+            'lucid.news' => 1,
+            'chacruna.net' => 1,
+            'realitysandwich.com' => 1,
+            
+            // Tier 2 (High Priority)
+            'dancesafe.org' => 2,
+            'blossomanalysis.com' => 2,
+            'erowid.org' => 2,
+            'shroomery.org' => 2,
+            
+            // Tier 3 (Medium Priority)
+            'psychedelicspotlight.com' => 3,
+            'psychedelicalpha.com' => 3,
+        ];
+        
+        foreach ($default_tiers as $domain => $tier) {
+            $wpdb->update(
+                $wpdb->prefix . 'ai_allowed_domains',
+                ['tier' => $tier],
+                ['domain' => $domain]
+            );
+        }
     }
 
 });
@@ -775,17 +810,25 @@ add_action('wp_ajax_ai_add_website', function() {
     global $wpdb;
     $title = sanitize_text_field($_POST['title'] ?? '');
     $url = esc_url_raw($_POST['url'] ?? '');
+    $tier = intval($_POST['tier'] ?? 3); // Default to tier 3 if not specified
+    
     if (empty($title) || empty($url)) {
         wp_send_json(['notice' => '<div class="notice notice-error"><p>Title and URL are required.</p></div>']);
     }
+    
+    if ($tier < 1 || $tier > 4) {
+        wp_send_json(['notice' => '<div class="notice notice-error"><p>Tier must be between 1 and 4.</p></div>']);
+    }
+    
     $domain = ai_trainer_extract_domain($url);
     $wpdb->insert($wpdb->prefix . 'ai_allowed_domains', [
         'title' => $title,
         'url' => $url,
         'domain' => $domain,
+        'tier' => $tier,
         'created_at' => current_time('mysql')
     ]);
-    wp_send_json(['notice' => '<div class="notice notice-success"><p>Website added.</p></div>']);
+    wp_send_json(['notice' => '<div class="notice notice-success"><p>Website added with tier ' . $tier . '.</p></div>']);
 });
 
 add_action('wp_ajax_ai_edit_website', function() {
@@ -794,16 +837,24 @@ add_action('wp_ajax_ai_edit_website', function() {
     $id = intval($_POST['id']);
     $title = sanitize_text_field($_POST['title'] ?? '');
     $url = esc_url_raw($_POST['url'] ?? '');
+    $tier = intval($_POST['tier'] ?? 3);
+    
     if ($id <= 0 || empty($title) || empty($url)) {
         wp_send_json(['notice' => '<div class="notice notice-error"><p>Invalid data.</p></div>']);
     }
+    
+    if ($tier < 1 || $tier > 4) {
+        wp_send_json(['notice' => '<div class="notice notice-error"><p>Tier must be between 1 and 4.</p></div>']);
+    }
+    
     $domain = ai_trainer_extract_domain($url);
     $wpdb->update($wpdb->prefix . 'ai_allowed_domains', [
         'title' => $title,
         'url' => $url,
-        'domain' => $domain
+        'domain' => $domain,
+        'tier' => $tier
     ], ['id' => $id]);
-    wp_send_json(['notice' => '<div class="notice notice-success"><p>Website updated.</p></div>']);
+    wp_send_json(['notice' => '<div class="notice notice-success"><p>Website updated with tier ' . $tier . '.</p></div>']);
 });
 
 add_action('wp_ajax_ai_delete_website', function() {
@@ -820,17 +871,27 @@ add_action('wp_ajax_ai_delete_website', function() {
 add_action('wp_ajax_ai_get_website_table', function() {
     check_ajax_referer('ai_trainer_nonce', 'nonce');
     global $wpdb;
-    $websites = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}ai_allowed_domains ORDER BY created_at DESC", ARRAY_A);
+    $websites = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}ai_allowed_domains ORDER BY tier ASC, domain ASC", ARRAY_A);
     ob_start();
     echo '<table class="widefat striped">';
-    echo '<thead><tr><th>Title</th><th>URL</th><th>Domain</th><th>Actions</th></tr></thead><tbody>';
+    echo '<thead><tr><th>Title</th><th>URL</th><th>Domain</th><th>Tier</th><th>Actions</th></tr></thead><tbody>';
     foreach ($websites as $site) {
+        $tier = isset($site['tier']) ? intval($site['tier']) : 3;
         echo '<tr data-id="' . esc_attr($site['id']) . '">';
         echo '<td class="website-title">' . esc_html($site['title']) . '</td>';
         echo '<td class="website-url"><a href="' . esc_url($site['url']) . '" target="_blank">' . esc_html($site['url']) . '</a></td>';
         echo '<td class="website-domain">' . esc_html($site['domain']) . '</td>';
+        echo '<td class="website-tier">';
+        $tier_labels = [
+            1 => 'Tier 1 (Highest)',
+            2 => 'Tier 2 (High)', 
+            3 => 'Tier 3 (Medium)',
+            4 => 'Tier 4 (Low)'
+        ];
+        echo '<span class="tier-' . $tier . '">' . $tier_labels[$tier] . '</span>';
+        echo '</td>';
         echo '<td class="actionsWrapper">';
-        echo '<button type="button" class="button button-small edit-website-inline" data-id="' . esc_attr($site['id']) . '" data-title="' . esc_attr($site['title']) . '" data-url="' . esc_attr($site['url']) . '">Edit</button> ';
+        echo '<button type="button" class="button button-small edit-website-inline" data-id="' . esc_attr($site['id']) . '" data-title="' . esc_attr($site['title']) . '" data-url="' . esc_attr($site['url']) . '" data-tier="' . esc_attr($tier) . '">Edit</button> ';
         echo '<a href="#" class="button button-small button-link-delete delete-website" data-id="' . esc_attr($site['id']) . '">Delete</a>';
         echo '</td></tr>';
     }
@@ -926,15 +987,30 @@ function ai_trainer_get_blocked_domains() {
 // Helper to get allowed domains for Exa search
 function ai_trainer_get_allowed_domains() {
     global $wpdb;
-    $domains = $wpdb->get_col("SELECT DISTINCT domain FROM {$wpdb->prefix}ai_allowed_domains WHERE domain IS NOT NULL AND domain != ''");
+    $domains = $wpdb->get_results("SELECT domain, tier FROM {$wpdb->prefix}ai_allowed_domains WHERE domain IS NOT NULL AND domain != '' ORDER BY tier ASC, domain ASC");
     
     // Only return domains from the database - no hardcoded fallbacks
     $main_domains = [];
     foreach ($domains as $d) {
-        $d = strtolower($d);
-        $main_domains[] = preg_replace('/^www\./', '', $d);
+        $domain = strtolower($d->domain);
+        $domain = preg_replace('/^www\./', '', $domain);
+        $main_domains[] = $domain;
     }
     return array_values(array_unique($main_domains));
+}
+
+// Helper to get domains with tier information for EXA search
+function ai_trainer_get_domains_with_tiers() {
+    global $wpdb;
+    $domains = $wpdb->get_results("SELECT domain, tier FROM {$wpdb->prefix}ai_allowed_domains WHERE domain IS NOT NULL AND domain != '' ORDER BY tier ASC, domain ASC");
+    
+    $tiered_domains = [];
+    foreach ($domains as $d) {
+        $domain = strtolower($d->domain);
+        $domain = preg_replace('/^www\./', '', $domain);
+        $tiered_domains[$domain] = $d->tier;
+    }
+    return $tiered_domains;
 }
 
 //  AJAX handler to update chatlog answer
@@ -1449,12 +1525,21 @@ class Exa_AI_Integration {
             'Authorization' => 'Bearer ' . $this->exa_api_key
         ];
         $allowed_domains = ai_trainer_get_allowed_domains();
+        $tiered_domains = ai_trainer_get_domains_with_tiers();
         $blocked_domains = ai_trainer_get_blocked_domains();
         
         // Clean allowed domains: trim spaces and filter out invalid ones
         $cleaned_domains = array_filter(array_map('trim', $allowed_domains), function($domain) {
             return !empty($domain) && filter_var('http://' . $domain, FILTER_VALIDATE_URL);
         });
+        
+        // Build domain priorities based on tiers (1 = highest priority, 4 = lowest)
+        $domain_priorities = [];
+        foreach ($tiered_domains as $domain => $tier) {
+            // Convert tier to priority: tier 1 = priority 20, tier 4 = priority 17
+            $priority = 21 - $tier; // This gives tier 1 = 20, tier 2 = 19, tier 3 = 18, tier 4 = 17
+            $domain_priorities[$domain] = $priority;
+        }
         
         // Clean blocked domains: trim spaces and filter out invalid ones
         $cleaned_blocked_domains = array_filter(array_map('trim', $blocked_domains), function($domain) {
@@ -1470,6 +1555,7 @@ class Exa_AI_Integration {
             'numResults' => 60, // Request 60 results to ensure we get 50 after filtering
             'include_domains' => array_values($cleaned_domains),
             // 'exclude_domains' => array_values($cleaned_blocked_domains),
+            'domainPriorities' => $domain_priorities,
             'type' => 'neural'
         ]);
         $response = wp_remote_post('https://api.exa.ai/search', [
@@ -1593,3 +1679,71 @@ class Exa_AI_Integration {
 }
 
 new Exa_AI_Integration();
+
+// AJAX handler to update domain tier
+add_action('wp_ajax_ai_update_domain_tier', function() {
+    check_ajax_referer('ai_trainer_nonce', 'nonce');
+    global $wpdb;
+    
+    $id = intval($_POST['id']);
+    $tier = intval($_POST['tier']);
+    
+    // Validate tier is between 1 and 4
+    if ($tier < 1 || $tier > 4) {
+        wp_send_json_error(['message' => 'Tier must be between 1 and 4.']);
+        return;
+    }
+    
+    $updated = $wpdb->update(
+        $wpdb->prefix . 'ai_allowed_domains',
+        ['tier' => $tier],
+        ['id' => $id]
+    );
+    
+    if ($updated !== false) {
+        wp_send_json_success(['message' => 'Tier updated successfully.']);
+    } else {
+        wp_send_json_error(['message' => 'Failed to update tier.']);
+    }
+});
+
+// AJAX handler to add domain with tier
+add_action('wp_ajax_ai_add_domain_with_tier', function() {
+    check_ajax_referer('ai_trainer_nonce', 'nonce');
+    global $wpdb;
+    
+    $title = sanitize_text_field($_POST['title']);
+    $url = esc_url_raw($_POST['url']);
+    $tier = intval($_POST['tier']);
+    
+    if (empty($title) || empty($url) || $tier < 1 || $tier > 4) {
+        wp_send_json_error(['message' => 'Title, URL, and valid tier (1-4) are required.']);
+        return;
+    }
+    
+    $domain = parse_url($url, PHP_URL_HOST);
+    if (empty($domain)) {
+        wp_send_json_error(['message' => 'Invalid URL provided.']);
+        return;
+    }
+    
+    $result = $wpdb->insert(
+        $wpdb->prefix . 'ai_allowed_domains',
+        [
+            'title' => $title,
+            'url' => $url,
+            'domain' => $domain,
+            'tier' => $tier,
+            'created_at' => current_time('mysql')
+        ]
+    );
+    
+    if ($result !== false) {
+        wp_send_json_success([
+            'message' => 'Domain added successfully.',
+            'id' => $wpdb->insert_id
+        ]);
+    } else {
+        wp_send_json_error(['message' => 'Failed to add domain.']);
+    }
+});
