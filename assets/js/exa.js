@@ -1189,89 +1189,1010 @@ jQuery(document).ready(function($) {
 
 
 
+/**
+ * Psybrarian Template Master System — 30 Templates (Fully Detailed)
+ * - Drop-in replacement for your buildPrompt() with the exact syntax you requested
+ * - HTML-only output skeletons (no Markdown, no emojis)
+ * - Auto-detects a template type from the query; can be overridden with opts.type
+ *
+ * Usage:
+ *   const prompt = buildPrompt(query, sources, block, contextBlock, { type: 'overview' });
+ *   // or auto-detect: const prompt = buildPrompt(query, sources, block, contextBlock);
+ */
+
+/* =========================== Core Builder =========================== */
+
+function buildPrompt(query, sources, block, contextBlock, opts = {}) {
+    const safeSources = String(sources || '').trim();
+    if (safeSources.length < 3) {
+      return `<h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>`;
+    }
+    const safeBlock = String(block || '').trim();
+    const safeContext = contextBlock ? String(contextBlock) : '';
   
-
-
-    function buildPrompt(query, sources, block, contextBlock) {
-        return `
-      You are the Psybrarian — an evidence-first, harm-reduction librarian for psychedelic topics.
-      
-      Your role is to provide a concise, trustworthy answer (6–8 sentences) to the question. Write in clear, neutral language suitable for a broad audience.
-      
-      Curate a list of the most relevant, foundational, and interesting resources for deeper exploration, as a librarian would. Include different perspectives when available, explaining any notable differences of opinion.
-      
-      Exclude content from any blocked or unreliable domains.
-      
-      ${contextBlock}
-      
-      Answer the following question using **only** information from the trusted sources below.
-      
-      Question: "${query}"
-      
-      Trusted Sources (use only these): ${sources}
-      
-      BLOCKED DOMAINS (never use these): ${block}
-      
-      If the trusted sources do not provide enough information to answer, output:
-      <h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>
-      
-      Otherwise, follow the format and guidelines below.
-      
-      Core Guidelines:
-      1. Answer **only** the question asked. Do not merge or add other topics.
-      2. If evidence is limited or mixed, state this clearly and avoid speculation.
-      3. No emojis. Output valid, clean HTML only (no Markdown).
-      
-      === OUTPUT FORMAT ===
-      - Use short paragraphs and bullet points for easy readability.
-      - Use the following section structure with the specified headings:
-      
-      <h2><!-- Brief title derived from the question --></h2>
-      
-      <h3>Question Summary</h3>
-      <p><!-- Restate the question in your own words, clarifying focus and scope. --></p>
-      
-      <h3>Quick Overview</h3>
-      <p><!-- A 2–3 sentence direct answer, including a key takeaway and why it matters. --></p>
-      
-      <h3>What to Know at a Glance</h3>
-      <ul>
-        <li><strong>What it is:</strong> <!-- One sentence defining the topic or substance. --></li>
-        <li><strong>How it works:</strong> <!-- One sentence on its mechanism or process in plain language. --></li>
-        <li><strong>Potential benefits:</strong> <!-- A few words or a short phrase (e.g., mood improvement, anxiety relief). --></li>
-        <li><strong>Key risks:</strong> <!-- A few words or a short phrase (e.g., anxiety spikes, legal issues). --></li>
-        <li><strong>Legal status:</strong> <!-- One sentence on current legal status (note regional differences if any). --></li>
-      </ul>
-      
-      <h3>Why It Matters</h3>
-      <p><!-- 1–2 sentences on the significance or real-world context of this topic. --></p>
-      
-      
-      
-      <h3>Safety Snapshot (30 seconds)</h3>
-      <ul>
-        <li><strong>Medications:</strong> <!-- Note any risky drug interactions (e.g., SSRIs, MAOIs, lithium). --></li>
-        <li><strong>Mental health:</strong> <!-- Note any mental health precautions (e.g., risk of psychosis or severe anxiety). --></li>
-        <li><strong>Physical health:</strong> <!-- Note any physical health precautions (e.g., heart or neurological risks). --></li>
-        <li><strong>Set & Setting:</strong> <!-- If relevant, remind that mindset and environment can influence experiences. --></li>
-      </ul>
-      
-      <h3>Related Questions</h3>
-      <ul>
-        <!-- Provide exactly 5 follow-up questions related to this topic, phrased simply. -->
-        <li><!-- Q1 --></li>
-        <li><!-- Q2 --></li>
-        <li><!-- Q3 --></li>
-        <li><!-- Q4 --></li>
-        <li><!-- Q5 --></li>
-      </ul>
-      `.trim();
-      }
-      
-      
-      
-      
-
+    // Determine template + render body
+    const type = (opts.type || detectType(query)).toLowerCase();
+    const render = TEMPLATES[type] || TEMPLATES['overview'];
+    const body = render();
+    const title = deriveTitle(query);
+  
+    // Header block — exactly as requested
+    const promptHeader = `
+  You are the Psybrarian — an evidence-first, harm-reduction librarian for psychedelic topics.
+  
+  Provide a concise, trustworthy answer (6–8 sentences) to the question using only the trusted sources listed below. Use clear, neutral language suitable for a broad audience.
+  
+  Do not use any blocked or unreliable domains.
+  
+  ${safeContext ? ('Conversation context:\n' + safeContext) : ''}
+  
+  Question: "${query}"
+  
+  Trusted Sources (use only these): ${safeSources}
+  BLOCKED DOMAINS (never use these): ${safeBlock}
+  
+  If the trusted sources do not provide enough information to answer, output exactly:
+  <h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>
+  
+  Formatting rules:
+  - Output valid HTML only (no Markdown).
+  - Prefer <h2>, <h3>, <p>, <ul>, <li>, <table>, <thead>, <tbody>, <tr>, <td>, <th>, <a>.
+  - Keep it concise and avoid repetition.
+  `.trim();
+  
+    // Standardized HTML skeleton (template-specific content slotted in)
+    const htmlSkeleton = `
+  <h2>${escapeHtml(title)}</h2>
+  
+  <h3>Question Summary</h3>
+  <p><!-- Restate the question in your own words, clarifying focus and scope. --></p>
+  
+  <h3>Quick Overview</h3>
+  <p><!-- A 2–3 sentence direct answer, including a key takeaway and why it matters. --></p>
+  
+  <h3>What to Know at a Glance</h3>
+  <ul>
+  ${body.glance}
+  </ul>
+  
+  <h3>Why It Matters</h3>
+  <p><!-- 1–2 sentences on the significance or real-world context of this topic. --></p>
+  
+  ${body.extra || ''}
+  
+  <h3>Related Questions</h3>
+  <ul>
+    <li><!-- Q1 --></li>
+    <li><!-- Q2 --></li>
+    <li><!-- Q3 --></li>
+    <li><!-- Q4 --></li>
+    <li><!-- Q5 --></li>
+  </ul>`;
+  
+    return `${promptHeader}\n\n${htmlSkeleton}`.trim();
+  }
+  
+  /* ============================ Templates ============================ */
+  /**
+   * Each template returns:
+   * { glance: "<li>...</li>\n<li>...</li>", extra: "<h3>...</h3>..." }
+   * - glance: bullet items under "What to Know at a Glance"
+   * - extra: any special sections (tables, checklists, timelines, Safety Snapshot when enabled),
+   *          plus optional standardized blocks (Additional, Practical, Sources)
+   */
+  
+  const TEMPLATES = {
+    /* 1) Substance Overview */
+    overview: () => baseTemplate({
+      addSafety: true,
+      includeAdditional: true,
+      includePractical: true,
+      includeSources: true,
+      bullets: [
+        ['What it is', 'One sentence definition.'],
+        ['How it works', 'Plain-language mechanism/process.'],
+        ['Potential benefits', 'Short phrases (e.g., mood, anxiety relief).'],
+        ['Key risks', 'Short phrases (e.g., anxiety spikes, interactions).'],
+        ['Legal status', 'One-sentence snapshot; note regional differences.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Classification &amp; Origins</h3>
+  <ul>
+    <li><strong>Type:</strong> <!-- Psychedelic / Dissociative / Empathogen / etc. --></li>
+    <li><strong>Origin:</strong> <!-- Natural / Synthetic; key plant/fungi lineage if relevant. --></li>
+    <li><strong>Common ROA:</strong> <!-- Oral, sublingual, inhaled, etc. --></li>
+  </ul>`
+        },
+      ],
+    }),
+  
+    /* 2) Dosing / How much / Routes */
+    dosing: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Common ranges', 'Ranges by route (oral, sublingual, inhaled, etc.).'],
+        ['Onset & duration', 'Approx. onset, peak, total duration.'],
+        ['Titration', '“Start low, go slow” when evidence supports.'],
+        ['Key risks', 'Overdosing, variability, interactions.'],
+        ['Legal status', 'If applicable.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Onset &amp; Duration by Route</h3>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead><tr><th>Route</th><th>Onset</th><th>Peak</th><th>Duration</th></tr></thead>
+    <tbody>
+      <tr><td><!-- Oral --></td><td><!-- ~ --></td><td><!-- ~ --></td><td><!-- ~ --></td></tr>
+      <tr><td><!-- Sublingual --></td><td><!-- ~ --></td><td><!-- ~ --></td><td><!-- ~ --></td></tr>
+      <tr><td><!-- Inhaled --></td><td><!-- ~ --></td><td><!-- ~ --></td><td><!-- ~ --></td></tr>
+    </tbody>
+  </table>`
+        },
+      ],
+    }),
+  
+    /* 3) Interactions / Contraindications (general) */
+    interactions: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Medications to avoid', 'e.g., MAOIs, SSRIs/SNRIs, lithium, tramadol — if supported.'],
+        ['Health conditions', 'Cardiac, seizure, psychosis spectrum — cite if supported.'],
+        ['Timing & washouts', 'Only if evidence exists; otherwise note uncertainty.'],
+        ['Emergency signs', 'When to seek urgent care.'],
+        ['Alternatives', 'Safer adjacent options if evidence-based.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>High-Risk Combinations</h3>
+  <ul>
+    <li><!-- MAOIs + serotonergic agents (serotonin syndrome risk) --></li>
+    <li><!-- Lithium + classic psychedelics (seizure risk reports) --></li>
+    <li><!-- Tramadol, bupropion, stimulants: seizure/HTN risk context --></li>
+  </ul>`
+        },
+        {
+          html: `
+  <h3>Washout &amp; Timing Notes</h3>
+  <p><!-- Only if supported by sources; otherwise clearly state uncertainty. --></p>`
+        },
+      ],
+    }),
+  
+    /* 4) Safety / First Aid */
+    safety: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Immediate steps', 'Calm, hydration, safe setting, trusted sober support.'],
+        ['Red flags', 'Chest pain, seizures, severe confusion, suicidality → seek help.'],
+        ['Interactions', 'Known high-risk combos.'],
+        ['Set & setting', 'Harm-reduction via environment and mindset.'],
+        ['Aftercare', 'Sleep, nutrition, integration support.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Immediate Actions</h3>
+  <ul>
+    <li><!-- Move to safe, calm environment; trusted sober support. --></li>
+    <li><!-- Hydration; temperature regulation. --></li>
+  </ul>`
+        },
+        {
+          html: `
+  <h3>Emergency Red Flags</h3>
+  <ul>
+    <li><!-- Chest pain, seizures, severe confusion, suicidality. --></li>
+  </ul>`
+        },
+      ],
+    }),
+  
+    /* 5) Effects & Timeline */
+    effects: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Typical onset', 'Approximate timing.'],
+        ['Peak period', 'Approximate timing.'],
+        ['Total duration', 'Approximate range.'],
+        ['Common effects', 'Neutral description: sensory, mood, cognition.'],
+        ['Challenging effects', 'Anxiety, confusion, nausea, etc.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Typical Timeline</h3>
+  <ul>
+    <li><!-- Onset ~...; Peak ~...; Total duration ~... --></li>
+  </ul>`
+        },
+      ],
+    }),
+  
+    /* 6) Legality / Policy */
+    legality: () => baseTemplate({
+      bullets: [
+        ['International status', 'UN schedules/conventions if relevant.'],
+        ['United States', 'Federal status; note state/local exceptions.'],
+        ['EU/UK/Canada', 'High-level snapshot; call out differences.'],
+        ['Enforcement trends', 'If supported by sources.'],
+        ['Legal risks', 'Possession, distribution, travel implications.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Region Breakdown</h3>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead><tr><th>Region</th><th>Status</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><!-- US (Federal) --></td><td><!-- Schedule / status --></td><td><!-- state/local exceptions --></td></tr>
+      <tr><td><!-- EU/UK/Canada --></td><td><!-- status --></td><td><!-- key differences --></td></tr>
+    </tbody>
+  </table>`
+        },
+      ],
+    }),
+  
+    /* 7) Comparisons (A vs B) */
+    compare: () => tableTemplate({
+      rows: [
+        ['Primary effects', 'A-effects', 'B-effects'],
+        ['Onset & duration', 'A-onset/duration', 'B-onset/duration'],
+        ['Typical ranges', 'A-ranges', 'B-ranges'],
+        ['Key risks', 'A-risks', 'B-risks'],
+        ['Legality', 'A-legal', 'B-legal'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Side-by-Side Table</h3>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead><tr><th>Parameter</th><th>Option A</th><th>Option B</th></tr></thead>
+    <tbody>
+      <tr><td><!-- Primary effects --></td><td><!-- A --></td><td><!-- B --></td></tr>
+      <tr><td><!-- Onset & duration --></td><td><!-- A --></td><td><!-- B --></td></tr>
+      <tr><td><!-- Typical ranges --></td><td><!-- A --></td><td><!-- B --></td></tr>
+      <tr><td><!-- Key risks --></td><td><!-- A --></td><td><!-- B --></td></tr>
+      <tr><td><!-- Legality --></td><td><!-- A --></td><td><!-- B --></td></tr>
+    </tbody>
+  </table>`
+        },
+      ],
+    }),
+  
+    /* 8) Preparation & Administration */
+    preparation: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Forms & routes', 'Tea, tincture, capsule, sublingual, etc.'],
+        ['Basic steps', 'General prep steps; avoid unsafe practices.'],
+        ['Stability & storage', 'Light/heat/moisture considerations.'],
+        ['Dosing notes', 'Potency variability; labeling caveats.'],
+        ['Safety notes', 'Contaminants, strain mis-ID, interactions.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Route How-To (Education Only)</h3>
+  <ol>
+    <li><!-- General steps; avoid unsafe/illegal instructions. --></li>
+    <li><!-- Stability & hygiene considerations. --></li>
+  </ol>`
+        },
+      ],
+    }),
+  
+    /* 9) Tolerance & Frequency */
+    tolerance: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Tolerance pattern', 'How quickly it builds and wanes (if known).'],
+        ['Cross-tolerance', 'If applicable and supported.'],
+        ['Frequency guidance', 'Evidence-informed spacing, if available.'],
+        ['Dependence risk', 'Psychological vs physical; evidence level.'],
+        ['Reset strategies', 'Time-based reset if supported.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Frequency Guidance (If Supported)</h3>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead><tr><th>Pattern</th><th>Rationale</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><!-- e.g., every 4 weeks --></td><td><!-- tolerance reset --></td><td><!-- evidence level --></td></tr>
+    </tbody>
+  </table>`
+        },
+      ],
+    }),
+  
+    /* 10) Therapeutic Evidence / Indications */
+    therapy: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Conditions studied', 'Indications with evidence strength.'],
+        ['Outcomes', 'Clinically meaningful results; effect sizes if reported.'],
+        ['Durability', 'Follow-up windows; persistence/relapse.'],
+        ['Safety profile', 'Adverse events reported.'],
+        ['Gaps & trials', 'Where evidence is thin or ongoing.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Clinical Evidence Summary</h3>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead><tr><th>Indication</th><th>Study Type</th><th>N</th><th>Outcome</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><!-- Depression --></td><td><!-- RCT/Open-label --></td><td><!-- ~ --></td><td><!-- effect size / response --></td><td><!-- durability/adverse events --></td></tr>
+    </tbody>
+  </table>`
+        },
+      ],
+    }),
+  
+    /* 11) Microdosing / Protocols */
+    microdosing: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Common schedules', 'e.g., 1 day on/2 off; weekday protocols.'],
+        ['Typical ranges', '“Sub-perceptual” guidance if supported.'],
+        ['Reported effects', 'Positive as well as neutral/negative findings.'],
+        ['Interactions & risks', 'SSRIs/MAOIs/lithium; mental health cautions.'],
+        ['Tracking & reflection', 'Journaling, mood/sleep tracking.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Common Protocols</h3>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead><tr><th>Name</th><th>Pattern</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><!-- e.g., 1 on / 2 off --></td><td><!-- schedule --></td><td><!-- tracking tip / evidence note --></td></tr>
+    </tbody>
+  </table>`
+        },
+        {
+          html: `
+  <h3>Self-Tracking Ideas</h3>
+  <ul>
+    <li><!-- Mood, sleep, focus, anxiety scales. --></li>
+    <li><!-- Weekly reflection prompts. --></li>
+  </ul>`
+        },
+      ],
+    }),
+  
+    /* 12) Integration / Aftercare / Set & Setting */
+    integration: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Mindset', 'Intentions, expectations, emotional readiness.'],
+        ['Environment', 'Safe, trusted space; sober support if applicable.'],
+        ['During', 'Grounding strategies for difficult moments.'],
+        ['After', 'Sleep, hydration, gentle movement, journaling.'],
+        ['Professional support', 'Therapeutic integration when needed.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Integration Timeline</h3>
+  <ul>
+    <li><strong>Day 0–1:</strong> <!-- Rest, hydration, gentle grounding. --></li>
+    <li><strong>Days 2–7:</strong> <!-- Journaling, therapy session if applicable. --></li>
+    <li><strong>Week 2+:</strong> <!-- Behavioral experiments, habits, community. --></li>
+  </ul>`
+        },
+      ],
+    }),
+  
+    /* 13) People (researchers, authors, facilitators, historical figures) */
+    person: () => baseTemplate({
+      includeAdditional: true,
+      includePractical: true,
+      includeSources: true,
+      bullets: [
+        ['Who they are', 'Role/discipline and relevance to psychedelics.'],
+        ['Era & role', 'Time period and primary positions.'],
+        ['Known for', 'Seminal contributions or discoveries.'],
+        ['Key works', 'Core papers/books/talks.'],
+        ['Controversies', 'Debates or limitations if any.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Key Contributions</h3>
+  <ul>
+    <li><!-- Major research/work/advocacy with dates if available. --></li>
+    <li><!-- Influence on practice, policy, or public understanding. --></li>
+    <li><!-- Awards/positions/foundational publications. --></li>
+  </ul>`
+        },
+        {
+          html: `
+  <h3>Substance Associations</h3>
+  <ul>
+    <li><!-- Substances most tied to their work and why. --></li>
+  </ul>`
+        },
+        {
+          html: `
+  <h3>Published Works / Media</h3>
+  <ul>
+    <li><!-- Seminal papers/books/talks with brief significance. --></li>
+  </ul>`
+        },
+        {
+          html: `
+  <h3>Collaborators &amp; Peers</h3>
+  <ul>
+    <li><!-- Notable colleagues, labs, or institutions. --></li>
+  </ul>`
+        },
+        {
+          html: `
+  <h3>Historical Context</h3>
+  <p><!-- Situate their work in time/policy/culture. --></p>`
+        },
+        {
+          html: `
+  <h3>Legacy &amp; Influence</h3>
+  <p><!-- How their work shapes current science, policy, or culture. --></p>`
+        },
+      ],
+    }),
+  
+    /* 14) Events (historical/policy events, landmark trials, conferences) */
+    event: () => baseTemplate({
+      includeAdditional: true,
+      includePractical: true,
+      includeSources: true,
+      bullets: [
+        ['When & where', 'Specific date(s) and location(s).'],
+        ['What happened', 'Key actions/decisions/interventions.'],
+        ['Immediate impact', 'Direct outcomes for people/policy/science.'],
+        ['Key figures', 'Institutions and individuals involved.'],
+        ['Legacy', 'Downstream effects & why it matters now.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Date &amp; Location</h3>
+  <p><!-- Specific date(s) and place(s); clarify region/time zone if relevant. --></p>`
+        },
+        {
+          html: `
+  <h3>What Happened?</h3>
+  <ul>
+    <li><!-- Key actions/decisions/interventions with concise chronology. --></li>
+    <li><!-- Immediate outcomes and stakeholders. --></li>
+  </ul>`
+        },
+        {
+          html: `
+  <h3>Why It Mattered</h3>
+  <p><!-- Policy/science/culture implications; downstream effects. --></p>`
+        },
+        {
+          html: `
+  <h3>Key Figures Involved</h3>
+  <ul>
+    <li><!-- People/institutions and their roles. --></li>
+  </ul>`
+        },
+        {
+          html: `
+  <h3>Primary Documents / Media</h3>
+  <ul>
+    <li><!-- Official statements, court filings, trial registrations, reports. --></li>
+  </ul>`
+        },
+        {
+          html: `
+  <h3>Related Movements or Events</h3>
+  <ul>
+    <li><!-- Earlier/later connected events. --></li>
+  </ul>`
+        },
+        {
+          html: `
+  <h3>Lasting Legacy</h3>
+  <p><!-- Long-term changes (laws, research, norms). --></p>`
+        },
+      ],
+    }),
+  
+    /* 15) Testing & Adulterants (reagents, FTS, lab testing) */
+    testing: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Why test', 'Counterfeits/adulterants are common; risk reduction.'],
+        ['Reagent basics', 'What reagents can/can’t tell you; color-change logic.'],
+        ['Fentanyl test strips', 'Scope/limits; false positives/negatives considerations.'],
+        ['Lab testing', 'When/why to use certified labs; sample handling.'],
+        ['Limitations', 'Testing ≠ proof of safety; dose/setting still matter.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Reagent Quick Reference</h3>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead><tr><th>Reagent</th><th>Expected Color</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><!-- Marquis --></td><td><!-- e.g., purple/black --></td><td><!-- Specificity/limits --></td></tr>
+      <tr><td><!-- Ehrlich --></td><td><!-- e.g., purple --></td><td><!-- Indoles only --></td></tr>
+    </tbody>
+  </table>`
+        },
+      ],
+    }),
+  
+    /* 16) Age, Pregnancy & Special Populations */
+    age_pregnancy_populations: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Population focus', 'Children/adolescents, older adults, pregnancy/lactation.'],
+        ['Known risks', 'Developmental, obstetric, geriatric considerations.'],
+        ['Medication overlaps', 'Prenatal vitamins, antihypertensives, etc.'],
+        ['Evidence gaps', 'Areas with limited or no data.'],
+        ['Safer alternatives', 'Non-pharmacologic supports when relevant.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Population-Specific Considerations</h3>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead><tr><th>Group</th><th>Key Risks</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><!-- Pregnancy/Lactation --></td><td><!-- fetal/OB considerations --></td><td><!-- evidence gaps --></td></tr>
+      <tr><td><!-- Adolescents/Older Adults --></td><td><!-- developmental/geriatric --></td><td><!-- polypharmacy --></td></tr>
+    </tbody>
+  </table>`
+        },
+      ],
+    }),
+  
+    /* 17) Mental Health Considerations (psychiatric) */
+    mental_health: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Risk profile', 'Psychosis spectrum, bipolar, severe anxiety, PTSD nuances.'],
+        ['Screening', 'Contraindications, red flags, informed consent.'],
+        ['Co-treatments', 'Therapy modalities that may help or conflict.'],
+        ['Crisis planning', 'When to pause/stop and seek professional help.'],
+        ['Evidence limits', 'Mixed or low-quality evidence — state clearly.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Screening &amp; Red Flags</h3>
+  <ul>
+    <li><!-- Psychosis spectrum, mania history, severe anxiety. --></li>
+    <li><!-- Suicidality risk; recent hospitalization. --></li>
+  </ul>`
+        },
+      ],
+    }),
+  
+    /* 18) Cardiac & Physical Risks */
+    cardiac_risk: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Cardiovascular effects', 'Blood pressure, heart rate, QTc concerns.'],
+        ['High-risk conditions', 'Arrhythmia, hypertension, valvular disease.'],
+        ['Drug interactions', 'Stimulants, decongestants, MAOIs.'],
+        ['Warning signs', 'Chest pain, syncope, palpitations.'],
+        ['Mitigation', 'Pre-checks, hydration, avoid combos.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Cardio Precautions</h3>
+  <ul>
+    <li><!-- Pre-check BP/HR if evidence-supported. --></li>
+    <li><!-- Avoid stimulants/MAOIs; hydration and temperature control. --></li>
+  </ul>`
+        },
+      ],
+    }),
+  
+    /* 19) Toxicology & Neurotoxicity */
+    toxicology: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Toxic dose context', 'What is known/unknown for acute toxicity.'],
+        ['Syndromes', 'Serotonin syndrome, hyperthermia, hyponatremia.'],
+        ['Organ risks', 'Hepato/nephro/neuro concerns where supported.'],
+        ['Animal vs human data', 'Extrapolation limits.'],
+        ['Emergency response', 'Cooling, fluids, medical evaluation.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Emergency Syndromes</h3>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead><tr><th>Syndrome</th><th>Key Signs</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><!-- Serotonin syndrome --></td><td><!-- clonus, hyperreflexia, agitation --></td><td><!-- triggers/combos --></td></tr>
+    </tbody>
+  </table>`
+        },
+      ],
+    }),
+  
+    /* 20) Pharmacology / Mechanism of Action (MOA) */
+    pharmacology_moa: () => baseTemplate({
+      bullets: [
+        ['Receptor targets', 'e.g., 5-HT2A, NMDA, kappa-opioid, etc.'],
+        ['Pathways', 'Downstream signaling, networks (plain language).'],
+        ['Subjective link', 'How MOA may relate to effects.'],
+        ['Variability', 'Polymorphisms, tolerance, set/setting overlap.'],
+        ['Evidence level', 'Where mechanisms are speculative.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Receptor Targets (Plain Language)</h3>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead><tr><th>Target</th><th>Role</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><!-- 5-HT2A --></td><td><!-- cortical signaling --></td><td><!-- relation to subjective effects --></td></tr>
+    </tbody>
+  </table>`
+        },
+      ],
+    }),
+  
+    /* 21) Pharmacokinetics / Metabolism (PK) */
+    pharmacokinetics: () => baseTemplate({
+      bullets: [
+        ['Absorption', 'Route-dependent differences.'],
+        ['Distribution', 'Protein binding, BBB crossing (simple terms).'],
+        ['Metabolism', 'CYP pathways; active metabolites if any.'],
+        ['Elimination', 'Half-life ranges and routes.'],
+        ['PK variability', 'Liver/renal impairment; genetic variants.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>PK Overview</h3>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead><tr><th>Phase</th><th>Key Points</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><!-- Absorption --></td><td><!-- ROA differences --></td><td><!-- food effects --></td></tr>
+      <tr><td><!-- Metabolism --></td><td><!-- CYPs --></td><td><!-- active metabolites --></td></tr>
+      <tr><td><!-- Elimination --></td><td><!-- half-life --></td><td><!-- renal/hepatic --></td></tr>
+    </tbody>
+  </table>`
+        },
+      ],
+    }),
+  
+    /* 22) Withdrawal, Comedown & Aftereffects */
+    aftereffects: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Immediate aftereffects', 'Fatigue, mood changes, sleep disturbance.'],
+        ['Withdrawal', 'If applicable; physical vs psychological.'],
+        ['Duration', 'Typical recovery timelines.'],
+        ['Mitigation', 'Hydration, nutrition, rest, light activity.'],
+        ['When to seek help', 'Persistent depression, suicidality, cognitive issues.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Aftereffects Timeline</h3>
+  <ul>
+    <li><!-- 0–24h: fatigue, mood variability, sleep changes. --></li>
+    <li><!-- 24–72h: normalization; hydration/nutrition notes. --></li>
+  </ul>`
+        },
+      ],
+    }),
+  
+    /* 23) Measurement & Weighing (Scales / Volumetric dosing) */
+    measurement: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Tools', 'Milligram scales, volumetric dosing, syringes/droppers.'],
+        ['Calibration', 'Taring, test weights; avoid kitchen scales.'],
+        ['Volumetric dosing', 'Step-by-step concept in plain terms.'],
+        ['Stability', 'Solutions/suspensions; storage.'],
+        ['Common mistakes', 'Misplacing decimals, uneven mixing.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Volumetric Dosing Example</h3>
+  <p><!-- Walk through a sample calculation step-by-step in plain language (no advice, education only). --></p>`
+        },
+      ],
+    }),
+  
+    /* 24) Stacking & Combinations (non-med combos) */
+    stacking: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Common stacks', 'e.g., caffeine + L-theanine; cacao + breathwork.'],
+        ['Rationale', 'Intended synergy; tradition vs modern practice.'],
+        ['Risks', 'Intensity, anxiety, nausea; unknown interactions.'],
+        ['Evidence check', 'What (if anything) supports the combo.'],
+        ['Alternatives', 'Single-variable approach to isolate effects.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Common Stacks</h3>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead><tr><th>Stack</th><th>Intended Effect</th><th>Risks/Notes</th></tr></thead>
+    <tbody>
+      <tr><td><!-- Caffeine + L-theanine --></td><td><!-- smoother focus --></td><td><!-- HR/BP for sensitivity --></td></tr>
+    </tbody>
+  </table>`
+        },
+      ],
+    }),
+  
+    /* 25) Set & Setting Planning */
+    set_setting_planning: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Preparation', 'Intention, mindset, sleep, nourishment.'],
+        ['Environment', 'Lighting, temperature, music/playlists.'],
+        ['Support', 'Sitter/guide roles and boundaries.'],
+        ['Boundaries & consent', 'Clear agreements; sober support if used.'],
+        ['Post-session plan', 'Integration time, journaling, calendar buffer.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Packing &amp; Prep Checklist</h3>
+  <ul>
+    <li><!-- Comfort items: water, blanket, eye mask, music. --></li>
+    <li><!-- Contacts: emergency numbers, address, directions. --></li>
+  </ul>`
+        },
+      ],
+    }),
+  
+    /* 26) Sourcing, Quality & Storage (no procurement advice) */
+    sourcing_quality: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Quality signals', 'Consistency, labeling, COAs when available.'],
+        ['Contaminants', 'Adulterants, mold, misidentification risks.'],
+        ['Storage', 'Light/heat/moisture control; shelf life.'],
+        ['Transport', 'Temperature and leak-proofing for legal items only.'],
+        ['Legal note', 'Clarify jurisdictional constraints; no procurement advice.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Storage Conditions</h3>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead><tr><th>Form</th><th>Best Practice</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><!-- Tincture --></td><td><!-- cool, dark --></td><td><!-- shelf life --></td></tr>
+      <tr><td><!-- Dried material --></td><td><!-- airtight, desiccant --></td><td><!-- mold risk --></td></tr>
+    </tbody>
+  </table>`
+        },
+      ],
+    }),
+  
+    /* 27) Myths vs Facts */
+    myths_vs_facts: () => baseTemplate({
+      bullets: [
+        ['Common myth', 'State the myth neutrally.'],
+        ['Evidence check', 'Summarize what reliable sources say.'],
+        ['What we know', 'Plain conclusion with confidence level.'],
+        ['What we don’t know', 'Gaps and ongoing research.'],
+        ['Practical takeaway', 'Simple advice consistent with evidence.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Myth vs Fact</h3>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead><tr><th>Myth</th><th>Evidence Check</th><th>Conclusion</th></tr></thead>
+    <tbody>
+      <tr><td><!-- e.g., LSD stays in spine --></td><td><!-- what sources say --></td><td><!-- plain-language verdict --></td></tr>
+    </tbody>
+  </table>`
+        },
+      ],
+    }),
+  
+    /* 28) Glossary / Definition */
+    glossary: () => baseTemplate({
+      bullets: [
+        ['Term definition', 'Short, plain-language definition.'],
+        ['Context', 'Where you encounter it (research, culture).'],
+        ['Why it matters', 'Decisions it affects; misunderstandings to avoid.'],
+        ['Related terms', 'Nearby concepts and distinctions.'],
+        ['Sources', 'Prefer primary/authoritative references.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Related Terms</h3>
+  <ul>
+    <li><!-- Nearby concept 1: distinction --></li>
+    <li><!-- Nearby concept 2: distinction --></li>
+  </ul>`
+        },
+      ],
+    }),
+  
+    /* 29) Protocol (step-by-step planning for sessions) */
+    protocol: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Pre-session', 'Medical/mental check, intentions, logistics.'],
+        ['During', 'Support roles, pacing, hydration.'],
+        ['Environment', 'Safety, privacy, tools within reach.'],
+        ['Contingencies', 'What to do if anxiety or nausea spikes.'],
+        ['Post-session', 'Sleep, nutrition, integration scheduling.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Checklist</h3>
+  <ul>
+    <li><!-- Pre-session: essentials packed, emergency contacts, consent/boundaries. --></li>
+    <li><!-- During: hydration, pacing, grounding tools. --></li>
+    <li><!-- Post-session: sleep plan, nutrition, integration time scheduled. --></li>
+  </ul>`
+        },
+      ],
+    }),
+  
+    /* 30) Troubleshooting & Challenging Experiences */
+    troubleshooting: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Didn’t feel anything', 'Possible causes: dose, ROA, tolerance, meds.'],
+        ['Anxiety spike', 'Breathing, posture, temperature, reassurance.'],
+        ['Nausea', 'Timing with food, ginger/peppermint notes; caution with meds.'],
+        ['Overwhelm', 'Grounding, music shift, eyeshades, change setting.'],
+        ['When to seek help', 'Persistent confusion, chest pain, suicidality.'],
+      ],
+    }),
+  };
+  
+  /* ============================ Helpers ============================== */
+  
+  // Lightweight intent detection (first match wins)
+  function detectType(q) {
+    const s = String(q || '').toLowerCase();
+  
+    if (/(who\s+(is|was)|biograph|researcher|author|figure|person)/.test(s)) return 'person';
+    if (/(event|what happened|when was|conference|trial|ban|raid|policy change|milestone)/.test(s)) return 'event';
+    if (/(vs\.?|compare|difference|which is better)/.test(s)) return 'compare';
+    if (/(dose|dosing|how much|microgram|milligram|mg|µg|ug|gram|\bg\b)/.test(s)) return 'dosing';
+    if (/(interaction|contraindicat|with ssri|with maoi|with lithium|drug combo|mix with)/.test(s)) return 'interactions';
+    if (/(safe|safety|first aid|overdose|bad trip|what to do if|emergency)/.test(s)) return 'safety';
+    if (/(effect|feel like|timeline|duration|onset|peak)/.test(s)) return 'effects';
+    if (/(legal|legality|decriminal|is it legal|law|schedule)/.test(s)) return 'legality';
+    if (/(prep|preparation|brew|tea|how to take|administration|sublingual|capsule)/.test(s)) return 'preparation';
+    if (/(tolerance|dependen|frequency|how often|spacing|reset)/.test(s)) return 'tolerance';
+    if (/(therap|clinical|evidence|study|trial|efficacy|effect size)/.test(s)) return 'therapy';
+    if (/(microdose|micro-dos|protocol|schedule|stack)/.test(s)) return 'microdosing';
+    if (/(integration|aftercare|set and setting|set & setting|intentions|grounding)/.test(s)) return 'integration';
+    if (/(test kit|reagent|fentanyl strip|adulterant|drug checking|lab testing)/.test(s)) return 'testing';
+    if (/(pregnan|lacta|breastfeed|older adult|elderly|child|teen|adolesc)/.test(s)) return 'age_pregnancy_populations';
+    if (/(psychosis|bipolar|schizo|ptsd|anxiety|depress)/.test(s)) return 'mental_health';
+    if (/(heart|cardiac|arrhythm|blood pressure|hypertension|qtc)/.test(s)) return 'cardiac_risk';
+    if (/(toxic|neurotoxic|serotonin syndrome|hyperthermia|hyponatremia|poison)/.test(s)) return 'toxicology';
+    if (/(mechanism|moa|receptor|5-ht|nmda|gaba|dopamine)/.test(s)) return 'pharmacology_moa';
+    if (/(half-life|cyp|metabol|pk|pharmacokinetic|eliminat)/.test(s)) return 'pharmacokinetics';
+    if (/(withdrawal|comedown|hangover|aftereffect|next day)/.test(s)) return 'aftereffects';
+    if (/(scale|weigh|volumetric|mg scale|measure)/.test(s)) return 'measurement';
+    if (/(stack|combo|combine|with cacao|with caffeine|lemon tek)/.test(s)) return 'stacking';
+    if (/(set and setting plan|music|playlist|lighting|sitter)/.test(s)) return 'set_setting_planning';
+    if (/(source|quality|storage|contaminant|mold|coa)/.test(s)) return 'sourcing_quality';
+    if (/(myth|misconception|is it true)/.test(s)) return 'myths_vs_facts';
+    if (/(define|what does .* mean|glossary|term)/.test(s)) return 'glossary';
+    if (/(protocol|step by step|checklist|guide)/.test(s)) return 'protocol';
+    if (/(troubleshoot|didn’t feel anything|didn't feel anything|nausea|anxiety spike|overwhelm)/.test(s)) return 'troubleshooting';
+    return 'overview';
+  }
+  
+  function deriveTitle(q) {
+    const t = String(q || '').trim().replace(/^[\s\-–—]+|[\s\-–—]+$/g, '');
+    return t.replace(/[?!.]+$/, '');
+  }
+  
+  // Base template builder
+  function baseTemplate({
+    bullets = [],
+    quickOverviewHint = '',
+    addSafety = false,
+    sections = [],
+    includeAdditional = true,
+    includePractical = true,
+    includeSources = true,
+  }) {
+    const glance = bullets.map(([label, hint]) =>
+      `  <li><strong>${escapeHtml(label)}:</strong> <!-- ${escapeHtml(hint)} --></li>`
+    ).join('\n');
+  
+    const extraBlocks = renderSections({ sections, includeAdditional, includePractical, includeSources });
+    const extra = `${extraBlocks}${addSafety ? safetySnapshot() : ''}`;
+    return { glance, quickOverviewHint, extra };
+  }
+  
+  // Comparison/table template builder
+  function tableTemplate({
+    rows = [],
+    addSafety = false,
+    sections = [],
+    includeAdditional = true,
+    includePractical = true,
+    includeSources = true,
+  }) {
+    const mapped = rows.map(([p, a, b]) =>
+      `  <li><strong>${escapeHtml(p)}:</strong> <!-- ${escapeHtml(a)} vs ${escapeHtml(b)} --></li>`
+    ).join('\n');
+  
+    const extraBlocks = renderSections({ sections, includeAdditional, includePractical, includeSources });
+    const extra = `${extraBlocks}${addSafety ? safetySnapshot() : ''}`;
+    return { glance: mapped, extra };
+  }
+  
+  // Standardized optional blocks + custom sections injector
+  function renderSections({ sections = [], includeAdditional = true, includePractical = true, includeSources = true }) {
+    const custom = sections.map(s => s && s.html ? s.html : '').join('\n');
+  
+    const additional = includeAdditional ? `
+  <h3>Additional Context or Considerations</h3>
+  <p><!-- Nuance, cultural framing, study limitations, variability by dose/context. --></p>` : '';
+  
+    const practical = includePractical ? `
+  <h3>Practical Advice or Next Steps</h3>
+  <ul>
+    <li><!-- Preparation or planning tips appropriate to this template. --></li>
+    <li><!-- Questions to ask yourself or a clinician. --></li>
+    <li><!-- Tools, checklists, or trackers to use. --></li>
+  </ul>` : '';
+  
+    const sources = includeSources ? `
+  <h3>Sources / Where to Learn More</h3>
+  <ul>
+    <li><!-- Primary literature (PubMed, clinical trials). --></li>
+    <li><!-- Harm reduction orgs (DanceSafe, Fireside). --></li>
+    <li><!-- Trusted education (Psychedelics.com, MAPS, Erowid). --></li>
+  </ul>` : '';
+  
+    return `${custom}${additional}${practical}${sources}`;
+  }
+  
+  // Optional Safety Snapshot, injected only when addSafety=true
+  function safetySnapshot() {
+    return `
+  <h3>Safety Snapshot (30 seconds)</h3>
+  <ul>
+    <li><strong>Medications:</strong> <!-- Note any risky drug interactions (e.g., SSRIs, MAOIs, lithium). --></li>
+    <li><strong>Mental health:</strong> <!-- Note mental health precautions (e.g., risk of psychosis or severe anxiety). --></li>
+    <li><strong>Physical health:</strong> <!-- Note physical health precautions (e.g., heart or neurological risks). --></li>
+    <li><strong>Set &amp; Setting:</strong> <!-- Mindset and environment can influence experiences. --></li>
+  </ul>`;
+  }
+  
+  // Escaper
+  function escapeHtml(s) {
+    return String(s || '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;');
+  }
+  
+  /* Optional export for testing (Node/CommonJS) */
+  if (typeof module !== 'undefined') {
+    module.exports = { buildPrompt, detectType };
+  }
 
     // Scroll while streaming
     // This function scrolls the answer block into view when the answer is being streamed

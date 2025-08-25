@@ -1308,6 +1308,29 @@ function ai_trainer_handle_chatlog_reaction() {
 add_action('wp_ajax_ai_update_chatlog_reaction', 'ai_trainer_handle_chatlog_reaction');
 add_action('wp_ajax_nopriv_ai_update_chatlog_reaction', 'ai_trainer_handle_chatlog_reaction');
 
+// AJAX handler to fetch reaction counts for a chatlog ID
+add_action('wp_ajax_ai_get_chatlog_reaction_counts', 'ai_trainer_handle_get_reaction_counts');
+add_action('wp_ajax_nopriv_ai_get_chatlog_reaction_counts', 'ai_trainer_handle_get_reaction_counts');
+function ai_trainer_handle_get_reaction_counts() {
+    global $wpdb;
+    $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+    if (!$id) {
+        wp_send_json_error(['message' => 'Invalid ID']);
+    }
+
+    $row = $wpdb->get_row($wpdb->prepare("SELECT reaction FROM {$wpdb->prefix}ai_chat_log WHERE id = %d", $id));
+    $counts = ['like' => 0, 'dislike' => 0];
+    if ($row && !empty($row->reaction)) {
+        $decoded = json_decode($row->reaction, true);
+        if (is_array($decoded)) {
+            $counts['like'] = isset($decoded['like']) ? intval($decoded['like']) : 0;
+            $counts['dislike'] = isset($decoded['dislike']) ? intval($decoded['dislike']) : 0;
+        }
+    }
+
+    wp_send_json_success($counts);
+}
+
 add_action('wp_ajax_ai_get_chatlog_by_id', function() {
     global $wpdb;
     $id = intval($_POST['id']);
