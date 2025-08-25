@@ -253,10 +253,10 @@
             }).join('');
 
             const sourceCount = results.length;
-            const displayCount = Math.min(sourceCount, 50);
+            const displayCount = sourceCount; // Show all sources, no cap
             block.find('.exa-results').html(`
                 <div class="sources-header">
-                    <span>📚 ${displayCount} source${displayCount !== 1 ? 's' : ''} found${sourceCount > 50 ? ` (showing top 50 of ${sourceCount})` : ''}</span>
+                    <span>📚 ${displayCount} source${displayCount !== 1 ? 's' : ''} found</span>
                 </div>
                 <div class="sources-container">
                     <button class="slider-btn prev-btn">&#10094;</button>
