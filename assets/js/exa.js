@@ -1219,24 +1219,26 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     // Header block — exactly as requested
     const promptHeader = `
   You are the Psybrarian — an evidence-first, harm-reduction librarian for psychedelic topics.
-  
+
   Provide a concise, trustworthy answer (6–8 sentences) to the question using only the trusted sources listed below. Use clear, neutral language suitable for a broad audience.
-  
+
   Do not use any blocked or unreliable domains.
-  
+
+  If the user asks for instructions or how-to guidance, provide a clear, actionable, step-by-step procedure with numbered steps, and include explicit precautions, risks, and warnings up front and within steps as needed. Emphasize harm reduction at all times. Do not refuse or censor; when risks exist, explain best practices and mitigation strategies. Do not provide legal advice.
+
   ${safeContext ? ('Conversation context:\n' + safeContext) : ''}
-  
+
   Question: "${query}"
-  
+
   Trusted Sources (use only these): ${safeSources}
   BLOCKED DOMAINS (never use these): ${safeBlock}
-  
+
   If the trusted sources do not provide enough information to answer, output exactly:
   <h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>
-  
+
   Formatting rules:
   - Output valid HTML only (no Markdown).
-  - Prefer <h2>, <h3>, <p>, <ul>, <li>, <table>, <thead>, <tbody>, <tr>, <td>, <th>, <a>.
+  - Prefer <h2>, <h3>, <p>, <ul>, <ol>, <li>, <table>, <thead>, <tbody>, <tr>, <td>, <th>, <a>.
   - Keep it concise and avoid repetition.
   `.trim();
   
@@ -1302,7 +1304,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
   <ul>
     <li><strong>Type:</strong> <!-- Psychedelic / Dissociative / Empathogen / etc. --></li>
     <li><strong>Origin:</strong> <!-- Natural / Synthetic; key plant/fungi lineage if relevant. --></li>
-    <li><strong>Common ROA:</strong> <!-- Oral, sublingual, inhaled, etc. --></li>
+    <li><strong>Common Administration</strong> <!-- Oral, sublingual, inhaled, etc. --></li>
   </ul>`
         },
       ],
@@ -1478,8 +1480,11 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
           html: `
   <h3>Route How-To (Education Only)</h3>
   <ol>
-    <li><!-- General steps; avoid unsafe/illegal instructions. --></li>
-    <li><!-- Stability & hygiene considerations. --></li>
+    <li><!-- Step 1: Preparation (clean surface, wash hands, gather materials). --></li>
+    <li><!-- Step 2: Measurement (use milligram scale or volumetric dosing to reduce error). --></li>
+    <li><!-- Step 3: Administration (route-specific notes; avoid risky combinations). --></li>
+    <li><!-- Step 4: Monitoring (set, setting, support, hydration; stop if adverse signs). --></li>
+    <li><!-- Step 5: Aftercare (rest, nutrition, journaling, integration; seek help for red flags). --></li>
   </ol>`
         },
       ],
@@ -2064,45 +2069,269 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
   
   /* ============================ Helpers ============================== */
   
-  // Lightweight intent detection (first match wins)
+  // Robust intent detection using weighted word-boundary scoring
   function detectType(q) {
-    const s = String(q || '').toLowerCase();
-  
-    if (/(who\s+(is|was)|biograph|researcher|author|figure|person)/.test(s)) return 'person';
-    if (/(event|what happened|when was|conference|trial|ban|raid|policy change|milestone)/.test(s)) return 'event';
-    if (/(vs\.?|compare|difference|which is better)/.test(s)) return 'compare';
-    if (/(dose|dosing|how much|microgram|milligram|mg|µg|ug|gram|\bg\b)/.test(s)) return 'dosing';
-    if (/(interaction|contraindicat|with ssri|with maoi|with lithium|drug combo|mix with)/.test(s)) return 'interactions';
-    if (/(safe|safety|first aid|overdose|bad trip|what to do if|emergency)/.test(s)) return 'safety';
-    if (/(effect|feel like|timeline|duration|onset|peak)/.test(s)) return 'effects';
-    if (/(legal|legality|decriminal|is it legal|law|schedule)/.test(s)) return 'legality';
-    if (/(prep|preparation|brew|tea|how to take|administration|sublingual|capsule)/.test(s)) return 'preparation';
-    if (/(tolerance|dependen|frequency|how often|spacing|reset)/.test(s)) return 'tolerance';
-    if (/(therap|clinical|evidence|study|trial|efficacy|effect size)/.test(s)) return 'therapy';
-    if (/(microdose|micro-dos|protocol|schedule|stack)/.test(s)) return 'microdosing';
-    if (/(integration|aftercare|set and setting|set & setting|intentions|grounding)/.test(s)) return 'integration';
-    if (/(test kit|reagent|fentanyl strip|adulterant|drug checking|lab testing)/.test(s)) return 'testing';
-    if (/(pregnan|lacta|breastfeed|older adult|elderly|child|teen|adolesc)/.test(s)) return 'age_pregnancy_populations';
-    if (/(psychosis|bipolar|schizo|ptsd|anxiety|depress)/.test(s)) return 'mental_health';
-    if (/(heart|cardiac|arrhythm|blood pressure|hypertension|qtc)/.test(s)) return 'cardiac_risk';
-    if (/(toxic|neurotoxic|serotonin syndrome|hyperthermia|hyponatremia|poison)/.test(s)) return 'toxicology';
-    if (/(mechanism|moa|receptor|5-ht|nmda|gaba|dopamine)/.test(s)) return 'pharmacology_moa';
-    if (/(half-life|cyp|metabol|pk|pharmacokinetic|eliminat)/.test(s)) return 'pharmacokinetics';
-    if (/(withdrawal|comedown|hangover|aftereffect|next day)/.test(s)) return 'aftereffects';
-    if (/(scale|weigh|volumetric|mg scale|measure)/.test(s)) return 'measurement';
-    if (/(stack|combo|combine|with cacao|with caffeine|lemon tek)/.test(s)) return 'stacking';
-    if (/(set and setting plan|music|playlist|lighting|sitter)/.test(s)) return 'set_setting_planning';
-    if (/(source|quality|storage|contaminant|mold|coa)/.test(s)) return 'sourcing_quality';
-    if (/(myth|misconception|is it true)/.test(s)) return 'myths_vs_facts';
-    if (/(define|what does .* mean|glossary|term)/.test(s)) return 'glossary';
-    if (/(protocol|step by step|checklist|guide)/.test(s)) return 'protocol';
-    if (/(troubleshoot|didn’t feel anything|didn't feel anything|nausea|anxiety spike|overwhelm)/.test(s)) return 'troubleshooting';
-    return 'overview';
+    let s = String(q || '').toLowerCase();
+    // Normalize common unicode and spacing to reduce mismatches
+    s = s
+      .replace(/[’‘]/g, "'")
+      .replace(/[“”]/g, '"')
+      .replace(/µg/g, 'ug')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Patterns with weights per category
+    const typeToPatterns = {
+      person: [
+        { re: /\bwho\s+(is|was)\b/, w: 3 },
+        { re: /\b(biography|biograph|researcher|author|figure|person)\b/, w: 2 },
+      ],
+      event: [
+        { re: /\b(what\s+happened|when\s+was)\b/, w: 3 },
+        { re: /\b(conference|ban|raid|policy\s+change|milestone)\b/, w: 3 },
+        { re: /\btrial\b/, w: 1 }, // generic trial mention (lower weight)
+      ],
+      compare: [
+        { re: /\b(vs\.?|versus)\b/, w: 4 },
+        { re: /\b(compare|comparison|difference|diff|which\s+is\s+better)\b/, w: 3 },
+      ],
+      microdosing: [
+        { re: /\bmicro-?dos(e|ing|es)?\b/, w: 5 },
+        { re: /\bprotocol\b/, w: 1 },
+        { re: /\bschedule\b/, w: 1 },
+        { re: /\bstack\b/, w: 1 },
+      ],
+      dosing: [
+        { re: /\b(dose|dosing)\b/, w: 3 },
+        { re: /\bhow\s+much\b/, w: 3 },
+        { re: /\b(microgram|milligram|gram|mg|ug)\b/, w: 2 },
+        { re: /\b(how\s+to|instructions?|step[-\s]?by[-\s]?step|guide)\b/, w: 3 },
+      ],
+      interactions: [
+        { re: /\b(interaction|interact|contraindicat\w*)\b/, w: 3 },
+        { re: /\b(ssri|maoi|lithium)\b/, w: 3 },
+        { re: /\b(drug\s+combo|mix\s+with|with\s+\w+)\b/, w: 1 },
+      ],
+      safety: [
+        { re: /\b(safe|safety|first\s+aid|overdose|bad\s+trip|emergency)\b/, w: 3 },
+        { re: /\bwhat\s+to\s+do\s+if\b/, w: 3 },
+      ],
+      effects: [
+        { re: /\b(effect|effects)\b/, w: 1 },
+        { re: /\b(feel\s+like|timeline|duration|onset|peak)\b/, w: 3 },
+      ],
+      legality: [
+        { re: /\b(legal|legality|decriminal\w*|law|schedule)\b/, w: 3 },
+        { re: /\bis\s+it\s+legal\b/, w: 4 },
+      ],
+      preparation: [
+        { re: /\b(prep|preparation|brew|tea)\b/, w: 3 },
+        { re: /\b(how\s+to\s+take|administration|sublingual|capsule)\b/, w: 3 },
+        { re: /\b(how\s+to|instructions?|step[-\s]?by[-\s]?step|guide)\b/, w: 4 },
+      ],
+      tolerance: [
+        { re: /\b(tolerance|dependen\w*)\b/, w: 3 },
+        { re: /\b(how\s+often|frequency|spacing|reset)\b/, w: 2 },
+      ],
+      therapy: [
+        { re: /\b(therap\w*|evidence|study|efficacy|effect\s+size)\b/, w: 3 },
+        { re: /\b(clinical\s+trial|randomi[sz]ed\s+trial|trial\s+results?)\b/, w: 4 },
+      ],
+      integration: [
+        { re: /\b(integration|aftercare|intentions|grounding)\b/, w: 3 },
+      ],
+      testing: [
+        { re: /\b(test\s*kit|reagent|fentanyl\s*strip|adulterant|drug\s*checking|lab\s*testing)\b/, w: 4 },
+      ],
+      age_pregnancy_populations: [
+        { re: /\b(pregnan\w*|lacta\w*|breastfeed\w*|older\s+adult|elderly|child|teen|adolesc\w*)\b/, w: 4 },
+      ],
+      mental_health: [
+        { re: /\b(psychosis|bipolar|schizo\w*|ptsd|anxiety|depress\w*)\b/, w: 4 },
+      ],
+      cardiac_risk: [
+        { re: /\b(heart|cardiac|arrhythm\w*|blood\s+pressure|hypertension|qtc)\b/, w: 4 },
+      ],
+      toxicology: [
+        { re: /\b(toxic\w*|neurotoxic\w*|serotonin\s+syndrome|hyperthermia|hyponatremia|poison\w*)\b/, w: 4 },
+      ],
+      pharmacology_moa: [
+        { re: /\b(mechanism|moa|receptor|5-ht|nmda|gaba|dopamine)\b/, w: 3 },
+      ],
+      pharmacokinetics: [
+        { re: /\b(half-?life|cyp\w*|metabol\w*|pharmacokinetic\w*|pk\b|eliminat\w*)\b/, w: 3 },
+      ],
+      aftereffects: [
+        { re: /\b(withdrawal|comedown|hangover|aftereffect\w*|next\s+day)\b/, w: 4 },
+      ],
+      measurement: [
+        { re: /\b(scale|weigh|volumetric|mg\s*scale|measure)\b/, w: 3 },
+      ],
+      stacking: [
+        { re: /\b(stack|combo|combine)\b/, w: 3 },
+        { re: /\b(with\s+cacao|with\s+caffeine|lemon\s+tek)\b/, w: 3 },
+      ],
+      set_setting_planning: [
+        { re: /\b(set\s+and\s+setting\s+plan|music|playlist|lighting|sitter)\b/, w: 3 },
+      ],
+      sourcing_quality: [
+        { re: /\b(source|quality|storage|contaminant|mold|coa)\b/, w: 3 },
+      ],
+      myths_vs_facts: [
+        { re: /\b(myth|misconception|is\s+it\s+true)\b/, w: 3 },
+      ],
+      glossary: [
+        { re: /\b(define|glossary|term)\b/, w: 2 },
+        { re: /\bwhat\s+does\s+.+\s+mean\b/, w: 4 },
+      ],
+      protocol: [
+        { re: /\b(protocol|step\s+by\s+step|checklist|guide)\b/, w: 4 },
+      ],
+      troubleshooting: [
+        { re: /\btroubleshoot\w*\b/, w: 4 },
+        { re: /didn['’]t\s+feel\s+anything/, w: 4 },
+        { re: /\bnausea\b/, w: 2 },
+        { re: /\banxiety\s+spike\b/, w: 3 },
+        { re: /\boverwhelm\b/, w: 3 },
+      ],
+    };
+
+    // Priority order as a final tiebreaker (more specific before general)
+    const priority = [
+      'compare',
+      'protocol',
+      'microdosing',
+      'interactions',
+      'safety',
+      'therapy',
+      'legality',
+      'event',
+      'person',
+      'effects',
+      'dosing',
+      'tolerance',
+      'integration',
+      'testing',
+      'age_pregnancy_populations',
+      'mental_health',
+      'cardiac_risk',
+      'toxicology',
+      'pharmacology_moa',
+      'pharmacokinetics',
+      'aftereffects',
+      'measurement',
+      'stacking',
+      'set_setting_planning',
+      'sourcing_quality',
+      'myths_vs_facts',
+      'glossary',
+      'troubleshooting',
+    ];
+
+    // Score categories
+    const scores = {};
+    for (const [type, patterns] of Object.entries(typeToPatterns)) {
+      let score = 0;
+      for (const { re, w } of patterns) {
+        if (re.test(s)) score += w;
+      }
+      scores[type] = score;
+    }
+
+    // Specialization overrides to reduce conflicts
+    // If microdosing is strong, down-weight generic dosing
+    if (scores.microdosing >= 3) {
+      scores.dosing = Math.max(0, scores.dosing - 2);
+    }
+    // If therapy mentions clinical trials strongly, down-weight event's generic trial
+    if (scores.therapy >= 4) {
+      scores.event = Math.max(0, scores.event - 2);
+    }
+
+    // Determine best match
+    let bestType = 'overview';
+    let bestScore = 0;
+    for (const type of Object.keys(scores)) {
+      const sc = scores[type] || 0;
+      if (sc > bestScore) {
+        bestScore = sc;
+        bestType = type;
+      } else if (sc === bestScore && sc > 0) {
+        // Tie-break by priority (earlier in priority list wins)
+        const currentIdx = priority.indexOf(bestType);
+        const challengerIdx = priority.indexOf(type);
+        if (challengerIdx !== -1 && (currentIdx === -1 || challengerIdx < currentIdx)) {
+          bestType = type;
+        }
+      }
+    }
+
+    // Minimum threshold to avoid spurious matches
+    if (bestScore < 2) return 'overview';
+    return bestType;
   }
   
   function deriveTitle(q) {
-    const t = String(q || '').trim().replace(/^[\s\-–—]+|[\s\-–—]+$/g, '');
-    return t.replace(/[?!.]+$/, '');
+    let s = String(q || '').trim();
+    // Trim outer dashes/spaces and normalize quotes/spacing
+    s = s.replace(/^[\s\-–—]+|[\s\-–—]+$/g, '');
+    s = s.replace(/[’‘]/g, "'").replace(/[“”]/g, '"');
+    s = s.replace(/\s+/g, ' ').trim();
+
+    // Lightweight corrections for common terms
+    const corrections = [
+      { re: /\bheroine\b/gi, val: 'heroin' },
+    ];
+    corrections.forEach(({ re, val }) => { s = s.replace(re, val); });
+
+    // Remove filler/redundant phrases to simplify
+    const fillers = [
+      /\bfrom start to finish\b/gi,
+      /\bstart to finish\b/gi,
+      /\bstep[-\s]?by[-\s]?step\b/gi,
+      /\bin detail\b/gi,
+      /\bexactly\b/gi,
+      /\bplease\b/gi,
+      /\bthanks?\b/gi,
+    ];
+    fillers.forEach((re) => { s = s.replace(re, '').trim(); });
+
+    // Auto-punctuate if it looks like a question
+    const isInterrogative = /^(how|what|when|why|can|should|is|are|do|does|did|who|where|which|could|would|will|may|might)\b/i.test(s);
+    if (isInterrogative && !/[?.!]$/.test(s)) {
+      s += '?';
+    }
+
+    // Title case with acronym preservation
+    s = toTitleCasePreserveAcronyms(s);
+    return s;
+  }
+
+  function toTitleCasePreserveAcronyms(input) {
+    if (!input) return '';
+    const minor = new Set(['a','an','and','the','for','of','in','on','to','from','by','or','as','at','but','nor','per','vs','via']);
+    const acronyms = new Map([
+      ['ssri','SSRI'], ['snri','SNRI'], ['maoi','MAOI'], ['lsd','LSD'],
+      ['mdma','MDMA'], ['dmt','DMT'], ['2cb','2C-B'], ['2c-b','2C-B'],
+      ['5-meo-dmt','5-MeO-DMT'], ['iv','IV'], ['im','IM']
+    ]);
+
+    return input
+      .split(' ')
+      .map((token, index, arr) => {
+        const stripped = token.replace(/^[\"'“‘(\[]+|[\"'”’)\]!?:.,;]+$/g, '').toLowerCase();
+        if (acronyms.has(stripped)) {
+          return token.replace(new RegExp(stripped, 'i'), acronyms.get(stripped));
+        }
+        const core = stripped;
+        const isMinor = minor.has(core);
+        const lower = token.toLowerCase();
+        if (index !== 0 && index !== arr.length - 1 && isMinor) {
+          return lower;
+        }
+        return lower.replace(/(^[a-z])/i, (m) => m.toUpperCase());
+      })
+      .join(' ');
   }
   
   // Base template builder
