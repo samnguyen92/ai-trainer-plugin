@@ -1092,6 +1092,9 @@ jQuery(document).ready(function($) {
                         // Stream complete
                         const cleanedHTML = sanitizeHTML(buffer);
                         container.innerHTML = cleanedHTML;
+                        
+                        // Make related questions clickable after content is loaded
+                        makeRelatedQuestionsClickable(container);
 
                         // Update conversation history with just the question (not the full answer)
                         const answerBlock = $(container).closest('.answer-block');
@@ -1316,7 +1319,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
       bullets: [
         ['Common ranges', 'Ranges by route (oral, sublingual, inhaled, etc.).'],
         ['Onset & duration', 'Approx. onset, peak, total duration.'],
-        ['Titration', '“Start low, go slow” when evidence supports.'],
+        ['Titration', '"Start low, go slow" when evidence supports.'],
         ['Key risks', 'Overdosing, variability, interactions.'],
         ['Legal status', 'If applicable.'],
       ],
@@ -1543,7 +1546,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
       addSafety: true,
       bullets: [
         ['Common schedules', 'e.g., 1 day on/2 off; weekday protocols.'],
-        ['Typical ranges', '“Sub-perceptual” guidance if supported.'],
+        ['Typical ranges', '"Sub-perceptual" guidance if supported.'],
         ['Reported effects', 'Positive as well as neutral/negative findings.'],
         ['Interactions & risks', 'SSRIs/MAOIs/lithium; mental health cautions.'],
         ['Tracking & reflection', 'Journaling, mood/sleep tracking.'],
@@ -1714,7 +1717,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
       addSafety: true,
       bullets: [
         ['Why test', 'Counterfeits/adulterants are common; risk reduction.'],
-        ['Reagent basics', 'What reagents can/can’t tell you; color-change logic.'],
+        ['Reagent basics', 'What reagents can/can\'t tell you; color-change logic.'],
         ['Fentanyl test strips', 'Scope/limits; false positives/negatives considerations.'],
         ['Lab testing', 'When/why to use certified labs; sample handling.'],
         ['Limitations', 'Testing ≠ proof of safety; dose/setting still matter.'],
@@ -1993,7 +1996,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         ['Common myth', 'State the myth neutrally.'],
         ['Evidence check', 'Summarize what reliable sources say.'],
         ['What we know', 'Plain conclusion with confidence level.'],
-        ['What we don’t know', 'Gaps and ongoing research.'],
+        ['What we don\'t know', 'Gaps and ongoing research.'],
         ['Practical takeaway', 'Simple advice consistent with evidence.'],
       ],
       sections: [
@@ -2058,7 +2061,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     troubleshooting: () => baseTemplate({
       addSafety: true,
       bullets: [
-        ['Didn’t feel anything', 'Possible causes: dose, ROA, tolerance, meds.'],
+        ['Didn\'t feel anything', 'Possible causes: dose, ROA, tolerance, meds.'],
         ['Anxiety spike', 'Breathing, posture, temperature, reassurance.'],
         ['Nausea', 'Timing with food, ginger/peppermint notes; caution with meds.'],
         ['Overwhelm', 'Grounding, music shift, eyeshades, change setting.'],
@@ -2074,8 +2077,8 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     let s = String(q || '').toLowerCase();
     // Normalize common unicode and spacing to reduce mismatches
     s = s
-      .replace(/[’‘]/g, "'")
-      .replace(/[“”]/g, '"')
+      .replace(/['']/g, "'")
+      .replace(/[""]/g, '"')
       .replace(/µg/g, 'ug')
       .replace(/\s+/g, ' ')
       .trim();
@@ -2191,7 +2194,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
       ],
       troubleshooting: [
         { re: /\btroubleshoot\w*\b/, w: 4 },
-        { re: /didn['’]t\s+feel\s+anything/, w: 4 },
+        { re: /didn['']t\s+feel\s+anything/, w: 4 },
         { re: /\bnausea\b/, w: 2 },
         { re: /\banxiety\s+spike\b/, w: 3 },
         { re: /\boverwhelm\b/, w: 3 },
@@ -2286,7 +2289,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     let s = String(q || '').trim();
     // Trim outer dashes/spaces and normalize quotes/spacing
     s = s.replace(/^[\s\-–—]+|[\s\-–—]+$/g, '');
-    s = s.replace(/[’‘]/g, "'").replace(/[“”]/g, '"');
+    s = s.replace(/['']/g, "'").replace(/[""]/g, '"');
     s = s.replace(/\s+/g, ' ').trim();
 
     // Lightweight corrections for common terms
@@ -2330,7 +2333,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     return input
       .split(' ')
       .map((token, index, arr) => {
-        const stripped = token.replace(/^[\"'“‘(\[]+|[\"'”’)\]!?:.,;]+$/g, '').toLowerCase();
+        const stripped = token.replace(/^[\"'"("]+|[\"'"")!?:.,;]+$/g, '').toLowerCase();
         if (acronyms.has(stripped)) {
           return token.replace(new RegExp(stripped, 'i'), acronyms.get(stripped));
         }
@@ -2493,6 +2496,9 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
                     if (done) {
                         // Stream complete
                         container.innerHTML = sanitizeHTML(buffer);
+                        
+                        // Make related questions clickable after content is loaded
+                        makeRelatedQuestionsClickable(container);
                         return;
                     }
                     
@@ -2538,6 +2544,9 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
                 container.appendChild(nodes[i].cloneNode(true));
                 i++;
                 setTimeout(streamStep, 180);
+            } else {
+                // Make related questions clickable after streaming is complete
+                makeRelatedQuestionsClickable(container);
             }
         }
         streamStep();
@@ -2683,6 +2692,66 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
             if (resp && resp.success && resp.data) {
                 $(`#like-count-${id}`).text(resp.data.like || 0);
                 $(`#dislike-count-${id}`).text(resp.data.dislike || 0);
+            }
+        });
+    }
+
+    // Make related questions clickable for follow-up prompts
+    function makeRelatedQuestionsClickable(container) {
+        // Use jQuery to find the related questions section
+        const $relatedQuestionsSection = $(container).find('h3').filter(function() {
+            return $(this).text().includes('Related Questions');
+        });
+        
+        if (!$relatedQuestionsSection.length) return;
+        
+        const $relatedQuestionsList = $relatedQuestionsSection.next('ul');
+        if (!$relatedQuestionsList.length) return;
+        
+        const $questionItems = $relatedQuestionsList.find('li');
+        $questionItems.each(function(index) {
+            const questionText = $(this).text().trim();
+            if (questionText && questionText !== '<!-- Q1 -->' && questionText !== '<!-- Q2 -->' && 
+                questionText !== '<!-- Q3 -->' && questionText !== '<!-- Q4 -->' && questionText !== '<!-- Q5 -->') {
+                
+                // Create clickable link
+                const $link = $('<a>', {
+                    href: '#',
+                    text: questionText,
+                    css: {
+                        color: '#3bb273',
+                        textDecoration: 'none',
+                        cursor: 'pointer',
+                        transition: 'color 0.2s'
+                    },
+                    title: 'Click to ask this follow-up question'
+                });
+                
+                // Add hover effect
+                $link.on('mouseenter', function() {
+                    $(this).css('color', '#4ddb8a');
+                }).on('mouseleave', function() {
+                    $(this).css('color', '#3bb273');
+                });
+                
+                // Add click handler
+                $link.on('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Find the input field and populate it with the question
+                    const $inputField = $('#exa-input, .exa-input, input[placeholder*="follow up"]');
+                    if ($inputField.length) {
+                        $inputField.val(questionText);
+                        $inputField.focus();
+                        
+                        // Auto-submit the question
+                        submitSearch();
+                    }
+                });
+                
+                // Replace the list item content with the clickable link
+                $(this).html('').append($link);
             }
         });
     }
