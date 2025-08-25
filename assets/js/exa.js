@@ -1387,14 +1387,14 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
   
   <h3>Quick Overview</h3>
   <p><!-- A 2–3 sentence direct answer, including a key takeaway and why it matters. --></p>
+
+  <h3>Why It Matters</h3>
+  <p><!-- 1–2 sentences on the significance or real-world context of this topic. --></p>
   
   <h3>What to Know at a Glance</h3>
   <ul>
   ${body.glance}
   </ul>
-  
-  <h3>Why It Matters</h3>
-  <p><!-- 1–2 sentences on the significance or real-world context of this topic. --></p>
   
   ${body.extra || ''}
   

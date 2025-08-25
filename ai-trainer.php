@@ -34,6 +34,13 @@ define('PSYCHEDELICS_COM_MIN_RESULTS', 3); // Minimum psychedelics.com results t
 define('PSYCHEDELICS_COM_MAX_RESULTS', 5); // Maximum psychedelics.com results to include
 define('PSYCHEDELICS_COM_MIN_RELEVANCE', 0.5); // Minimum relevance score (0.0-1.0) for psychedelics.com results
 
+// Configuration for main search results
+// To change the number of sources returned, modify these values:
+// - MAIN_SEARCH_MAX_RESULTS: How many results to request from Exa API (higher = more sources but slower)
+// - MAIN_SEARCH_TARGET_RESULTS: Target number of results after filtering (should be lower than MAX_RESULTS)
+define('MAIN_SEARCH_MAX_RESULTS', 100); // Maximum results to request from Exa API (default: 100)
+define('MAIN_SEARCH_TARGET_RESULTS', 80); // Target results after filtering (default: 80)
+
 register_activation_hook(__FILE__, function () {
     global $wpdb;
     $table = $wpdb->prefix . 'ai_knowledge';
@@ -1755,7 +1762,7 @@ class Exa_AI_Integration {
         $body = json_encode([
             'query' => $conversational_prompt,
             'contents' => [ 'text' => true ],
-            'numResults' => 60, // Request 60 results to ensure we get 50 after filtering
+            'numResults' => defined('MAIN_SEARCH_MAX_RESULTS') ? MAIN_SEARCH_MAX_RESULTS : 100, // Request results based on configuration
             'include_domains' => array_values($cleaned_domains),
             // 'exclude_domains' => array_values($cleaned_blocked_domains),
             'domainPriorities' => $domain_priorities,
