@@ -332,14 +332,7 @@
                         </svg>
                         Share
                     </button>
-                    <button class="action-btn export-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7,10 12,15 17,10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        Export
-                    </button>
+
                     <button class="action-btn rewrite-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
@@ -355,7 +348,7 @@
                     <span class="like-count">12</span>
                     <span class="reaction-dislike">👎</span>
                     <span class="dislike-count">2</span>
-                    <span class="reaction-save">💾</span>
+
                     <span class="reaction-more">⋯</span>
                 </div>
             </div>
@@ -401,23 +394,26 @@
         });
 
         // Action button functionality
-        $(document).on('click', '.export-btn', function() {
-            alert('Export functionality would download the answer as a text file.');
-        });
-
         $(document).on('click', '.rewrite-btn', function() {
             alert('Rewrite functionality would regenerate the answer with AI.');
         });
 
         $(document).on('click', '.share-btn', function() {
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Psychedelics Information',
-                    text: 'Check out this information about psychedelics from Psybrary!',
-                    url: window.location.href
+            // Copy current page URL to clipboard
+            const url = window.location.href;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => {
+                    alert('Link copied to clipboard!');
                 });
             } else {
-                alert('Share functionality would copy a link to the clipboard.');
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('Link copied to clipboard!');
             }
         });
 

@@ -59,9 +59,9 @@ jQuery(document).ready(function($) {
     const likeSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="none" class="tabler-icon tabler-icon-thumb-up-filled reaction-like-svg" style="vertical-align:middle;"><path d="M13 3a3 3 0 0 1 2.995 2.824l.005 .176v4h2a3 3 0 0 1 2.98 2.65l.015 .174l.005 .176l-.02 .196l-1.006 5.032c-.381 1.626 -1.502 2.796 -2.81 2.78l-.164 -.008h-8a1 1 0 0 1 -.993 -.883l-.007 -.117l.001 -9.536a1 1 0 0 1 .5 -.865a2.998 2.998 0 0 0 1.492 -2.397l.007 -.202v-1a3 3 0 0 1 3 -3z" fill="currentColor"></path><path d="M5 10a1 1 0 0 1 .993 .883l.007 .117v9a1 1 0 0 1 -.883 .993l-.117 .007h-1a2 2 0 0 1 -1.995 -1.85l-.005 -.15v-7a2 2 0 0 1 1.85 -1.995l.15 -.005h1z" fill="currentColor"></path></svg>`;
     const dislikeSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="none" class="tabler-icon tabler-icon-thumb-down-filled reaction-dislike-svg" style="vertical-align:middle;transform:scaleY(-1);"><path d="M13 3a3 3 0 0 1 2.995 2.824l.005 .176v4h2a3 3 0 0 1 2.98 2.65l.015 .174l.005 .176l-.02 .196l-1.006 5.032c-.381 1.626 -1.502 2.796 -2.81 2.78l-.164 -.008h-8a1 1 0 0 1 -.993 -.883l-.007 -.117l.001 -9.536a1 1 0 0 1 .5 -.865a2.998 2.998 0 0 0 1.492 -2.397l.007 -.202v-1a3 3 0 0 1 3 -3z" fill="currentColor"></path><path d="M5 10a1 1 0 0 1 .993 .883l.007 .117v9a1 1 0 0 1 -.883 .993l-.117 .007h-1a2 2 0 0 1 -1.995 -1.85l-.005 -.15v-7a2 2 0 0 1 1.85 -1.995l.15 -.005h1z" fill="currentColor"></path></svg>`;
     const shareSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7999999999999998" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-share-3 "><path d="M13 4v4c-6.575 1.028 -9.02 6.788 -10 12c-.037 .206 5.384 -5.962 10 -6v4l8 -7l-8 -7z"></path></svg>`;
-    const exportSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7,10 12,15 17,10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
+
     const rewriteSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M3 21v-5h5"></path></svg>`;
-    const saveSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17,21 17,13 7,13 7,21"></polyline><polyline points="7,3 7,8 15,8"></polyline></svg>`;
+
     const moreSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>`;
 
     // Pre-compile regex patterns for better performance
@@ -531,10 +531,6 @@ jQuery(document).ready(function($) {
                         ${shareSVG}
                         Share
                     </button>
-                    <button class="action-btn export-btn" data-id="${chatlogId}">
-                        ${exportSVG}
-                        Export
-                    </button>
                     <button class="action-btn rewrite-btn" data-id="${chatlogId}">
                         ${rewriteSVG}
                         Rewrite
@@ -545,7 +541,6 @@ jQuery(document).ready(function($) {
                     <span class="like-count" id="like-count-${chatlogId}">0</span>
                     <span class="reaction-dislike" data-id="${chatlogId}">${dislikeSVG}</span>
                     <span class="dislike-count" id="dislike-count-${chatlogId}">0</span>
-                    <span class="reaction-save" data-id="${chatlogId}">${saveSVG}</span>
                     <span class="reaction-more" data-id="${chatlogId}">${moreSVG}</span>
                 </div>
             </div>
@@ -564,16 +559,12 @@ jQuery(document).ready(function($) {
         });
 
         // Add event handlers for action buttons
-        reactionBar.find('.export-btn').on('click', function() {
-            exportAnswer(block, chatlogId);
+        reactionBar.find('.share-btn').on('click', function() {
+            copyAnswerLink(block, chatlogId);
         });
 
         reactionBar.find('.rewrite-btn').on('click', function() {
             rewriteAnswer(block, chatlogId);
-        });
-
-        reactionBar.find('.reaction-save').on('click', function() {
-            saveAnswer(block, chatlogId);
         });
 
         reactionBar.find('.reaction-more').on('click', function() {
@@ -581,25 +572,7 @@ jQuery(document).ready(function($) {
         });
     }
 
-    // Export answer functionality
-    function exportAnswer(block, chatlogId) {
-        const question = block.find('.exa-user-question').text();
-        const answer = block.find('.exa-answer-streaming').html();
-        
-        // Create a formatted text version
-        const exportText = `Question: ${question}\n\nAnswer:\n${answer.replace(/<[^>]*>/g, '')}`;
-        
-        // Create and download file
-        const blob = new Blob([exportText], { type: 'text/plain' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `psybrary-answer-${chatlogId}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-    }
+
 
     // Rewrite answer functionality
     function rewriteAnswer(block, chatlogId) {
@@ -614,24 +587,7 @@ jQuery(document).ready(function($) {
         streamOpenAIRewrite(question, answer, container);
     }
 
-    // Save answer functionality
-    function saveAnswer(block, chatlogId) {
-        const saveBtn = block.find('.reaction-save');
-        const originalHTML = saveBtn.html();
-        
-        // Visual feedback
-        saveBtn.html(`${saveSVG} Saved!`);
-        saveBtn.css('color', '#3bb273');
-        
-        // Reset after 2 seconds
-        setTimeout(() => {
-            saveBtn.html(originalHTML);
-            saveBtn.css('color', 'rgba(255, 255, 255, 0.7)');
-        }, 2000);
-        
-        // TODO: Implement actual save functionality to backend
-        console.log('Saving answer for chatlog:', chatlogId);
-    }
+
 
     // Show more options functionality
     function showMoreOptions(block, chatlogId) {
@@ -643,7 +599,7 @@ jQuery(document).ready(function($) {
                 <div class="more-options-container" style="position: absolute; top: 100%; right: 0; background: #1a0024; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 8px; margin-top: 8px; z-index: 1000; min-width: 150px;">
                     <div class="more-option" style="padding: 8px 12px; cursor: pointer; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">Copy Link</div>
                     <div class="more-option" style="padding: 8px 12px; cursor: pointer; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">Report Issue</div>
-                    <div class="more-option" style="padding: 8px 12px; cursor: pointer; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'">View History</div>
+
                 </div>
             `);
             
@@ -661,10 +617,7 @@ jQuery(document).ready(function($) {
                 options.remove();
             });
             
-            options.find('.more-option').eq(2).on('click', function() {
-                viewHistory(block, chatlogId);
-                options.remove();
-            });
+
         } else {
             optionsContainer.remove();
         }
@@ -721,11 +674,7 @@ jQuery(document).ready(function($) {
         });
     }
 
-    // View history functionality
-    function viewHistory(block, chatlogId) {
-        // TODO: Implement history view
-        showNotification('History feature coming soon!', 'info');
-    }
+
 
     // Show notification functionality
     function showNotification(message, type = 'info') {
@@ -2459,7 +2408,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
   <p><!-- Nuance, cultural framing, study limitations, variability by dose/context. --></p>` : '';
   
     const practical = includePractical ? `
-  <h3>Practical Advice or Next Steps</h3>
+  <h3>Practical Advice</h3>
   <ul>
     <li><!-- Preparation or planning tips appropriate to this template. --></li>
     <li><!-- Questions to ask yourself or a clinician. --></li>
@@ -2467,7 +2416,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
   </ul>` : '';
   
     const sources = includeSources ? `
-  <h3>Sources / Where to Learn More</h3>
+  <h3>Where to Learn More</h3>
   <ul>
     <li><!-- Primary literature (PubMed, clinical trials). --></li>
     <li><!-- Harm reduction orgs (DanceSafe, Fireside). --></li>

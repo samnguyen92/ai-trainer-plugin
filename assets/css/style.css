@@ -461,7 +461,6 @@
 
 .modern-ui .reaction-like,
 .modern-ui .reaction-dislike,
-.modern-ui .reaction-save,
 .modern-ui .reaction-more {
     cursor: pointer;
     display: flex;
@@ -473,14 +472,12 @@
 
 .modern-ui .reaction-like:hover,
 .modern-ui .reaction-dislike:hover,
-.modern-ui .reaction-save:hover,
 .modern-ui .reaction-more:hover {
     color: #fff;
 }
 
 .modern-ui .reaction-like svg,
 .modern-ui .reaction-dislike svg,
-.modern-ui .reaction-save svg,
 .modern-ui .reaction-more svg {
     width: 20px;
     height: 20px;
