@@ -82,24 +82,8 @@ register_activation_hook(__FILE__, function () {
     dbDelta($sql4);
     dbDelta($sql5);
 
-    // Insert default allowed domains if not present
-    $default_domains = [
-        'www.psychedelics.com', 'doubleblindmag.com', 'psychedelicstoday.com',
-        'www.erowid.org', 'www.lucid.news', 'chacruna.net', 'realitysandwich.com',
-        'psychedelicspotlight.com', 'psychedelicalpha.com', 'dancesafe.org',
-        'zendoproject.org', 'maps.org', 'blossomanalysis.com'
-    ];
-    foreach ($default_domains as $domain) {
-        $exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $domains_table WHERE domain = %s", $domain));
-        if (!$exists) {
-            $wpdb->insert($domains_table, [
-                'title' => $domain,
-                'url' => 'https://' . $domain,
-                'domain' => $domain,
-                'created_at' => current_time('mysql')
-            ]);
-        }
-    }
+    // Note: Default domains are now managed through the admin interface
+    // No hardcoded defaults to avoid conflicts with manual domain management
 
     // Add this to the activation hook to add the reaction column if not exists
     $columns = $wpdb->get_results("SHOW COLUMNS FROM $chatlog_table LIKE 'reaction'");
@@ -943,14 +927,8 @@ function ai_trainer_get_blocked_domains() {
 function ai_trainer_get_allowed_domains() {
     global $wpdb;
     $domains = $wpdb->get_col("SELECT DISTINCT domain FROM {$wpdb->prefix}ai_allowed_domains WHERE domain IS NOT NULL AND domain != ''");
-    // Always include these core domains (if not already in DB)
-    $core = [
-        'psychedelics.com', 'doubleblindmag.com', 'psychedelicstoday.com',
-        'erowid.org', 'lucid.news', 'chacruna.net', 'realitysandwich.com',
-        'psychedelicspotlight.com', 'psychedelicalpha.com', 'dancesafe.org',
-        'zendoproject.org', 'maps.org', 'blossomanalysis.com'
-    ];
-    $domains = array_unique(array_merge($domains, $core));
+    
+    // Only return domains from the database - no hardcoded fallbacks
     $main_domains = [];
     foreach ($domains as $d) {
         $d = strtolower($d);
