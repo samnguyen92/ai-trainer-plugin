@@ -1010,6 +1010,10 @@ function ai_trainer_get_domains_with_tiers() {
         $domain = preg_replace('/^www\./', '', $domain);
         $tiered_domains[$domain] = $d->tier;
     }
+    
+    // Debug logging
+    error_log('ai_trainer_get_domains_with_tiers() returned: ' . print_r($tiered_domains, true));
+    
     return $tiered_domains;
 }
 
@@ -1528,6 +1532,8 @@ class Exa_AI_Integration {
         $tiered_domains = ai_trainer_get_domains_with_tiers();
         $blocked_domains = ai_trainer_get_blocked_domains();
         
+        error_log('Tiered domains from database: ' . print_r($tiered_domains, true));
+        
         // Clean allowed domains: trim spaces and filter out invalid ones
         $cleaned_domains = array_filter(array_map('trim', $allowed_domains), function($domain) {
             return !empty($domain) && filter_var('http://' . $domain, FILTER_VALIDATE_URL);
@@ -1548,6 +1554,7 @@ class Exa_AI_Integration {
         
         error_log('Exa include_domains (cleaned): ' . print_r($cleaned_domains, true));
         error_log('Exa exclude_domains (cleaned): ' . print_r($cleaned_blocked_domains, true));
+        error_log('Domain priorities being sent to EXA: ' . print_r($domain_priorities, true));
         
         $body = json_encode([
             'query' => $conversational_prompt,
@@ -1589,10 +1596,25 @@ class Exa_AI_Integration {
                 return in_array($host, $cleaned_domains) || in_array($host_nw, $cleaned_domains);
             });
             
-            // Use results as-is without special domain prioritization
-            $data['results'] = array_slice($data['results'], 0, 50);
+            // Apply tier-based reordering to ensure results respect our priority system
+            $data['results'] = $this->reorder_results_by_tier($data['results'], $tiered_domains);
             
-            // No special fallback search for specific domains - use results as returned by EXA
+            // Log the first few results after reordering
+            if (!empty($data['results'])) {
+                $first_results = array_slice($data['results'], 0, 5);
+                $first_domains = [];
+                foreach ($first_results as $result) {
+                    if (isset($result['url'])) {
+                        $host = parse_url($result['url'], PHP_URL_HOST);
+                        $host_nw = preg_replace('/^www\./', '', strtolower($host));
+                        $first_domains[] = $host_nw;
+                    }
+                }
+                error_log('First 5 results after tier reordering: ' . implode(', ', $first_domains));
+            }
+            
+            // Limit to 50 results
+            $data['results'] = array_slice($data['results'], 0, 50);
         }
         $sources = [];
         if (!empty($data['results']) && is_array($data['results'])) {
@@ -1675,6 +1697,46 @@ class Exa_AI_Integration {
             $magB += $b[$i] ** 2;
         }
         return $dot / (sqrt($magA) * sqrt($magB) + 1e-8);
+    }
+    
+    // Reorder search results by tier priority
+    private function reorder_results_by_tier($results, $tiered_domains) {
+        // Group results by tier
+        $tiered_results = [
+            1 => [], // Highest priority
+            2 => [],
+            3 => [],
+            4 => []
+        ];
+        
+        foreach ($results as $result) {
+            if (empty($result['url'])) continue;
+            
+            $host = parse_url($result['url'], PHP_URL_HOST);
+            $host = strtolower($host);
+            $host_nw = preg_replace('/^www\./', '', $host);
+            
+            // Find the tier for this domain
+            $tier = 4; // Default to lowest tier
+            if (isset($tiered_domains[$host])) {
+                $tier = $tiered_domains[$host];
+            } elseif (isset($tiered_domains[$host_nw])) {
+                $tier = $tiered_domains[$host_nw];
+            }
+            
+            $tiered_results[$tier][] = $result;
+        }
+        
+        // Reorder results: Tier 1 first, then Tier 2, etc.
+        $reordered_results = [];
+        foreach ($tiered_results as $tier => $results_for_tier) {
+            $reordered_results = array_merge($reordered_results, $results_for_tier);
+        }
+        
+        // Log the reordering for debugging
+        error_log('Results reordered by tier - Tier 1: ' . count($tiered_results[1]) . ', Tier 2: ' . count($tiered_results[2]) . ', Tier 3: ' . count($tiered_results[3]) . ', Tier 4: ' . count($tiered_results[4]));
+        
+        return $reordered_results;
     }
 }
 
