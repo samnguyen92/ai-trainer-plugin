@@ -31,7 +31,8 @@ define('OPENAI_API_KEY', isset($_ENV['OPENAI_API_KEY']) ? $_ENV['OPENAI_API_KEY'
 define('PSYCHEDELICS_COM_GUARANTEE', true); // Set to false to disable the guarantee
 define('PSYCHEDELICS_COM_FALLBACK_ENABLED', true); // Set to false to disable fallback search
 define('PSYCHEDELICS_COM_MIN_RESULTS', 3); // Minimum psychedelics.com results to include
-define('PSYCHEDELICS_COM_MAX_RESULTS', 8); // Maximum psychedelics.com results to include
+define('PSYCHEDELICS_COM_MAX_RESULTS', 5); // Maximum psychedelics.com results to include
+define('PSYCHEDELICS_COM_MIN_RELEVANCE', 0.5); // Minimum relevance score (0.0-1.0) for psychedelics.com results
 
 register_activation_hook(__FILE__, function () {
     global $wpdb;
@@ -1562,6 +1563,17 @@ class Exa_AI_Integration {
         // Check if we have psychedelics.com results in primary search
         $has_psychedelics_com = $this->has_domain_results($all_results, 'psychedelics.com');
         
+        // ENHANCED: Apply relevance filtering to primary search psychedelics.com results
+        if ($has_psychedelics_com) {
+            $primary_psychedelics = $this->extract_psychedelics_com_results($all_results);
+            $filtered_primary_psychedelics = $this->filter_psychedelics_com_by_relevance($primary_psychedelics, $query);
+            
+            // Replace primary results with filtered psychedelics.com results
+            $all_results = $this->replace_psychedelics_com_results($all_results, $filtered_primary_psychedelics);
+            
+            error_log('Primary search psychedelics.com results filtered by relevance: ' . count($filtered_primary_psychedelics) . ' relevant results');
+        }
+        
         // Fallback Query: If no psychedelics.com results, run specific search
         if (!$has_psychedelics_com) {
             error_log('No psychedelics.com results found in primary search, running fallback query');
@@ -1587,7 +1599,7 @@ class Exa_AI_Integration {
         // Filter and prepare final sources
         $sources = [];
         if (!empty($all_results) && is_array($all_results)) {
-            foreach (array_slice($all_results, 0, 50) as $result) {
+            foreach (array_slice($all_results, 0, 100) as $result) {
                 if (isset($result['url'])) {
                     $sources[] = esc_url_raw($result['url']);
                 }
@@ -1801,7 +1813,162 @@ class Exa_AI_Integration {
         $filtered_count = count($psychedelics_results);
         error_log('Psychedelics.com fallback search filtered to ' . $filtered_count . ' valid results');
         
-        return array_values($psychedelics_results);
+        // ENHANCED: Score and filter results by relevance to the original query
+        $relevant_results = $this->filter_psychedelics_com_by_relevance($psychedelics_results, $query);
+        
+        return array_values($relevant_results);
+    }
+    
+    // NEW: Filter psychedelics.com results by relevance to the query
+    private function filter_psychedelics_com_by_relevance($results, $original_query) {
+        if (empty($results)) return [];
+        
+        // Score each result for relevance
+        $scored_results = [];
+        foreach ($results as $result) {
+            $relevance_score = $this->calculate_relevance_score($result, $original_query);
+            $scored_results[] = [
+                'result' => $result,
+                'relevance_score' => $relevance_score
+            ];
+        }
+        
+        // Sort by relevance score (highest first)
+        usort($scored_results, function($a, $b) {
+            return $b['relevance_score'] <=> $a['relevance_score'];
+        });
+        
+        // Get minimum relevance threshold from configuration
+        $min_relevance = defined('PSYCHEDELICS_COM_MIN_RELEVANCE') ? PSYCHEDELICS_COM_MIN_RELEVANCE : 0.2;
+        $max_results = defined('PSYCHEDELICS_COM_MAX_RESULTS') ? PSYCHEDELICS_COM_MAX_RESULTS : 8;
+        
+        // Filter by relevance threshold and limit results
+        $filtered_results = [];
+        $total_scored = count($scored_results);
+        $passed_threshold = 0;
+        
+        foreach ($scored_results as $scored_result) {
+            if ($scored_result['relevance_score'] >= $min_relevance && count($filtered_results) < $max_results) {
+                $filtered_results[] = $scored_result['result'];
+                $passed_threshold++;
+            }
+        }
+        
+        // Log relevance filtering results
+        error_log("Relevance filtering: {$total_scored} total results, {$passed_threshold} passed threshold ({$min_relevance})");
+        
+        // Log top 3 relevance scores for debugging
+        if (!empty($scored_results)) {
+            $top_scores = array_slice($scored_results, 0, 3);
+            $score_log = [];
+            foreach ($top_scores as $item) {
+                $title = substr($item['result']['title'] ?? 'No Title', 0, 40);
+                $score_log[] = round($item['relevance_score'], 3) . " ({$title}...)";
+            }
+            error_log('Top 3 relevance scores: ' . implode(', ', $score_log));
+        }
+        
+        return $filtered_results;
+    }
+    
+    // NEW: Calculate relevance score for a psychedelics.com result
+    private function calculate_relevance_score($result, $original_query) {
+        $score = 0.0;
+        
+        // Extract text content for analysis
+        $title = strtolower($result['title'] ?? '');
+        $text = strtolower($result['text'] ?? '');
+        $url = strtolower($result['url'] ?? '');
+        
+        // Normalize the original query
+        $query_terms = $this->extract_query_terms($original_query);
+        
+        if (empty($query_terms)) return 0.0;
+        
+        // 1. Title relevance (highest weight - 40%)
+        $title_score = $this->calculate_term_overlap_score($title, $query_terms);
+        $score += $title_score * 0.4;
+        
+        // 2. Text content relevance (medium weight - 35%)
+        $text_score = $this->calculate_term_overlap_score($text, $query_terms);
+        $score += $text_score * 0.35;
+        
+        // 3. URL path relevance (lower weight - 15%)
+        $url_score = $this->calculate_url_relevance_score($url, $query_terms);
+        $score += $url_score * 0.15;
+        
+        // 4. EXA's neural score if available (medium weight - 10%)
+        if (isset($result['score'])) {
+            $neural_score = floatval($result['score']);
+            $score += $neural_score * 0.1;
+        }
+        
+        // Ensure score is between 0 and 1
+        $score = max(0.0, min(1.0, $score));
+        
+        return $score;
+    }
+    
+    // NEW: Extract meaningful terms from the query
+    private function extract_query_terms($query) {
+        // Remove common stop words and normalize
+        $stop_words = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'what', 'how', 'why', 'when', 'where', 'who', 'which', 'that', 'this', 'these', 'those'];
+        
+        // Clean and split the query
+        $clean_query = preg_replace('/[^\w\s]/', ' ', strtolower($query));
+        $terms = preg_split('/\s+/', trim($clean_query));
+        
+        // Filter out stop words and short terms
+        $filtered_terms = array_filter($terms, function($term) use ($stop_words) {
+            return strlen($term) > 2 && !in_array($term, $stop_words);
+        });
+        
+        return array_values($filtered_terms);
+    }
+    
+    // NEW: Calculate term overlap score between content and query
+    private function calculate_term_overlap_score($content, $query_terms) {
+        if (empty($query_terms) || empty($content)) return 0.0;
+        
+        $content_terms = preg_split('/\s+/', preg_replace('/[^\w\s]/', ' ', $content));
+        $content_terms = array_map('strtolower', $content_terms);
+        
+        $matches = 0;
+        $total_terms = count($query_terms);
+        
+        foreach ($query_terms as $query_term) {
+            if (in_array($query_term, $content_terms)) {
+                $matches++;
+            }
+        }
+        
+        // Calculate base overlap score
+        $overlap_score = $matches / $total_terms;
+        
+        // Bonus for multiple occurrences of the same term
+        $frequency_bonus = 0.0;
+        foreach ($query_terms as $query_term) {
+            $term_count = substr_count($content, $query_term);
+            if ($term_count > 1) {
+                $frequency_bonus += min(0.2, ($term_count - 1) * 0.05);
+            }
+        }
+        
+        return min(1.0, $overlap_score + $frequency_bonus);
+    }
+    
+    // NEW: Calculate URL relevance score
+    private function calculate_url_relevance_score($url, $query_terms) {
+        if (empty($query_terms)) return 0.0;
+        
+        // Extract path and query parameters
+        $parsed_url = parse_url($url);
+        $path = strtolower($parsed_url['path'] ?? '');
+        $query = strtolower($parsed_url['query'] ?? '');
+        
+        $url_content = $path . ' ' . $query;
+        
+        return $this->calculate_term_overlap_score($url_content, $query_terms);
     }
     
     // NEW: Check if results contain specific domain
@@ -2054,6 +2221,45 @@ class Exa_AI_Integration {
             'details' => "Found {$final_psychedelics_count} results, properly positioned in top results"
         ];
     }
+
+    // Extract psychedelics.com results from the primary search
+    private function extract_psychedelics_com_results($results) {
+        if (empty($results) || !is_array($results)) return [];
+        
+        $psychedelics_results = [];
+        foreach ($results as $result) {
+            if (empty($result['url'])) continue;
+            $host = parse_url($result['url'], PHP_URL_HOST);
+            $host = strtolower($host);
+            $host_nw = preg_replace('/^www\./', '', $host);
+            if ($host === 'psychedelics.com' || $host_nw === 'psychedelics.com') {
+                $psychedelics_results[] = $result;
+            }
+        }
+        
+        return $psychedelics_results;
+    }
+
+    // Replace psychedelics.com results in the primary search with filtered results
+    private function replace_psychedelics_com_results($all_results, $filtered_psychedelics) {
+        if (empty($all_results) || !is_array($all_results)) return $all_results;
+        
+        // Remove all psychedelics.com results from all_results
+        $non_psychedelics_results = array_filter($all_results, function($result) {
+            if (empty($result['url'])) return true;
+            $host = parse_url($result['url'], PHP_URL_HOST);
+            $host = strtolower($host);
+            $host_nw = preg_replace('/^www\./', '', $host);
+            return !($host === 'psychedelics.com' || $host_nw === 'psychedelics.com');
+        });
+        
+        // Merge filtered psychedelics.com results with non-psychedelics results
+        $merged_results = array_merge($filtered_psychedelics, $non_psychedelics_results);
+        
+        error_log('Replaced psychedelics.com results: ' . count($filtered_psychedelics) . ' relevant + ' . count($non_psychedelics_results) . ' other = ' . count($merged_results) . ' total');
+        
+        return $merged_results;
+    }
 }
 
 new Exa_AI_Integration();
@@ -2125,3 +2331,104 @@ add_action('wp_ajax_ai_add_domain_with_tier', function() {
         wp_send_json_error(['message' => 'Failed to add domain.']);
     }
 });
+
+// NEW: Test endpoint for psychedelics.com relevance scoring
+add_action('wp_ajax_ai_test_relevance_scoring', 'ai_trainer_test_relevance_scoring');
+add_action('wp_ajax_nopriv_ai_test_relevance_scoring', 'ai_trainer_test_relevance_scoring');
+
+function ai_trainer_test_relevance_scoring() {
+    echo "=== PSYCHEDELICS.COM RELEVANCE SCORING TEST ===\n\n";
+    
+    // Test query
+    $test_query = "What are the benefits of microdosing psilocybin?";
+    echo "Test Query: {$test_query}\n\n";
+    
+    // Mock psychedelics.com results
+    $mock_results = [
+        [
+            'title' => 'Microdosing Psilocybin: Complete Guide to Benefits and Risks',
+            'text' => 'Microdosing psilocybin mushrooms has shown promising results for mental health, creativity, and emotional well-being. Studies indicate benefits for depression, anxiety, and PTSD.',
+            'url' => 'https://psychedelics.com/microdosing-psilocybin-guide',
+            'score' => 0.85
+        ],
+        [
+            'title' => 'Psychedelic Therapy for Depression Treatment',
+            'text' => 'Research shows that psychedelic substances like psilocybin can be effective in treating treatment-resistant depression.',
+            'url' => 'https://psychedelics.com/psychedelic-therapy-depression',
+            'score' => 0.72
+        ],
+        [
+            'title' => 'History of Psychedelics in Ancient Cultures',
+            'text' => 'Ancient civilizations used psychedelic substances for spiritual ceremonies and healing practices.',
+            'url' => 'https://psychedelics.com/ancient-cultures-psychedelics',
+            'score' => 0.45
+        ],
+        [
+            'title' => 'Legal Status of Psychedelics Worldwide',
+            'text' => 'Current legal status of psychedelic substances varies by country and region.',
+            'url' => 'https://psychedelics.com/legal-status-worldwide',
+            'score' => 0.38
+        ]
+    ];
+    
+    echo "Mock Results (before relevance scoring):\n";
+    foreach ($mock_results as $i => $result) {
+        echo ($i + 1) . ". {$result['title']}\n";
+    }
+    
+    echo "\n=== RELEVANCE SCORING ANALYSIS ===\n";
+    
+    // Create instance to test the relevance scoring
+    $ai_trainer = new Exa_AI_Integration();
+    
+    // Use reflection to access private methods for testing
+    $reflection = new ReflectionClass($ai_trainer);
+    
+    try {
+        $extract_method = $reflection->getMethod('extract_query_terms');
+        $extract_method->setAccessible(true);
+        $query_terms = $extract_method->invoke($ai_trainer, $test_query);
+        
+        echo "Extracted Query Terms: " . implode(', ', $query_terms) . "\n\n";
+        
+        $score_method = $reflection->getMethod('calculate_relevance_score');
+        $score_method->setAccessible(true);
+        
+        $overlap_method = $reflection->getMethod('calculate_term_overlap_score');
+        $overlap_method->setAccessible(true);
+        
+        echo "Individual Relevance Scores:\n";
+        foreach ($mock_results as $i => $result) {
+            $relevance_score = $score_method->invoke($ai_trainer, $result, $test_query);
+            $title_score = $overlap_method->invoke($ai_trainer, $result['title'], $query_terms);
+            $text_score = $overlap_method->invoke($ai_trainer, $result['text'], $query_terms);
+            
+            echo ($i + 1) . ". {$result['title']}\n";
+            echo "   - Overall Relevance: " . round($relevance_score, 3) . "\n";
+            echo "   - Title Score: " . round($title_score, 3) . "\n";
+            echo "   - Text Score: " . round($text_score, 3) . "\n";
+            echo "   - EXA Score: " . round($result['score'], 3) . "\n\n";
+        }
+        
+        // Test filtering
+        $filter_method = $reflection->getMethod('filter_psychedelics_com_by_relevance');
+        $filter_method->setAccessible(true);
+        
+        $filtered_results = $filter_method->invoke($ai_trainer, $mock_results, $test_query);
+        
+        echo "=== FILTERED RESULTS ===\n";
+        echo "Total results: " . count($mock_results) . "\n";
+        echo "Results after relevance filtering: " . count($filtered_results) . "\n\n";
+        
+        echo "Final Relevant Results:\n";
+        foreach ($filtered_results as $i => $result) {
+            echo ($i + 1) . ". {$result['title']}\n";
+        }
+        
+    } catch (Exception $e) {
+        echo "Error during testing: " . $e->getMessage() . "\n";
+    }
+    
+    echo "\n=== TEST END ===\n";
+    wp_die();
+}
