@@ -1275,14 +1275,13 @@ Core Guardrails:
 
 <!-- EXPLORE MORE (ROUTE TRAFFIC TO FEATURED PARTNERS)
 Populate these sections ONLY with links that exist in the provided sources list.
-Prioritize order if present: Psychedelics.com → DoubleBlind → Psychedelics Today → Blossom Analysis → other reputable sources.
+Prioritize order if present: DoubleBlind → Psychedelics Today → Blossom Analysis → other reputable sources.
 Omit an item if the partner domain is not present in the provided sources.
 -->
 
 <h3>Explore More: In-Depth Guides</h3>
 <ul>
   <!-- Include 0–3 items from provided sources. Prefer these if present and relevant: -->
-  <!-- Psychedelics.com -->
   <!-- DoubleBlind -->
   <!-- Psychedelics Today -->
   <!-- Use clear, reader-friendly anchor text. -->
@@ -1310,9 +1309,8 @@ Omit an item if the partner domain is not present in the provided sources.
 <ol>
   <!-- Render 3–10 links from the provided sources, deduped and excluding blocked domains.
        Sort priority:
-         (1) psychedelics.com (and subdomains) first if present,
-         (2) DoubleBlind, Psychedelics Today, Blossom Analysis,
-         (3) Other reputable sources.
+         (1) DoubleBlind, Psychedelics Today, Blossom Analysis,
+         (2) Other reputable sources.
        Use source title if available; otherwise use the domain as link text. -->
   <li><a href="https://example1.com" target="_blank">Source Title or Domain</a></li>
   <li><a href="https://example2.com" target="_blank">Source Title or Domain</a></li>
@@ -1323,7 +1321,7 @@ Rendering & Citation Rules:
 - Use numbered superscripts (<sup>[n]</sup>) in the body that map to the ordered list in <h3>Citations</h3>.
 - Do not fabricate links or content. Use ONLY the provided sources.
 - Dedupe citations by canonical URL and exclude any domain listed in ${block}.
-- Render between 3 and 10 citations if available (minimum 2 when possible). Prioritize Psychedelics.com and featured partners when present in sources.
+- Render between 3 and 10 citations if available (minimum 2 when possible). Prioritize featured partners when present in sources.
 
 `.trim();
 }

@@ -1470,9 +1470,6 @@ class Exa_AI_Integration {
             'numResults' => 60, // Request 60 results to ensure we get 50 after filtering
             'include_domains' => array_values($cleaned_domains),
             // 'exclude_domains' => array_values($cleaned_blocked_domains),
-            'domainPriorities' => [
-                'www.psychedelics.com' => 20
-            ],
             'type' => 'neural'
         ]);
         $response = wp_remote_post('https://api.exa.ai/search', [
@@ -1506,109 +1503,10 @@ class Exa_AI_Integration {
                 return in_array($host, $cleaned_domains) || in_array($host_nw, $cleaned_domains);
             });
             
-            // Separate psychedelics.com results from other sources
-            $psychedelics_results = [];
-            $other_results = [];
-            foreach ($data['results'] as $result) {
-                $host = parse_url($result['url'], PHP_URL_HOST);
-                $host_nw = preg_replace('/^www\./', '', strtolower($host));
-                if ($host_nw === 'psychedelics.com') {
-                    $psychedelics_results[] = $result;
-                } else {
-                    $other_results[] = $result;
-                }
-            }
-
-            $results_ordered = [];
-            // If more than 2 psychedelics.com results
-            if (count($psychedelics_results) > 2) {
-                // 1. First result is psychedelics.com
-                $results_ordered[] = $psychedelics_results[0];
-                // 2-3. Next two are other sources
-                $other_count = 0;
-                foreach ($other_results as $result) {
-                    if ($other_count < 2) {
-                        $results_ordered[] = $result;
-                        $other_count++;
-                    }
-                }
-                // 4-5. Next two are psychedelics.com (positions 4,5)
-                if (isset($psychedelics_results[1])) $results_ordered[3] = $psychedelics_results[1];
-                if (isset($psychedelics_results[2])) $results_ordered[4] = $psychedelics_results[2];
-                // Fill up to 6 results with other sources if needed
-                $i = count($results_ordered);
-                foreach ($other_results as $result) {
-                    if ($i >= 6) break;
-                    if (!in_array($result, $results_ordered, true)) {
-                        $results_ordered[] = $result;
-                        $i++;
-                    }
-                }
-            } else {
-                // Always at least one psychedelics.com result
-                if (!empty($psychedelics_results)) {
-                    $results_ordered[] = $psychedelics_results[0];
-                }
-                // Fill with other sources
-                $other_count = 0;
-                foreach ($other_results as $result) {
-                    if ($other_count < 49) { // Increased to 49 to allow up to 50 total
-                        $results_ordered[] = $result;
-                        $other_count++;
-                    }
-                }
-                // If less than 50, add more psychedelics.com results
-                $i = count($results_ordered);
-                for ($j = 1; $j < count($psychedelics_results) && $i < 50; $j++) {
-                    $results_ordered[] = $psychedelics_results[$j];
-                    $i++;
-                }
-            }
-            // Always show at least 5 results, but allow up to 50
-            $data['results'] = array_slice($results_ordered, 0, max(5, min(50, count($results_ordered))));
+            // Use results as-is without special domain prioritization
+            $data['results'] = array_slice($data['results'], 0, 50);
             
-            // If no result from www.psychedelics.com, make a second Exa call
-            $has_psy = false;
-            foreach ($data['results'] as $result) {
-                $host = parse_url($result['url'], PHP_URL_HOST);
-                if ($host === 'www.psychedelics.com') {
-                    $has_psy = true;
-                    break;
-                }
-            }
-            if (!$has_psy) {
-                $psy_body = json_encode([
-                    'query' => $conversational_prompt,
-                    'contents' => [ 'text' => true ],
-                    'numResults' => 10, // Request 10 psychedelics.com results
-                    'include_domains' => ['www.psychedelics.com'],
-                    // 'exclude_domains' => array_values($cleaned_blocked_domains),
-                    'domainPriorities' => ['www.psychedelics.com' => 20],
-                    'type' => 'neural'
-                ]);
-                $psy_response = wp_remote_post('https://api.exa.ai/search', [
-                    'headers' => $headers,
-                    'body' => $psy_body,
-                    'timeout' => 20
-                ]);
-                if (!is_wp_error($psy_response)) {
-                    $psy_data = json_decode(wp_remote_retrieve_body($psy_response), true);
-                    if (!empty($psy_data['results']) && is_array($psy_data['results'])) {
-                        // Only add if not already present
-                        $first_psy = $psy_data['results'][0];
-                        $already = false;
-                        foreach ($data['results'] as $r) {
-                            if (isset($r['url']) && isset($first_psy['url']) && $r['url'] === $first_psy['url']) {
-                                $already = true;
-                                break;
-                            }
-                        }
-                        if (!$already) {
-                            array_unshift($data['results'], $first_psy);
-                        }
-                    }
-                }
-            }
+            // No special fallback search for specific domains - use results as returned by EXA
         }
         $sources = [];
         if (!empty($data['results']) && is_array($data['results'])) {
