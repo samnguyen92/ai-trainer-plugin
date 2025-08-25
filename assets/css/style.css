@@ -1106,3 +1106,34 @@
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }  
+
+/* Target only the two specific sections we want green */
+.section-where-to-learn-more ul li,
+.section-related-questions ul li {
+    color: #3bb273 !important;
+}
+
+/* More aggressive targeting to ensure green color */
+.section-where-to-learn-more li,
+.section-related-questions li {
+    color: #3bb273 !important;
+}
+
+/* Target the text content directly */
+.section-where-to-learn-more *,
+.section-related-questions * {
+    color: #3bb273 !important;
+}
+
+/* Ensure links are green and properly styled */
+.section-where-to-learn-more a,
+.section-related-questions a {
+    color: #3bb273 !important;
+    text-decoration: none !important;
+}
+
+.section-where-to-learn-more a:hover,
+.section-related-questions a:hover {
+    color: #4ddb8a !important;
+    text-decoration: underline !important;
+}  

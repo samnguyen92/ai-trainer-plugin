@@ -850,11 +850,126 @@ jQuery(document).ready(function($) {
                 safe = truncateHTML(safe);
             }
 
+            // Apply green color to "Where to Learn More" section
+            safe = applyWhereToLearnMoreStyling(safe);
+
             return safe;
         } catch (e) {
             console.warn('Sanitize error:', e, 'Original HTML:', html);
             return html; // Return original if parsing fails
         }
+    }
+
+    // Apply green color to specific sections only
+    function applyWhereToLearnMoreStyling(html) {
+        if (!html || typeof html !== 'string') {
+            return html;
+        }
+
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString('<div>' + html + '</div>', 'text/html');
+            
+            // Only style the two specific sections we want green
+            const whereToLearnMore = doc.querySelector('.section-where-to-learn-more');
+            const relatedQuestions = doc.querySelector('.section-related-questions');
+            
+            if (whereToLearnMore) {
+                const listItems = whereToLearnMore.querySelectorAll('li');
+                listItems.forEach(li => {
+                    li.style.color = '#3bb273';
+                });
+            }
+            
+            if (relatedQuestions) {
+                const listItems = relatedQuestions.querySelectorAll('li');
+                listItems.forEach(li => {
+                    li.style.color = '#3bb273';
+                });
+            }
+            
+            return doc.body.firstChild.innerHTML;
+        } catch (e) {
+            console.warn('Styling error:', e);
+            return html; // Return original if styling fails
+        }
+    }
+
+    // Function to apply styling to existing DOM elements
+    function styleWhereToLearnMoreInDOM(container) {
+        if (!container) return;
+        
+        // Only style the two specific sections we want green
+        const whereToLearnMore = container.querySelector('.section-where-to-learn-more');
+        const relatedQuestions = container.querySelector('.section-related-questions');
+        
+        if (whereToLearnMore) {
+            const listItems = whereToLearnMore.querySelectorAll('li');
+            listItems.forEach(li => {
+                li.style.color = '#3bb273';
+            });
+        }
+        
+        if (relatedQuestions) {
+            const listItems = relatedQuestions.querySelectorAll('li');
+            listItems.forEach(li => {
+                li.style.color = '#3bb273';
+            });
+        }
+    }
+
+    // Set up MutationObserver to automatically style new content
+    function setupWhereToLearnMoreObserver() {
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            // Only style the two specific sections we want green
+                            const whereToLearnMore = node.querySelector ? node.querySelector('.section-where-to-learn-more') : null;
+                            const relatedQuestions = node.querySelector ? node.querySelector('.section-related-questions') : null;
+                            
+                            if (whereToLearnMore) {
+                                const listItems = whereToLearnMore.querySelectorAll('li');
+                                listItems.forEach(li => {
+                                    li.style.color = '#3bb273';
+                                });
+                            }
+                            
+                            if (relatedQuestions) {
+                                const listItems = relatedQuestions.querySelectorAll('li');
+                                listItems.forEach(li => {
+                                    li.style.color = '#3bb273';
+                                });
+                            }
+                            
+                            // Also check if the node itself is one of our target sections
+                            if (node.classList && (node.classList.contains('section-where-to-learn-more') || node.classList.contains('section-related-questions'))) {
+                                const listItems = node.querySelectorAll('li');
+                                listItems.forEach(li => {
+                                    li.style.color = '#3bb273';
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+        });
+        
+        // Start observing the document body
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        
+        return observer;
+    }
+
+    // Initialize the observer when the page loads
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupWhereToLearnMoreObserver);
+    } else {
+        setupWhereToLearnMoreObserver();
     }
 
     // Fix list structure
@@ -1077,6 +1192,9 @@ jQuery(document).ready(function($) {
                         
                         // Make related questions clickable after content is loaded
                         makeRelatedQuestionsClickable(container);
+                        
+                        // Apply styling to "Where to Learn More" section
+                        styleWhereToLearnMoreInDOM(container);
 
                         // Update conversation history with just the question (not the full answer)
                         const answerBlock = $(container).closest('.answer-block');
@@ -1193,13 +1311,15 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
       return `<h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>
       
 <h3>Related Questions</h3>
+<div class="section-related-questions">
 <ul>
-<li>What specific information about this topic would be most helpful to you?</li>
-<li>Are there related topics you'd like to explore instead?</li>
-<li>Would you like to learn about similar substances or experiences?</li>
-<li>What aspects of this topic are you most curious about?</li>
-<li>How can I help you find the information you're looking for?</li>
-</ul>`;
+<li><a href="#" style="color: #3bb273; text-decoration: none;">What specific information about this topic would be most helpful to you?</a></li>
+<li><a href="#" style="color: #3bb273; text-decoration: none;">Are there related topics you'd like to explore instead?</a></li>
+<li><a href="#" style="color: #3bb273; text-decoration: none;">Would you like to learn about similar substances or experiences?</a></li>
+<li><a href="#" style="color: #3bb273; text-decoration: none;">What aspects of this topic are you most curious about?</a></li>
+<li><a href="#" style="color: #3bb273; text-decoration: none;">How can I help you find the information you're looking for?</a></li>
+</ul>
+</div>`;
     }
     const safeBlock = String(block || '').trim();
     const safeContext = contextBlock ? String(contextBlock) : '';
@@ -1279,14 +1399,16 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
   ${body.extra || ''}
   
   <h3>Related Questions</h3>
-  <p><strong>MANDATORY: You MUST replace all placeholder comments below with actual questions. This section is required.</strong></p>
-  <ul>
-    <li><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></li>
-    <li><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></li>
-    <li><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></li>
-    <li><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></li>
-    <li><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></li>
-  </ul>`;
+  <div class="section-related-questions">
+    <p><strong>MANDATORY: You MUST replace all placeholder comments below with actual questions. This section is required.</strong></p>
+    <ul>
+      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></a></li>
+      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></a></li>
+      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></a></li>
+      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></a></li>
+      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></a></li>
+    </ul>
+  </div>`;
   
     return `${promptHeader}\n\n${htmlSkeleton}`.trim();
   }
@@ -2377,7 +2499,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     ).join('\n');
   
     const extraBlocks = renderSections({ sections, includeAdditional, includePractical, includeSources });
-    const extra = `${extraBlocks}${addSafety ? safetySnapshot() : ''}`;
+    const extra = `${addSafety ? safetySnapshot() : ''}${extraBlocks}`;
     return { glance, quickOverviewHint, extra };
   }
   
@@ -2395,7 +2517,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     ).join('\n');
   
     const extraBlocks = renderSections({ sections, includeAdditional, includePractical, includeSources });
-    const extra = `${extraBlocks}${addSafety ? safetySnapshot() : ''}`;
+    const extra = `${addSafety ? safetySnapshot() : ''}${extraBlocks}`;
     return { glance: mapped, extra };
   }
   
@@ -2417,11 +2539,13 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
   
     const sources = includeSources ? `
   <h3>Where to Learn More</h3>
-  <ul>
-    <li><!-- Primary literature (PubMed, clinical trials). --></li>
-    <li><!-- Harm reduction orgs (DanceSafe, Fireside). --></li>
-    <li><!-- Trusted education (Psychedelics.com, MAPS, Erowid). --></li>
-  </ul>` : '';
+  <div class="section-where-to-learn-more">
+    <ul>
+      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Primary literature (PubMed, clinical trials). --></a></li>
+      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Harm reduction orgs (DanceSafe, Fireside). --></a></li>
+      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Trusted education (Psychedelics.com, MAPS, Erowid). --></a></li>
+    </ul>
+  </div>` : '';
   
     return `${custom}${additional}${practical}${sources}`;
   }
@@ -2513,6 +2637,9 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
                         
                         // Make related questions clickable after content is loaded
                         makeRelatedQuestionsClickable(container);
+                        
+                        // Apply styling to "Where to Learn More" section
+                        styleWhereToLearnMoreInDOM(container);
                         return;
                     }
                     
@@ -2561,6 +2688,9 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
             } else {
                 // Make related questions clickable after streaming is complete
                 makeRelatedQuestionsClickable(container);
+                
+                // Apply styling to "Where to Learn More" section
+                styleWhereToLearnMoreInDOM(container);
             }
         }
         streamStep();
