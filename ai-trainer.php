@@ -1494,7 +1494,8 @@ class Exa_AI_Integration {
             // 'exclude_domains' => array_values($cleaned_blocked_domains),
             'domainPriorities' => [
                 'www.psychedelics.com' => 20
-            ]
+            ],
+            'type' => 'neural'
         ]);
         $response = wp_remote_post('https://api.exa.ai/search', [
             'headers' => $headers,
@@ -1604,7 +1605,8 @@ class Exa_AI_Integration {
                     'numResults' => 10, // Request 10 psychedelics.com results
                     'include_domains' => ['www.psychedelics.com'],
                     // 'exclude_domains' => array_values($cleaned_blocked_domains),
-                    'domainPriorities' => ['www.psychedelics.com' => 20]
+                    'domainPriorities' => ['www.psychedelics.com' => 20],
+                    'type' => 'neural'
                 ]);
                 $psy_response = wp_remote_post('https://api.exa.ai/search', [
                     'headers' => $headers,
