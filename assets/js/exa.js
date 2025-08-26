@@ -1328,10 +1328,11 @@ jQuery(document).ready(function($) {
 
 
 /**
- * Psybrarian Template Master System — 30 Templates (Fully Detailed)
+ * Psybrarian Template Master System — 21 Templates (Consolidated from 30)
  * - Drop-in replacement for your buildPrompt() with the exact syntax you requested
  * - HTML-only output skeletons (no Markdown, no emojis)
  * - Auto-detects a template type from the query; can be overridden with opts.type
+ * - Templates consolidated for better maintenance and reduced overlap
  *
  * Usage:
  *   const prompt = buildPrompt(query, sources, block, contextBlock, { type: 'overview' });
@@ -1645,14 +1646,14 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
       ],
     }),
   
-    /* 8) Preparation & Administration */
-    preparation: () => baseTemplate({
+    /* 8) Administration & Measurement (merged: preparation + measurement) */
+    administration_measurement: () => baseTemplate({
       addSafety: true,
       bullets: [
         ['Forms & routes', 'Tea, tincture, capsule, sublingual, etc.'],
+        ['Measurement tools', 'Milligram scales, volumetric dosing, syringes/droppers.'],
         ['Basic steps', 'General prep steps; avoid unsafe practices.'],
-        ['Stability & storage', 'Light/heat/moisture considerations.'],
-        ['Dosing notes', 'Potency variability; labeling caveats.'],
+        ['Calibration', 'Taring, test weights; avoid kitchen scales.'],
         ['Safety notes', 'Contaminants, strain mis-ID, interactions.'],
       ],
       sections: [
@@ -1666,6 +1667,11 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     <li><!-- Step 4: Monitoring (set, setting, support, hydration; stop if adverse signs). --></li>
     <li><!-- Step 5: Aftercare (rest, nutrition, journaling, integration; seek help for red flags). --></li>
   </ol>`
+        },
+        {
+          html: `
+  <h3>Volumetric Dosing Example</h3>
+  <p><!-- Walk through a sample calculation step-by-step in plain language (no advice, education only). --></p>`
         },
       ],
     }),
@@ -1750,8 +1756,8 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
       ],
     }),
   
-    /* 12) Integration / Aftercare / Set & Setting */
-    integration: () => baseTemplate({
+    /* 12) Preparation & Integration (merged: set_setting + integration) */
+    preparation_integration: () => baseTemplate({
       addSafety: true,
       bullets: [
         ['Mindset', 'Intentions, expectations, emotional readiness.'],
@@ -1768,6 +1774,14 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     <li><strong>Day 0–1:</strong> <!-- Rest, hydration, gentle grounding. --></li>
     <li><strong>Days 2–7:</strong> <!-- Journaling, therapy session if applicable. --></li>
     <li><strong>Week 2+:</strong> <!-- Behavioral experiments, habits, community. --></li>
+  </ul>`
+        },
+        {
+          html: `
+  <h3>Packing &amp; Prep Checklist</h3>
+  <ul>
+    <li><!-- Comfort items: water, blanket, eye mask, music. --></li>
+    <li><!-- Contacts: emergency numbers, address, directions. --></li>
   </ul>`
         },
       ],
@@ -1824,7 +1838,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         {
           html: `
   <h3>Legacy &amp; Influence</h3>
-  <p><!-- How their work shapes current science, policy, or culture. --></p>`
+          <p><!-- How their work shapes current science, policy, or culture. --></p>`
         },
       ],
     }),
@@ -1855,48 +1869,44 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     <li><!-- Immediate outcomes and stakeholders. --></li>
   </ul>`
         },
-        {
-          html: `
-  <h3>Why It Mattered</h3>
-  <p><!-- Policy/science/culture implications; downstream effects. --></p>`
-        },
+       
         {
           html: `
   <h3>Key Figures Involved</h3>
-  <ul>
-    <li><!-- People/institutions and their roles. --></li>
-  </ul>`
+          <ul>
+            <li><!-- People/institutions and their roles. --></li>
+          </ul>`
         },
         {
           html: `
   <h3>Primary Documents / Media</h3>
-  <ul>
-    <li><!-- Official statements, court filings, trial registrations, reports. --></li>
-  </ul>`
+          <ul>
+            <li><!-- Official statements, court filings, trial registrations, reports. --></li>
+          </ul>`
         },
         {
           html: `
   <h3>Related Movements or Events</h3>
-  <ul>
-    <li><!-- Earlier/later connected events. --></li>
-  </ul>`
+          <ul>
+            <li><!-- Earlier/later connected events. --></li>
+          </ul>`
         },
         {
           html: `
   <h3>Lasting Legacy</h3>
-  <p><!-- Long-term changes (laws, research, norms). --></p>`
+          <p><!-- Long-term changes (laws, research, norms). --></p>`
         },
       ],
     }),
   
-    /* 15) Testing & Adulterants (reagents, FTS, lab testing) */
-    testing: () => baseTemplate({
+    /* 15) Safety & Quality (merged: testing + sourcing_quality) */
+    safety_quality: () => baseTemplate({
       addSafety: true,
       bullets: [
         ['Why test', 'Counterfeits/adulterants are common; risk reduction.'],
-        ['Reagent basics', 'What reagents can/can\'t tell you; color-change logic.'],
-        ['Fentanyl test strips', 'Scope/limits; false positives/negatives considerations.'],
-        ['Lab testing', 'When/why to use certified labs; sample handling.'],
+        ['Quality signals', 'Consistency, labeling, COAs when available.'],
+        ['Testing methods', 'Reagents, FTS, lab testing; scope and limits.'],
+        ['Storage & handling', 'Light/heat/moisture control; shelf life.'],
         ['Limitations', 'Testing ≠ proof of safety; dose/setting still matter.'],
       ],
       sections: [
@@ -1911,248 +1921,6 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     </tbody>
   </table>`
         },
-      ],
-    }),
-  
-    /* 16) Age, Pregnancy & Special Populations */
-    age_pregnancy_populations: () => baseTemplate({
-      addSafety: true,
-      bullets: [
-        ['Population focus', 'Children/adolescents, older adults, pregnancy/lactation.'],
-        ['Known risks', 'Developmental, obstetric, geriatric considerations.'],
-        ['Medication overlaps', 'Prenatal vitamins, antihypertensives, etc.'],
-        ['Evidence gaps', 'Areas with limited or no data.'],
-        ['Safer alternatives', 'Non-pharmacologic supports when relevant.'],
-      ],
-      sections: [
-        {
-          html: `
-  <h3>Population-Specific Considerations</h3>
-  <table border="1" cellpadding="6" cellspacing="0">
-    <thead><tr><th>Group</th><th>Key Risks</th><th>Notes</th></tr></thead>
-    <tbody>
-      <tr><td><!-- Pregnancy/Lactation --></td><td><!-- fetal/OB considerations --></td><td><!-- evidence gaps --></td></tr>
-      <tr><td><!-- Adolescents/Older Adults --></td><td><!-- developmental/geriatric --></td><td><!-- polypharmacy --></td></tr>
-    </tbody>
-  </table>`
-        },
-      ],
-    }),
-  
-    /* 17) Mental Health Considerations (psychiatric) */
-    mental_health: () => baseTemplate({
-      addSafety: true,
-      bullets: [
-        ['Risk profile', 'Psychosis spectrum, bipolar, severe anxiety, PTSD nuances.'],
-        ['Screening', 'Contraindications, red flags, informed consent.'],
-        ['Co-treatments', 'Therapy modalities that may help or conflict.'],
-        ['Crisis planning', 'When to pause/stop and seek professional help.'],
-        ['Evidence limits', 'Mixed or low-quality evidence — state clearly.'],
-      ],
-      sections: [
-        {
-          html: `
-  <h3>Screening &amp; Red Flags</h3>
-  <ul>
-    <li><!-- Psychosis spectrum, mania history, severe anxiety. --></li>
-    <li><!-- Suicidality risk; recent hospitalization. --></li>
-  </ul>`
-        },
-      ],
-    }),
-  
-    /* 18) Cardiac & Physical Risks */
-    cardiac_risk: () => baseTemplate({
-      addSafety: true,
-      bullets: [
-        ['Cardiovascular effects', 'Blood pressure, heart rate, QTc concerns.'],
-        ['High-risk conditions', 'Arrhythmia, hypertension, valvular disease.'],
-        ['Drug interactions', 'Stimulants, decongestants, MAOIs.'],
-        ['Warning signs', 'Chest pain, syncope, palpitations.'],
-        ['Mitigation', 'Pre-checks, hydration, avoid combos.'],
-      ],
-      sections: [
-        {
-          html: `
-  <h3>Cardio Precautions</h3>
-  <ul>
-    <li><!-- Pre-check BP/HR if evidence-supported. --></li>
-    <li><!-- Avoid stimulants/MAOIs; hydration and temperature control. --></li>
-  </ul>`
-        },
-      ],
-    }),
-  
-    /* 19) Toxicology & Neurotoxicity */
-    toxicology: () => baseTemplate({
-      addSafety: true,
-      bullets: [
-        ['Toxic dose context', 'What is known/unknown for acute toxicity.'],
-        ['Syndromes', 'Serotonin syndrome, hyperthermia, hyponatremia.'],
-        ['Organ risks', 'Hepato/nephro/neuro concerns where supported.'],
-        ['Animal vs human data', 'Extrapolation limits.'],
-        ['Emergency response', 'Cooling, fluids, medical evaluation.'],
-      ],
-      sections: [
-        {
-          html: `
-  <h3>Emergency Syndromes</h3>
-  <table border="1" cellpadding="6" cellspacing="0">
-    <thead><tr><th>Syndrome</th><th>Key Signs</th><th>Notes</th></tr></thead>
-    <tbody>
-      <tr><td><!-- Serotonin syndrome --></td><td><!-- clonus, hyperreflexia, agitation --></td><td><!-- triggers/combos --></td></tr>
-    </tbody>
-  </table>`
-        },
-      ],
-    }),
-  
-    /* 20) Pharmacology / Mechanism of Action (MOA) */
-    pharmacology_moa: () => baseTemplate({
-      bullets: [
-        ['Receptor targets', 'e.g., 5-HT2A, NMDA, kappa-opioid, etc.'],
-        ['Pathways', 'Downstream signaling, networks (plain language).'],
-        ['Subjective link', 'How MOA may relate to effects.'],
-        ['Variability', 'Polymorphisms, tolerance, set/setting overlap.'],
-        ['Evidence level', 'Where mechanisms are speculative.'],
-      ],
-      sections: [
-        {
-          html: `
-  <h3>Receptor Targets (Plain Language)</h3>
-  <table border="1" cellpadding="6" cellspacing="0">
-    <thead><tr><th>Target</th><th>Role</th><th>Notes</th></tr></thead>
-    <tbody>
-      <tr><td><!-- 5-HT2A --></td><td><!-- cortical signaling --></td><td><!-- relation to subjective effects --></td></tr>
-    </tbody>
-  </table>`
-        },
-      ],
-    }),
-  
-    /* 21) Pharmacokinetics / Metabolism (PK) */
-    pharmacokinetics: () => baseTemplate({
-      bullets: [
-        ['Absorption', 'Route-dependent differences.'],
-        ['Distribution', 'Protein binding, BBB crossing (simple terms).'],
-        ['Metabolism', 'CYP pathways; active metabolites if any.'],
-        ['Elimination', 'Half-life ranges and routes.'],
-        ['PK variability', 'Liver/renal impairment; genetic variants.'],
-      ],
-      sections: [
-        {
-          html: `
-  <h3>PK Overview</h3>
-  <table border="1" cellpadding="6" cellspacing="0">
-    <thead><tr><th>Phase</th><th>Key Points</th><th>Notes</th></tr></thead>
-    <tbody>
-      <tr><td><!-- Absorption --></td><td><!-- ROA differences --></td><td><!-- food effects --></td></tr>
-      <tr><td><!-- Metabolism --></td><td><!-- CYPs --></td><td><!-- active metabolites --></td></tr>
-      <tr><td><!-- Elimination --></td><td><!-- half-life --></td><td><!-- renal/hepatic --></td></tr>
-    </tbody>
-  </table>`
-        },
-      ],
-    }),
-  
-    /* 22) Withdrawal, Comedown & Aftereffects */
-    aftereffects: () => baseTemplate({
-      addSafety: true,
-      bullets: [
-        ['Immediate aftereffects', 'Fatigue, mood changes, sleep disturbance.'],
-        ['Withdrawal', 'If applicable; physical vs psychological.'],
-        ['Duration', 'Typical recovery timelines.'],
-        ['Mitigation', 'Hydration, nutrition, rest, light activity.'],
-        ['When to seek help', 'Persistent depression, suicidality, cognitive issues.'],
-      ],
-      sections: [
-        {
-          html: `
-  <h3>Aftereffects Timeline</h3>
-  <ul>
-    <li><!-- 0–24h: fatigue, mood variability, sleep changes. --></li>
-    <li><!-- 24–72h: normalization; hydration/nutrition notes. --></li>
-  </ul>`
-        },
-      ],
-    }),
-  
-    /* 23) Measurement & Weighing (Scales / Volumetric dosing) */
-    measurement: () => baseTemplate({
-      addSafety: true,
-      bullets: [
-        ['Tools', 'Milligram scales, volumetric dosing, syringes/droppers.'],
-        ['Calibration', 'Taring, test weights; avoid kitchen scales.'],
-        ['Volumetric dosing', 'Step-by-step concept in plain terms.'],
-        ['Stability', 'Solutions/suspensions; storage.'],
-        ['Common mistakes', 'Misplacing decimals, uneven mixing.'],
-      ],
-      sections: [
-        {
-          html: `
-  <h3>Volumetric Dosing Example</h3>
-  <p><!-- Walk through a sample calculation step-by-step in plain language (no advice, education only). --></p>`
-        },
-      ],
-    }),
-  
-    /* 24) Stacking & Combinations (non-med combos) */
-    stacking: () => baseTemplate({
-      addSafety: true,
-      bullets: [
-        ['Common stacks', 'e.g., caffeine + L-theanine; cacao + breathwork.'],
-        ['Rationale', 'Intended synergy; tradition vs modern practice.'],
-        ['Risks', 'Intensity, anxiety, nausea; unknown interactions.'],
-        ['Evidence check', 'What (if anything) supports the combo.'],
-        ['Alternatives', 'Single-variable approach to isolate effects.'],
-      ],
-      sections: [
-        {
-          html: `
-  <h3>Common Stacks</h3>
-  <table border="1" cellpadding="6" cellspacing="0">
-    <thead><tr><th>Stack</th><th>Intended Effect</th><th>Risks/Notes</th></tr></thead>
-    <tbody>
-      <tr><td><!-- Caffeine + L-theanine --></td><td><!-- smoother focus --></td><td><!-- HR/BP for sensitivity --></td></tr>
-    </tbody>
-  </table>`
-        },
-      ],
-    }),
-  
-    /* 25) Set & Setting Planning */
-    set_setting_planning: () => baseTemplate({
-      addSafety: true,
-      bullets: [
-        ['Preparation', 'Intention, mindset, sleep, nourishment.'],
-        ['Environment', 'Lighting, temperature, music/playlists.'],
-        ['Support', 'Sitter/guide roles and boundaries.'],
-        ['Boundaries & consent', 'Clear agreements; sober support if used.'],
-        ['Post-session plan', 'Integration time, journaling, calendar buffer.'],
-      ],
-      sections: [
-        {
-          html: `
-  <h3>Packing &amp; Prep Checklist</h3>
-  <ul>
-    <li><!-- Comfort items: water, blanket, eye mask, music. --></li>
-    <li><!-- Contacts: emergency numbers, address, directions. --></li>
-  </ul>`
-        },
-      ],
-    }),
-  
-    /* 26) Sourcing, Quality & Storage (no procurement advice) */
-    sourcing_quality: () => baseTemplate({
-      addSafety: true,
-      bullets: [
-        ['Quality signals', 'Consistency, labeling, COAs when available.'],
-        ['Contaminants', 'Adulterants, mold, misidentification risks.'],
-        ['Storage', 'Light/heat/moisture control; shelf life.'],
-        ['Transport', 'Temperature and leak-proofing for legal items only.'],
-        ['Legal note', 'Clarify jurisdictional constraints; no procurement advice.'],
-      ],
-      sections: [
         {
           html: `
   <h3>Storage Conditions</h3>
@@ -2167,82 +1935,198 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
       ],
     }),
   
-    /* 27) Myths vs Facts */
-    myths_vs_facts: () => baseTemplate({
+    /* 16) Special Populations & Mental Health (merged: age_pregnancy + mental_health) */
+    special_populations: () => baseTemplate({
+      addSafety: true,
       bullets: [
+        ['Population focus', 'Children/adolescents, older adults, pregnancy/lactation.'],
+        ['Mental health risks', 'Psychosis spectrum, bipolar, severe anxiety, PTSD.'],
+        ['Known risks', 'Developmental, obstetric, geriatric considerations.'],
+        ['Screening', 'Contraindications, red flags, informed consent.'],
+        ['Safer alternatives', 'Non-pharmacologic supports when relevant.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Population-Specific Considerations</h3>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead><tr><th>Group</th><th>Key Risks</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><!-- Pregnancy/Lactation --></td><td><!-- fetal/OB considerations --></td><td><!-- evidence gaps --></td></tr>
+      <tr><td><!-- Adolescents/Older Adults --></td><td><!-- developmental/geriatric --></td><td><!-- polypharmacy --></td></tr>
+    </tbody>
+  </table>`
+        },
+        {
+          html: `
+  <h3>Screening &amp; Red Flags</h3>
+          <ul>
+            <li><!-- Psychosis spectrum, mania history, severe anxiety. --></li>
+            <li><!-- Suicidality risk; recent hospitalization. --></li>
+          </ul>`
+        },
+      ],
+    }),
+  
+    /* 17) Physical Health & Safety (merged: cardiac_risk + toxicology) */
+    physical_health: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Cardiovascular effects', 'Blood pressure, heart rate, QTc concerns.'],
+        ['Toxic syndromes', 'Serotonin syndrome, hyperthermia, hyponatremia.'],
+        ['High-risk conditions', 'Arrhythmia, hypertension, valvular disease.'],
+        ['Warning signs', 'Chest pain, syncope, palpitations.'],
+        ['Emergency response', 'Cooling, fluids, medical evaluation.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Cardio Precautions</h3>
+          <ul>
+            <li><!-- Pre-check BP/HR if evidence-supported. --></li>
+            <li><!-- Avoid stimulants/MAOIs; hydration and temperature control. --></li>
+          </ul>`
+        },
+        {
+          html: `
+  <h3>Emergency Syndromes</h3>
+          <table border="1" cellpadding="6" cellspacing="0">
+            <thead><tr><th>Syndrome</th><th>Key Signs</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><!-- Serotonin syndrome --></td><td><!-- clonus, hyperreflexia, agitation --></td><td><!-- triggers/combos --></td></tr>
+            </tbody>
+          </table>`
+        },
+      ],
+    }),
+  
+    /* 18) Education & Clarification (merged: myths_vs_facts + glossary) */
+    education: () => baseTemplate({
+      bullets: [
+        ['Term definition', 'Short, plain-language definition.'],
         ['Common myth', 'State the myth neutrally.'],
         ['Evidence check', 'Summarize what reliable sources say.'],
         ['What we know', 'Plain conclusion with confidence level.'],
-        ['What we don\'t know', 'Gaps and ongoing research.'],
-        ['Practical takeaway', 'Simple advice consistent with evidence.'],
+        ['Related terms', 'Nearby concepts and distinctions.'],
       ],
       sections: [
         {
           html: `
   <h3>Myth vs Fact</h3>
-  <table border="1" cellpadding="6" cellspacing="0">
-    <thead><tr><th>Myth</th><th>Evidence Check</th><th>Conclusion</th></tr></thead>
-    <tbody>
-      <tr><td><!-- e.g., LSD stays in spine --></td><td><!-- what sources say --></td><td><!-- plain-language verdict --></td></tr>
-    </tbody>
-  </table>`
+          <table border="1" cellpadding="6" cellspacing="0">
+            <thead><tr><th>Myth</th><th>Evidence Check</th><th>Conclusion</th></tr></thead>
+            <tbody>
+              <tr><td><!-- e.g., LSD stays in spine --></td><td><!-- what sources say --></td><td><!-- plain-language verdict --></td></tr>
+            </tbody>
+          </table>`
         },
-      ],
-    }),
-  
-    /* 28) Glossary / Definition */
-    glossary: () => baseTemplate({
-      bullets: [
-        ['Term definition', 'Short, plain-language definition.'],
-        ['Context', 'Where you encounter it (research, culture).'],
-        ['Why it matters', 'Decisions it affects; misunderstandings to avoid.'],
-        ['Related terms', 'Nearby concepts and distinctions.'],
-        ['Sources', 'Prefer primary/authoritative references.'],
-      ],
-      sections: [
         {
           html: `
   <h3>Related Terms</h3>
-  <ul>
-    <li><!-- Nearby concept 1: distinction --></li>
-    <li><!-- Nearby concept 2: distinction --></li>
-  </ul>`
+          <ul>
+            <li><!-- Nearby concept 1: distinction --></li>
+            <li><!-- Nearby concept 2: distinction --></li>
+          </ul>`
         },
       ],
     }),
-  
-    /* 29) Protocol (step-by-step planning for sessions) */
-    protocol: () => baseTemplate({
-      addSafety: true,
+
+    /* 19) Mechanisms & Metabolism (merged: pharmacology_moa + pharmacokinetics) */
+    mechanisms_metabolism: () => baseTemplate({
       bullets: [
-        ['Pre-session', 'Medical/mental check, intentions, logistics.'],
-        ['During', 'Support roles, pacing, hydration.'],
-        ['Environment', 'Safety, privacy, tools within reach.'],
-        ['Contingencies', 'What to do if anxiety or nausea spikes.'],
-        ['Post-session', 'Sleep, nutrition, integration scheduling.'],
+        ['Receptor targets', 'e.g., 5-HT2A, NMDA, kappa-opioid, etc.'],
+        ['Pathways', 'Downstream signaling, networks (plain language).'],
+        ['Absorption & distribution', 'Route-dependent differences, protein binding.'],
+        ['Metabolism & elimination', 'CYP pathways, half-life ranges.'],
+        ['Evidence level', 'Where mechanisms are speculative.'],
       ],
       sections: [
         {
           html: `
-  <h3>Checklist</h3>
-  <ul>
-    <li><!-- Pre-session: essentials packed, emergency contacts, consent/boundaries. --></li>
-    <li><!-- During: hydration, pacing, grounding tools. --></li>
-    <li><!-- Post-session: sleep plan, nutrition, integration time scheduled. --></li>
-  </ul>`
+  <h3>Receptor Targets (Plain Language)</h3>
+          <table border="1" cellpadding="6" cellspacing="0">
+            <thead><tr><th>Target</th><th>Role</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><!-- 5-HT2A --></td><td><!-- cortical signaling --></td><td><!-- relation to subjective effects --></td></tr>
+            </tbody>
+          </table>`
+        },
+        {
+          html: `
+  <h3>PK Overview</h3>
+          <table border="1" cellpadding="6" cellspacing="0">
+            <thead><tr><th>Phase</th><th>Key Points</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><!-- Absorption --></td><td><!-- ROA differences --></td><td><!-- food effects --></td></tr>
+              <tr><td><!-- Metabolism --></td><td><!-- CYPs --></td><td><!-- active metabolites --></td></tr>
+              <tr><td><!-- Elimination --></td><td><!-- half-life --></td><td><!-- renal/hepatic --></td></tr>
+            </tbody>
+          </table>`
         },
       ],
     }),
-  
-    /* 30) Troubleshooting & Challenging Experiences */
-    troubleshooting: () => baseTemplate({
+
+    /* 20) Challenges & Recovery (merged: aftereffects + troubleshooting) */
+    challenges_recovery: () => baseTemplate({
       addSafety: true,
       bullets: [
-        ['Didn\'t feel anything', 'Possible causes: dose, ROA, tolerance, meds.'],
-        ['Anxiety spike', 'Breathing, posture, temperature, reassurance.'],
-        ['Nausea', 'Timing with food, ginger/peppermint notes; caution with meds.'],
-        ['Overwhelm', 'Grounding, music shift, eyeshades, change setting.'],
-        ['When to seek help', 'Persistent confusion, chest pain, suicidality.'],
+        ['Immediate aftereffects', 'Fatigue, mood changes, sleep disturbance.'],
+        ['Common challenges', 'Anxiety spikes, nausea, overwhelm, no effects.'],
+        ['Recovery timeline', 'Typical recovery and normalization periods.'],
+        ['Mitigation strategies', 'Hydration, nutrition, rest, grounding techniques.'],
+        ['When to seek help', 'Persistent issues, red flags, emergency signs.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Recovery Timeline</h3>
+          <ul>
+            <li><!-- 0–24h: fatigue, mood variability, sleep changes. --></li>
+            <li><!-- 24–72h: normalization; hydration/nutrition notes. --></li>
+          </ul>`
+        },
+        {
+          html: `
+  <h3>Common Challenge Solutions</h3>
+          <ul>
+            <li><!-- Anxiety: breathing, posture, temperature, reassurance. --></li>
+            <li><!-- Nausea: timing with food, ginger/peppermint notes. --></li>
+            <li><!-- Overwhelm: grounding, music shift, eyeshades, setting change. --></li>
+          </ul>`
+        },
+      ],
+    }),
+
+    /* 21) Protocols & Combinations (merged: protocol + stacking) */
+    protocols_combinations: () => baseTemplate({
+      addSafety: true,
+      bullets: [
+        ['Pre-session planning', 'Medical/mental check, intentions, logistics.'],
+        ['Common combinations', 'e.g., caffeine + L-theanine; cacao + breathwork.'],
+        ['During session', 'Support roles, pacing, hydration, contingencies.'],
+        ['Post-session', 'Sleep, nutrition, integration scheduling.'],
+        ['Evidence check', 'What (if anything) supports the combo.'],
+      ],
+      sections: [
+        {
+          html: `
+  <h3>Session Checklist</h3>
+          <ul>
+            <li><!-- Pre-session: essentials packed, emergency contacts, consent/boundaries. --></li>
+            <li><!-- During: hydration, pacing, grounding tools. --></li>
+            <li><!-- Post-session: sleep plan, nutrition, integration time scheduled. --></li>
+          </ul>`
+        },
+        {
+          html: `
+  <h3>Common Stacks</h3>
+          <table border="1" cellpadding="6" cellspacing="0">
+            <thead><tr><th>Stack</th><th>Intended Effect</th><th>Risks/Notes</th></tr></thead>
+            <tbody>
+              <tr><td><!-- Caffeine + L-theanine --></td><td><!-- smoother focus --></td><td><!-- HR/BP for sensitivity --></td></tr>
+            </tbody>
+          </table>`
+        },
       ],
     }),
   };
@@ -2263,13 +2147,25 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     // Patterns with weights per category
     const typeToPatterns = {
       person: [
-        { re: /\bwho\s+(is|was)\b/, w: 3 },
-        { re: /\b(biography|biograph|researcher|author|figure|person)\b/, w: 2 },
+        { re: /\bwho\s+(is|was)\b/, w: 4 },
+        { re: /\b(biography|biograph|researcher|author|figure|person)\b/, w: 3 },
+        { re: /\b(what\s+is\s+.*\s+known\s+for|what\s+was\s+.*\s+known\s+for|what\s+is\s+.*\s+famous\s+for)\b/, w: 5 },
+        { re: /\b(what\s+did\s+.*\s+do|what\s+does\s+.*\s+do|what\s+has\s+.*\s+done)\b/, w: 4 },
+        { re: /\b(what\s+are\s+.*\s+contributions|what\s+are\s+.*\s+achievements|what\s+are\s+.*\s+discoveries)\b/, w: 4 },
+        { re: /\b(albert\s+hofmann|timothy\s+leary|terence\s+mckenna|alexander\s+shulgin|rick\s+doblin)\b/, w: 5 },
+        { re: /\b(chemist|scientist|researcher|discoverer|inventor|pioneer)\b/, w: 3 },
       ],
       event: [
-        { re: /\b(what\s+happened|when\s+was)\b/, w: 3 },
-        { re: /\b(conference|ban|raid|policy\s+change|milestone)\b/, w: 3 },
+        { re: /\b(what\s+happened|when\s+was)\b/, w: 4 },
+        { re: /\b(conference|ban|raid|policy\s+change|milestone)\b/, w: 4 },
         { re: /\btrial\b/, w: 1 }, // generic trial mention (lower weight)
+        { re: /\b(what\s+was\s+the|what\s+is\s+the|what\s+were\s+the)\b/, w: 4 },
+        { re: /\b(project|study|research|experiment|investigation|initiative)\b/, w: 4 },
+        { re: /\b(harvard\s+psilocybin\s+project|stanford\s+prison\s+experiment|milgram\s+experiment)\b/, w: 5 },
+        { re: /\b(history|historical|timeline|chronology|sequence|order)\b/, w: 3 },
+        { re: /\b(1960s|1970s|1980s|1990s|2000s|decade|era|period)\b/, w: 3 },
+        { re: /\b(what\s+occurred|what\s+took\s+place|what\s+transpired)\b/, w: 4 },
+        { re: /\b(when\s+did|when\s+was|when\s+occurred|when\s+happened)\b/, w: 4 },
       ],
       compare: [
         { re: /\b(vs\.?|versus)\b/, w: 4 },
@@ -2285,7 +2181,8 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         { re: /\b(dose|dosing)\b/, w: 3 },
         { re: /\bhow\s+much\b/, w: 3 },
         { re: /\b(microgram|milligram|gram|mg|ug)\b/, w: 2 },
-        { re: /\b(how\s+to|instructions?|step[-\s]?by[-\s]?step|guide)\b/, w: 3 },
+        { re: /\b(how\s+to\s+(take|measure|calculate|determine))\b/, w: 3 },
+        { re: /\b(instructions?|step[-\s]?by[-\s]?step|guide)\b/, w: 2 },
       ],
       interactions: [
         { re: /\b(interaction|interact|contraindicat\w*)\b/, w: 3 },
@@ -2294,97 +2191,321 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         { re: /\b(combine|combining|mix|mixing|take\s+with|use\s+with)\b/, w: 3 },
       ],
       safety: [
-        { re: /\b(safe|safety|first\s+aid|overdose|bad\s+trip|emergency)\b/, w: 3 },
-        { re: /\bwhat\s+to\s+do\s+if\b/, w: 3 },
+        { re: /\b(safe|safety|first\s+aid|overdose|bad\s+trip|emergency)\b/, w: 4 },
+        { re: /\b(ambulance|call\s+.*\s+help|seek\s+help|medical\s+help|urgent\s+care|er|emergency\s+room)\b/, w: 5 },
+        { re: /\b(crisis|dangerous|life.?threatening|severe|critical|immediate|urgent)\b/, w: 4 },
+        { re: /\b(what\s+to\s+do\s+if|what\s+should\s+you\s+do)\b/, w: 4 },
+        { re: /\b(when\s+to\s+call|when\s+should\s+you|when\s+do\s+you|when\s+is\s+it\s+time)\b/, w: 3 },
+        { re: /\b(symptoms|signs|warning\s+signs|red\s+flags)\b/, w: 3 },
+        { re: /\b(medical\s+attention|professional\s+help|doctor|hospital|paramedic|emt|first\s+responder)\b/, w: 3 },
+        { re: /\b(breathing|consciousness|unresponsive|seizure|chest\s+pain|heart\s+attack|stroke|cardiac\s+arrest)\b/, w: 3 },
+        { re: /\b(serotonin\s+syndrome|hyperthermia|heatstroke|dehydration|hypothermia|hypoglycemia)\b/, w: 3 },
+        { re: /\b(panic|anxiety|distress|overwhelm|bad\s+trip|difficult\s+experience)\b/, w: 3 },
+        { re: /\b(help|support|assistance|intervention)\b/, w: 2 },
+        { re: /\b(risk|danger|hazard|warning|caution)\b/, w: 3 },
+        { re: /\b(adverse|negative|harmful|toxic|poisonous)\b/, w: 3 },
+        { re: /\b(crisis\s+intervention|crisis\s+support|crisis\s+line|crisis\s+hotline)\b/, w: 4 },
+        { re: /\b(emergency\s+response|emergency\s+protocol|emergency\s+procedure|emergency\s+plan)\b/, w: 4 },
+        { re: /\b(911|nine.?one.?one|emergency\s+services|emergency\s+number)\b/, w: 4 },
       ],
       effects: [
-        { re: /\b(effect|effects)\b/, w: 1 },
-        { re: /\b(feel\s+like|timeline|duration|onset|peak)\b/, w: 3 },
+        { re: /\b(effect|effects)\b/, w: 4 },
+        { re: /\b(feel\s+like|timeline|duration|onset|peak|how\s+long|when\s+does|how\s+fast|how\s+quickly)\b/, w: 4 },
+        { re: /\b(emotional|mood|feeling|sensation|experience|psychological|mental|cognitive|behavioral|social)\b/, w: 3 },
+        { re: /\b(what\s+is\s+the|what\s+are\s+the|what\s+does\s+it\s+feel\s+like|what\s+kind\s+of|what\s+type\s+of)\b/, w: 3 },
+        { re: /\b(how\s+does\s+it\s+feel|how\s+do\s+you\s+feel|what\s+do\s+you\s+feel|how\s+is\s+it|what\s+is\s+it)\b/, w: 3 },
+        { re: /\b(come\s+up|come\s+down|afterglow|aftermath|after\s+effects|peak\s+time|peak\s+effects|plateau|comedown)\b/, w: 3 },
+        { re: /\b(high|euphoria|empathy|connectedness|love|warmth|joy|happiness|bliss|pleasure|contentment|peace)\b/, w: 3 },
+        { re: /\b(visual|auditory|sensory|perceptual|cognitive|mind|thought|thinking)\b/, w: 2 },
+        { re: /\b(empathogen|entactogen|psychedelic|hallucinogen|stimulant|depressant)\b/, w: 2 },
+        { re: /\b(what\s+is\s+it\s+like|what\s+does\s+it\s+do|what\s+happens|what\s+can\s+you\s+expect|what\s+to\s+expect)\b/, w: 3 },
       ],
       legality: [
-        { re: /\b(legal|legality|decriminal\w*|law|schedule)\b/, w: 3 },
-        { re: /\bis\s+it\s+legal\b/, w: 4 },
+        { re: /\b(legal|legality|decriminal\w*|law|schedule)\b/, w: 4 },
+        { re: /\bis\s+it\s+legal\b/, w: 5 },
+        { re: /\b(arrest|arrested|busted|caught|police|law\s+enforcement|fbi|dea)\b/, w: 5 },
+        { re: /\b(illegal|prohibited|banned|restricted|controlled\s+substance)\b/, w: 4 },
+        { re: /\b(penalty|punishment|fine|jail|prison|sentence|conviction)\b/, w: 4 },
+        { re: /\b(permit|license|registration|exemption|religious|ceremonial|sacramental|traditional)\b/, w: 3 },
+        { re: /\b(federal|state|local|jurisdiction|authority|enforcement|government|official)\b/, w: 3 },
+        { re: /\b(can\s+you|will\s+you|do\s+you|would\s+you)\s+(get\s+)?(arrested|busted|caught|in\s+trouble)\b/, w: 5 },
+        { re: /\b(what\s+happens\s+if|what\s+are\s+the\s+consequences|what\s+are\s+the\s+penalties)\b/, w: 4 },
+        { re: /\b(legal\s+status|legal\s+consequences|legal\s+risks|legal\s+issues)\b/, w: 4 },
+        { re: /\b(regulation|regulatory|compliance|enforcement|violation|prosecution|trial|court)\b/, w: 3 },
+        { re: /\b(constitutional|amendment|bill|act|statute|code|legislation|policy|law\s+reform|decriminalization)\b/, w: 3 },
+        { re: /\b(legal\s+advice|legal\s+opinion|legal\s+guidance|legal\s+help|legal\s+information)\b/, w: 4 },
+        { re: /\b(rights|civil\s+rights|religious\s+rights|freedom|liberty|protection|defense)\b/, w: 3 },
+        { re: /\b(what\s+are\s+my\s+rights|what\s+are\s+the\s+rules|what\s+are\s+the\s+laws|what\s+is\s+allowed|what\s+is\s+permitted)\b/, w: 4 },
+        { re: /\b(can\s+i|can\s+you|could\s+i|could\s+you|will\s+i|will\s+you)\s+(get\s+)?(in\s+trouble|arrested|busted|caught|prosecuted)\b/, w: 5 },
+        { re: /\b(what\s+if\s+i|what\s+if\s+you|what\s+happens\s+if\s+i|what\s+happens\s+if\s+you)\s+(get\s+)?(caught|busted|arrested)\b/, w: 5 },
+        { re: /\b(countries|nations|states|regions|jurisdictions|places|locations)\s+(where|that|which|allow|permit|legal)\b/, w: 5 },
+        { re: /\b(allow|permit|tolerate|accept|recognize|authorize|sanction)\b/, w: 4 },
+        { re: /\b(legal\s+in|legal\s+at|legal\s+for|legal\s+to|legally\s+allowed|legally\s+permitted)\b/, w: 4 },
+        { re: /\b(worldwide|globally|internationally|across\s+countries|around\s+the\s+world)\b/, w: 3 },
+        { re: /\b(which\s+countries|what\s+countries|where\s+is\s+it\s+legal|where\s+can\s+you)\b/, w: 4 },
+        { re: /\b(legal\s+framework|legal\s+system|legal\s+structure|legal\s+regime)\b/, w: 4 },
+        { re: /\b(legal\s+exceptions|legal\s+exemptions|legal\s+protections|legal\s+rights)\b/, w: 4 },
+        { re: /\b(legal\s+status|legal\s+position|legal\s+situation|legal\s+standing)\b/, w: 4 },
+        { re: /\b(legal\s+environment|legal\s+climate|legal\s+landscape|legal\s+context)\b/, w: 3 },
+        { re: /\b(what\s+are\s+the\s+laws|what\s+are\s+the\s+regulations|what\s+are\s+the\s+rules)\b/, w: 4 },
+        { re: /\b(how\s+legal|how\s+illegal|how\s+restricted|how\s+regulated)\b/, w: 4 },
+        { re: /\b(legal\s+around\s+the\s+world|legal\s+worldwide|legal\s+globally)\b/, w: 4 },
+        { re: /\b(legal\s+in\s+different\s+countries|legal\s+across\s+borders|legal\s+by\s+country)\b/, w: 4 },
       ],
-      preparation: [
-        { re: /\b(prep|preparation|brew|tea)\b/, w: 3 },
-        { re: /\b(how\s+to\s+take|administration|sublingual|capsule)\b/, w: 3 },
-        { re: /\b(how\s+to|instructions?|step[-\s]?by[-\s]?step|guide)\b/, w: 4 },
+      administration_measurement: [
+        { re: /\b(prep|preparation|brew|tea)\b/, w: 4 },
+        { re: /\b(how\s+to\s+take|administration|sublingual|capsule)\b/, w: 4 },
+        { re: /\b(how\s+to\s+(take|use|administer|prepare|vape|smoke|inhale|consume))\b/, w: 5 },
+        { re: /\b(instructions?|step[-\s]?by[-\s]?step|guide|procedure|method|technique)\b/, w: 4 },
+        { re: /\b(scale|weigh|volumetric|mg\s*scale|measure|dosage|dose|amount)\b/, w: 4 },
+        { re: /\b(vape|vaping|smoke|smoking|inhale|inhalation|oral|sublingual|nasal|rectal)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+correct\s+way|what\s+is\s+the\s+right\s+way|what\s+is\s+the\s+proper\s+way)\b/, w: 5 },
+        { re: /\b(how\s+do\s+you\s+(vape|smoke|take|use|administer|prepare|consume))\b/, w: 5 },
+        { re: /\b(equipment|device|tool|method|route|administration\s+method)\b/, w: 3 },
+        { re: /\b(temperature|heat|burn|combust|vaporize|evaporate)\b/, w: 3 },
+        { re: /\b(what\s+equipment|what\s+device|what\s+method|what\s+technique)\b/, w: 4 },
+        { re: /\b(best\s+way|optimal\s+way|efficient\s+way|effective\s+way)\b/, w: 4 },
+        { re: /\b(what\s+method|what\s+technique|what\s+procedure|what\s+approach)\b/, w: 4 },
+        { re: /\b(how\s+should\s+you|how\s+do\s+you|how\s+can\s+you)\s+(vape|smoke|take|use|administer)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+method|what\s+is\s+the\s+technique|what\s+is\s+the\s+procedure)\b/, w: 4 },
+        { re: /\b(administration|route\s+of\s+administration|method\s+of\s+use)\b/, w: 4 },
+        { re: /\b(what\s+do\s+you\s+need\s+to\s+(vape|smoke|take|use|administer))\b/, w: 4 },
+        { re: /\b(equipment\s+needed|tools\s+needed|supplies\s+needed|materials\s+needed)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+correct\s+method|what\s+is\s+the\s+right\s+method|what\s+is\s+the\s+proper\s+method)\b/, w: 5 },
+        { re: /\b(how\s+to\s+properly|how\s+to\s+correctly|how\s+to\s+rightly)\s+(vape|smoke|take|use|administer)\b/, w: 5 },
+        { re: /\b(what\s+is\s+the\s+correct\s+technique|what\s+is\s+the\s+right\s+technique|what\s+is\s+the\s+proper\s+technique)\b/, w: 5 },
+        { re: /\b(what\s+is\s+the\s+correct\s+procedure|what\s+is\s+the\s+right\s+procedure|what\s+is\s+the\s+proper\s+procedure)\b/, w: 5 },
       ],
       tolerance: [
-        { re: /\b(tolerance|dependen\w*)\b/, w: 3 },
-        { re: /\b(how\s+often|frequency|spacing|reset)\b/, w: 2 },
+        { re: /\b(tolerance|dependen\w*)\b/, w: 4 },
+        { re: /\b(how\s+often|frequency|spacing|reset)\b/, w: 4 },
+        { re: /\b(every\s+day|daily|weekly|monthly|regularly|consistently)\b/, w: 4 },
+        { re: /\b(can\s+you|could\s+you|should\s+you|is\s+it\s+ok\s+to)\s+(take|use|consume|eat|ingest)\s+(every\s+day|daily|regularly)\b/, w: 5 },
+        { re: /\b(what\s+happens\s+if\s+you|what\s+if\s+you|what\s+are\s+the\s+effects\s+of)\s+(taking|using|consuming)\s+(every\s+day|daily|regularly)\b/, w: 5 },
+        { re: /\b(buildup|build\s+up|accumulation|accumulate|increase|decrease|reduce)\b/, w: 3 },
+        { re: /\b(schedule|timing|interval|break|pause|rest|wait)\b/, w: 3 },
+        { re: /\b(protocol|regimen|routine|pattern|cycle|rotation)\b/, w: 3 },
+        { re: /\b(what\s+is\s+the\s+best\s+frequency|what\s+is\s+the\s+optimal\s+frequency|what\s+is\s+the\s+right\s+frequency)\b/, w: 4 },
+        { re: /\b(how\s+long\s+to\s+wait|how\s+long\s+between|how\s+long\s+until)\b/, w: 4 },
+        { re: /\b(continuous|ongoing|repeated|repetitive|chronic|habitual)\b/, w: 3 },
+        { re: /\b(what\s+is\s+the\s+recommended\s+frequency|what\s+is\s+the\s+suggested\s+frequency)\b/, w: 4 },
+        { re: /\b(how\s+many\s+times|how\s+many\s+days|how\s+many\s+weeks|how\s+many\s+months)\b/, w: 3 },
+        { re: /\b(what\s+is\s+the\s+maximum\s+frequency|what\s+is\s+the\s+minimum\s+frequency|what\s+is\s+the\s+safe\s+frequency)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+best\s+schedule|what\s+is\s+the\s+optimal\s+schedule|what\s+is\s+the\s+right\s+schedule)\b/, w: 4 },
+        { re: /\b(how\s+often\s+can\s+you|how\s+often\s+should\s+you|how\s+often\s+is\s+it\s+ok\s+to)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+best\s+timing|what\s+is\s+the\s+optimal\s+timing|what\s+is\s+the\s+right\s+timing)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+best\s+interval|what\s+is\s+the\s+optimal\s+interval|what\s+is\s+the\s+right\s+interval)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+best\s+pattern|what\s+is\s+the\s+optimal\s+pattern|what\s+is\s+the\s+right\s+pattern)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+best\s+cycle|what\s+is\s+the\s+optimal\s+cycle|what\s+is\s+the\s+right\s+cycle)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+best\s+regimen|what\s+is\s+the\s+optimal\s+regimen|what\s+is\s+the\s+right\s+regimen)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+best\s+protocol|what\s+is\s+the\s+optimal\s+protocol|what\s+is\s+the\s+right\s+protocol)\b/, w: 4 },
+        { re: /\b(lose\s+effectiveness|lose\s+potency|lose\s+strength|become\s+less\s+effective)\b/, w: 5 },
+        { re: /\b(does\s+.*\s+lose|will\s+.*\s+lose|can\s+.*\s+lose)\s+(effectiveness|potency|strength|power)\b/, w: 5 },
+        { re: /\b(if\s+used\s+often|if\s+used\s+frequently|if\s+used\s+regularly|if\s+used\s+repeatedly)\b/, w: 4 },
+        { re: /\b(what\s+happens\s+if\s+you\s+use\s+(often|frequently|regularly|repeatedly))\b/, w: 4 },
+        { re: /\b(what\s+are\s+the\s+effects\s+of\s+(frequent|regular|repeated|ongoing|continuous)\s+use)\b/, w: 4 },
+        { re: /\b(what\s+are\s+the\s+consequences\s+of\s+(frequent|regular|repeated|ongoing|continuous)\s+use)\b/, w: 4 },
+        { re: /\b(what\s+are\s+the\s+risks\s+of\s+(frequent|regular|repeated|ongoing|continuous)\s+use)\b/, w: 4 },
+        { re: /\b(what\s+are\s+the\s+side\s+effects\s+of\s+(frequent|regular|repeated|ongoing|continuous)\s+use)\b/, w: 4 },
+        { re: /\b(what\s+are\s+the\s+problems\s+with\s+(frequent|regular|repeated|ongoing|continuous)\s+use)\b/, w: 4 },
+        { re: /\b(what\s+are\s+the\s+issues\s+with\s+(frequent|regular|repeated|ongoing|continuous)\s+use)\b/, w: 4 },
+        { re: /\b(what\s+are\s+the\s+concerns\s+about\s+(frequent|regular|repeated|ongoing|continuous)\s+use)\b/, w: 4 },
+        { re: /\b(what\s+are\s+the\s+worries\s+about\s+(frequent|regular|repeated|ongoing|continuous)\s+use)\b/, w: 4 },
+        { re: /\b(what\s+are\s+the\s+drawbacks\s+of\s+(frequent|regular|repeated|ongoing|continuous)\s+use)\b/, w: 4 },
       ],
       therapy: [
-        { re: /\b(therap\w*|evidence|study|efficacy|effect\s+size)\b/, w: 3 },
-        { re: /\b(clinical\s+trial|randomi[sz]ed\s+trial|trial\s+results?)\b/, w: 4 },
+        { re: /\b(therap\w*|evidence|study|efficacy|effect\s+size)\b/, w: 4 },
+        { re: /\b(clinical\s+trial|randomi[sz]ed\s+trial|trial\s+results?)\b/, w: 5 },
+        { re: /\b(research|scientific|clinical|medical|therapeutic|treatment)\b/, w: 4 },
+        { re: /\b(what\s+does\s+research\s+say|what\s+does\s+the\s+research\s+show|what\s+does\s+the\s+evidence\s+show)\b/, w: 5 },
+        { re: /\b(what\s+do\s+studies\s+show|what\s+do\s+trials\s+show|what\s+do\s+experiments\s+show)\b/, w: 5 },
+        { re: /\b(what\s+is\s+the\s+evidence|what\s+is\s+the\s+research|what\s+is\s+the\s+science)\b/, w: 4 },
+        { re: /\b(how\s+effective|how\s+successful|how\s+well\s+does\s+it\s+work)\b/, w: 4 },
+        { re: /\b(what\s+are\s+the\s+results|what\s+are\s+the\s+findings|what\s+are\s+the\s+outcomes)\b/, w: 4 },
+        { re: /\b(phase\s+[12]|phase\s+[23]|phase\s+[34]|clinical\s+phase)\b/, w: 4 },
+        { re: /\b(approved|approval|fda|regulatory|medical\s+use|prescription)\b/, w: 3 },
+        { re: /\b(what\s+is\s+the\s+success\s+rate|what\s+is\s+the\s+response\s+rate|what\s+is\s+the\s+remission\s+rate)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+cure\s+rate|what\s+is\s+the\s+healing\s+rate|what\s+is\s+the\s+recovery\s+rate)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+improvement\s+rate|what\s+is\s+the\s+benefit\s+rate|what\s+is\s+the\s+help\s+rate)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+risk\s+benefit|what\s+is\s+the\s+risk\s+ratio|what\s+is\s+the\s+risk\s+profile)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+comparison|what\s+is\s+the\s+difference|what\s+is\s+the\s+contrast)\b/, w: 3 },
+        { re: /\b(what\s+is\s+the\s+alternative|what\s+is\s+the\s+option|what\s+is\s+the\s+choice)\b/, w: 3 },
+        { re: /\b(what\s+is\s+the\s+best\s+treatment|what\s+is\s+the\s+optimal\s+treatment|what\s+is\s+the\s+right\s+treatment)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+most\s+effective|what\s+is\s+the\s+most\s+successful|what\s+is\s+the\s+most\s+beneficial)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+standard\s+of\s+care|what\s+is\s+the\s+first\s+line|what\s+is\s+the\s+conventional)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+experimental|what\s+is\s+the\s+investigational|what\s+is\s+the\s+novel)\b/, w: 3 },
+        { re: /\b(has\s+.*\s+been\s+studied|has\s+.*\s+been\s+researched|has\s+.*\s+been\s+tested)\b/, w: 5 },
+        { re: /\b(what\s+evidence\s+exists|what\s+evidence\s+is\s+there|what\s+evidence\s+shows)\b/, w: 4 },
+        { re: /\b(what\s+research\s+exists|what\s+research\s+is\s+there|what\s+research\s+shows)\b/, w: 4 },
+        { re: /\b(what\s+studies\s+exist|what\s+studies\s+are\s+there|what\s+studies\s+show)\b/, w: 4 },
+        { re: /\b(what\s+trials\s+exist|what\s+trials\s+are\s+there|what\s+trials\s+show)\b/, w: 4 },
+        { re: /\b(what\s+is\s+known\s+about|what\s+do\s+we\s+know\s+about|what\s+have\s+we\s+learned\s+about)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+current\s+understanding|what\s+is\s+the\s+current\s+knowledge|what\s+is\s+the\s+current\s+state)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+latest\s+research|what\s+is\s+the\s+recent\s+research|what\s+is\s+the\s+new\s+research)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+recent\s+evidence|what\s+is\s+the\s+latest\s+evidence|what\s+is\s+the\s+new\s+evidence)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+status\s+of\s+research|what\s+is\s+the\s+state\s+of\s+research|what\s+is\s+the\s+progress\s+of\s+research)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+quality\s+of\s+evidence|what\s+is\s+the\s+strength\s+of\s+evidence|what\s+is\s+the\s+level\s+of\s+evidence)\b/, w: 4 },
       ],
-      integration: [
-        { re: /\b(integration|aftercare|intentions|grounding)\b/, w: 3 },
+      preparation_integration: [
+        { re: /\b(integration|aftercare|intentions|grounding)\b/, w: 4 },
+        { re: /\b(set\s+and\s+setting\s+plan|music|playlist|lighting|sitter)\b/, w: 4 },
+        { re: /\b(how\s+can\s+.*\s+integrate|how\s+do\s+.*\s+integrate|how\s+should\s+.*\s+integrate)\b/, w: 5 },
+        { re: /\b(what\s+is\s+integration|what\s+does\s+integration\s+mean|what\s+is\s+the\s+integration\s+process)\b/, w: 4 },
+        { re: /\b(insights|lessons|experiences|revelations|understandings|realizations)\b/, w: 4 },
+        { re: /\b(post\s*experience|after\s*experience|following\s*experience|post\s*session|after\s*session)\b/, w: 4 },
+        { re: /\b(how\s+to\s+process|how\s+to\s+work\s+with|how\s+to\s+use|how\s+to\s+apply)\b/, w: 4 },
+        { re: /\b(journaling|reflection|meditation|mindfulness|contemplation|prayer)\b/, w: 3 },
+        { re: /\b(community|support\s+group|integration\s+circle|therapy|counseling|coaching)\b/, w: 3 },
+        { re: /\b(what\s+to\s+do\s+after|what\s+to\s+do\s+post|what\s+to\s+do\s+following)\b/, w: 4 },
+        { re: /\b(how\s+to\s+make\s+meaning|how\s+to\s+find\s+meaning|how\s+to\s+create\s+meaning)\b/, w: 4 },
+        { re: /\b(how\s+to\s+continue|how\s+to\s+maintain|how\s+to\s+sustain|how\s+to\s+keep)\b/, w: 4 },
+        { re: /\b(what\s+are\s+integration\s+practices|what\s+are\s+integration\s+techniques|what\s+are\s+integration\s+methods)\b/, w: 4 },
+        { re: /\b(what\s+are\s+preparation\s+practices|what\s+are\s+preparation\s+techniques|what\s+are\s+preparation\s+methods)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+best\s+way\s+to\s+integrate|what\s+is\s+the\s+optimal\s+way\s+to\s+integrate|what\s+is\s+the\s+right\s+way\s+to\s+integrate)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+best\s+way\s+to\s+prepare|what\s+is\s+the\s+optimal\s+way\s+to\s+prepare|what\s+is\s+the\s+right\s+way\s+to\s+prepare)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+best\s+way\s+to\s+process|what\s+is\s+the\s+optimal\s+way\s+to\s+process|what\s+is\s+the\s+right\s+way\s+to\s+process)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+best\s+way\s+to\s+work\s+with|what\s+is\s+the\s+optimal\s+way\s+to\s+work\s+with|what\s+is\s+the\s+right\s+way\s+to\s+work\s+with)\b/, w: 4 },
+        { re: /\b(rituals?|ceremonies?|traditions?|customs?|practices?)\b/, w: 4 },
+        { re: /\b(before|prior\s+to|leading\s+up\s+to|in\s+preparation\s+for|ahead\s+of)\b/, w: 4 },
+        { re: /\b(pre\s*ceremony|pre\s*ritual|pre\s*session|pre\s*experience|pre\s*use)\b/, w: 4 },
+        { re: /\b(what\s+rituals|what\s+ceremonies|what\s+traditions|what\s+customs|what\s+practices)\b/, w: 5 },
+        { re: /\b(what\s+are\s+the\s+rituals|what\s+are\s+the\s+ceremonies|what\s+are\s+the\s+traditions|what\s+are\s+the\s+customs|what\s+are\s+the\s+practices)\b/, w: 5 },
+        { re: /\b(how\s+do\s+therapists|how\s+do\s+counselors|how\s+do\s+professionals|how\s+do\s+experts)\b/, w: 5 },
+        { re: /\b(how\s+do\s+.*\s+help\s+with|how\s+do\s+.*\s+support|how\s+do\s+.*\s+assist)\b/, w: 4 },
+        { re: /\b(integration\s+therapy|integration\s+counseling|integration\s+support|integration\s+work)\b/, w: 5 },
+        { re: /\b(what\s+do\s+therapists\s+do|what\s+do\s+counselors\s+do|what\s+do\s+professionals\s+do)\b/, w: 4 },
+        { re: /\b(how\s+can\s+therapy\s+help|how\s+can\s+counseling\s+help|how\s+can\s+professional\s+help)\b/, w: 4 },
       ],
-      testing: [
-        { re: /\b(test\s*kit|reagent|fentanyl\s*strip|adulterant|drug\s*checking|lab\s*testing)\b/, w: 4 },
+      safety_quality: [
+        { re: /\b(test\s*kit|reagent|fentanyl\s*strip|adulterant|drug\s*checking|lab\s*testing)\b/, w: 5 },
+        { re: /\b(test|testing|purity|impurity|adulterant|contaminant|substance\s+checking)\b/, w: 4 },
+        { re: /\b(equipment|tools|gear|supplies|materials|instruments)\b/, w: 4 },
+        { re: /\b(marquis|mecke|simon|mandelin|froehde|reagent\s+test)\b/, w: 5 },
+        { re: /\b(source|quality|storage|mold|coa|certificate\s+of\s+analysis)\b/, w: 4 },
+        { re: /\b(what\s+do\s+you\s+need|what\s+equipment|what\s+tools|what\s+supplies)\b/, w: 4 },
+        { re: /\b(harm\s+reduction|safety\s+testing|purity\s+testing|adulterant\s+detection)\b/, w: 4 },
+        { re: /\b(spot\s+plate|micro\s+scoop|milligram\s+scale|weighing\s+scale)\b/, w: 4 },
+        { re: /\b(color\s+change|reaction|chemical\s+test|identification)\b/, w: 3 },
+        { re: /\b(verify|confirm|identify|detect|check|validate)\b/, w: 3 },
+        { re: /\b(how\s+to\s+test|how\s+do\s+you\s+test|testing\s+procedure|testing\s+method)\b/, w: 4 },
+        { re: /\b(test\s+results|test\s+outcome|test\s+reading|test\s+interpretation)\b/, w: 3 },
+        { re: /\b(what\s+to\s+look\s+for|what\s+to\s+expect|what\s+indicates|what\s+shows)\b/, w: 3 },
+        { re: /\b(accurate|reliable|trustworthy|precise|exact|correct)\b/, w: 2 },
+        { re: /\b(what\s+equipment|what\s+tools|what\s+supplies|what\s+materials)\b/, w: 4 },
+        { re: /\b(need|required|necessary|essential|important|crucial)\b/, w: 2 },
+        { re: /\b(what\s+do\s+you\s+need|what\s+should\s+you\s+have|what\s+must\s+you\s+have)\b/, w: 4 },
+        { re: /\b(equipment\s+list|tool\s+list|supply\s+list|materials\s+list)\b/, w: 4 },
+        { re: /\b(what\s+is\s+needed|what\s+is\s+required|what\s+is\s+necessary)\b/, w: 4 },
+        { re: /\b(testing\s+kit|testing\s+equipment|testing\s+tools|testing\s+supplies)\b/, w: 4 },
+        { re: /\b(what\s+equipment\s+do\s+you\s+need|what\s+tools\s+do\s+you\s+need)\b/, w: 5 },
+        { re: /\b(how\s+to\s+check|how\s+to\s+verify|how\s+to\s+confirm)\b/, w: 4 },
+        { re: /\b(store|storage|storing|keep|preserve|maintain|protect)\b/, w: 4 },
+        { re: /\b(safest\s+way|safe\s+method|safe\s+practice|safe\s+technique)\b/, w: 5 },
+        { re: /\b(how\s+to\s+safely|how\s+to\s+store|how\s+to\s+keep|how\s+to\s+preserve)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+safest|what\s+is\s+the\s+safe|what\s+are\s+the\s+safe)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+best\s+way\s+to\s+store|what\s+is\s+the\s+best\s+way\s+to\s+keep)\b/, w: 4 },
+        { re: /\b(container|vial|bag|package|wrap|seal|airtight|moisture|humidity)\b/, w: 3 },
+        { re: /\b(temperature|heat|cold|freezer|refrigerator|cool|dark|light|exposure)\b/, w: 3 },
+        { re: /\b(degradation|degrade|potency|strength|effectiveness|shelf\s+life|expiration)\b/, w: 4 },
       ],
-      age_pregnancy_populations: [
-        { re: /\b(pregnan\w*|lacta\w*|breastfeed\w*|older\s+adult|elderly|child|teen|adolesc\w*)\b/, w: 4 },
+      special_populations: [
+        { re: /\b(pregnan\w*|lacta\w*|breastfeed\w*|older\s+adult|elderly|child|teen|adolesc\w*)\b/, w: 5 },
+        { re: /\b(psychosis|bipolar|schizo\w*|ptsd|depress\w*)\b/, w: 5 },
+        { re: /\b(anxiety\s+disorder|chronic\s+anxiety|generalized\s+anxiety)\b/, w: 5 },
+        { re: /\b(is\s+it\s+safe\s+to\s+use|is\s+it\s+safe\s+to\s+take|is\s+it\s+safe\s+to\s+consume)\b/, w: 5 },
+        { re: /\b(while\s+pregnant|during\s+pregnancy|when\s+pregnant|if\s+pregnant)\b/, w: 5 },
+        { re: /\b(while\s+breastfeeding|during\s+lactation|when\s+breastfeeding|if\s+breastfeeding)\b/, w: 5 },
+        { re: /\b(while\s+on\s+medication|during\s+treatment|when\s+on\s+meds|if\s+on\s+medication)\b/, w: 4 },
+        { re: /\b(mental\s+health|psychiatric|psychological|emotional\s+health)\b/, w: 4 },
+        { re: /\b(special\s+populations|vulnerable\s+populations|at\s+risk\s+groups)\b/, w: 4 },
+        { re: /\b(what\s+about\s+pregnant|what\s+about\s+breastfeeding|what\s+about\s+elderly)\b/, w: 4 },
+        { re: /\b(can\s+teenagers|can\s+teens|can\s+adolescents|can\s+minors)\b/, w: 5 },
+        { re: /\b(can\s+.*\s+take|can\s+.*\s+use|can\s+.*\s+consume)\b/, w: 4 },
+        { re: /\b(teenagers?|teens?|adolescents?|minors?|youth|young\s+people)\b/, w: 5 },
+        { re: /\b(developmental|development|growing|maturing|underage|minor)\b/, w: 4 },
+        { re: /\b(what\s+about\s+teens|what\s+about\s+teenagers|what\s+about\s+adolescents)\b/, w: 4 },
+        { re: /\b(are\s+.*\s+at\s+higher\s+risk|are\s+.*\s+at\s+risk|are\s+.*\s+more\s+vulnerable)\b/, w: 5 },
+        { re: /\b(older\s+adults?|elderly|seniors?|aging|aged|senior\s+citizens?)\b/, w: 5 },
+        { re: /\b(risk|vulnerable|susceptible|sensitive|fragile|delicate)\b/, w: 4 },
+        { re: /\b(what\s+about\s+older\s+adults|what\s+about\s+elderly|what\s+about\s+seniors)\b/, w: 4 },
+        { re: /\b(age\s+related|age\s+specific|age\s+appropriate|age\s+considerations)\b/, w: 4 },
       ],
-      mental_health: [
-        { re: /\b(psychosis|bipolar|schizo\w*|ptsd|anxiety|depress\w*)\b/, w: 4 },
-      ],
-      cardiac_risk: [
+      physical_health: [
         { re: /\b(heart|cardiac|arrhythm\w*|blood\s+pressure|hypertension|qtc)\b/, w: 4 },
-      ],
-      toxicology: [
         { re: /\b(toxic\w*|neurotoxic\w*|serotonin\s+syndrome|hyperthermia|hyponatremia|poison\w*)\b/, w: 4 },
+        { re: /\b(liver|hepatic|hepatotoxic|kidney|renal|nephrotoxic|lung|pulmonary)\b/, w: 4 },
+        { re: /\b(brain|neurological|neurological|cognitive|memory|learning)\b/, w: 4 },
+        { re: /\b(how\s+toxic|how\s+poisonous|how\s+harmful|how\s+dangerous)\b/, w: 5 },
+        { re: /\b(organ\s+damage|organ\s+toxicity|organ\s+injury|organ\s+harm)\b/, w: 4 },
+        { re: /\b(physical\s+health|physical\s+effects|physical\s+risks|physical\s+damage)\b/, w: 4 },
+        { re: /\b(what\s+does\s+.*\s+do\s+to\s+the|how\s+does\s+.*\s+affect\s+the)\b/, w: 4 },
+        { re: /\b(metabolism|metabolize|breakdown|process|eliminate|excrete)\b/, w: 3 },
+        { re: /\b(blood\s+test|lab\s+test|enzyme|elevated|abnormal|normal)\b/, w: 3 },
+        { re: /\b(cardiovascular|cardio|circulatory|vascular|blood\s+vessel)\b/, w: 4 },
+        { re: /\b(heart\s+rate|blood\s+pressure|hypertension|hypotension|arrhythmia)\b/, w: 4 },
+        { re: /\b(what\s+are\s+the\s+.*\s+risks|what\s+are\s+the\s+.*\s+effects|what\s+are\s+the\s+.*\s+concerns)\b/, w: 4 },
+        { re: /\b(risk|risks|danger|dangers|hazard|hazards|concern|concerns)\b/, w: 3 },
+        { re: /\b(palpitation|tachycardia|bradycardia|irregular\s+heartbeat)\b/, w: 4 },
+        { re: /\b(vasoconstriction|vasodilation|constriction|dilation|narrowing|widening)\b/, w: 3 },
+        { re: /\b(bladder|urinary|urethra|kidney|renal|nephrotoxic|cystitis|incontinence)\b/, w: 4 },
+        { re: /\b(can\s+.*\s+damage|can\s+.*\s+hurt|can\s+.*\s+harm|can\s+.*\s+injure)\b/, w: 5 },
+        { re: /\b(damage|injury|harm|hurt|wound|lesion|ulcer|inflammation)\b/, w: 4 },
+        { re: /\b(urinary\s+frequency|urinary\s+urgency|urinary\s+pain|urinary\s+problems)\b/, w: 4 },
+        { re: /\b(what\s+does\s+.*\s+do\s+to|how\s+does\s+.*\s+affect|can\s+.*\s+affect)\b/, w: 4 },
+        { re: /\b(side\s+effect|adverse\s+effect|negative\s+effect|harmful\s+effect)\b/, w: 3 },
       ],
-      pharmacology_moa: [
-        { re: /\b(mechanism|moa|receptor|5-ht|nmda|gaba|dopamine)\b/, w: 3 },
+      mechanisms_metabolism: [
+        { re: /\b(mechanism|moa|receptor|5-ht|nmda|gaba|dopamine)\b/, w: 4 },
+        { re: /\b(half-?life|cyp\w*|metabol\w*|pharmacokinetic\w*|pk\b|eliminat\w*)\b/, w: 4 },
+        { re: /\b(activate|activation|bind|binding|interact|interaction|target|targeting)\b/, w: 4 },
+        { re: /\b(what\s+receptors|what\s+receptor|which\s+receptors|which\s+receptor)\b/, w: 5 },
+        { re: /\b(how\s+does\s+.*\s+work|how\s+does\s+.*\s+function|how\s+does\s+.*\s+operate)\b/, w: 4 },
+        { re: /\b(neurochemical|neurotransmitter|synapse|synaptic|neural|neuron)\b/, w: 4 },
+        { re: /\b(serotonin|dopamine|norepinephrine|acetylcholine|glutamate|gaba)\b/, w: 4 },
+        { re: /\b(agonist|antagonist|partial\s+agonist|inverse\s+agonist)\b/, w: 4 },
+        { re: /\b(what\s+does\s+.*\s+do\s+in\s+the\s+brain|how\s+does\s+.*\s+affect\s+the\s+brain)\b/, w: 4 },
+        { re: /\b(pharmacology|pharmacological|drug\s+action|drug\s+mechanism)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+half.?life|what\s+is\s+the\s+half.?life\s+of|what\s+is\s+the\s+half.?life\s+for)\b/, w: 5 },
+        { re: /\b(how\s+long\s+does\s+.*\s+last|how\s+long\s+does\s+.*\s+stay|how\s+long\s+does\s+.*\s+remain)\b/, w: 4 },
+        { re: /\b(duration|timing|clearance|elimination|excretion|removal)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+duration|what\s+is\s+the\s+timing|what\s+is\s+the\s+clearance)\b/, w: 4 },
+        { re: /\b(metabolize|metabolism|breakdown|degradation|processing|conversion)\b/, w: 4 },
+        { re: /\b(what\s+is\s+the\s+metabolism|how\s+is\s+.*\s+metabolized|how\s+does\s+.*\s+break\s+down)\b/, w: 4 },
       ],
-      pharmacokinetics: [
-        { re: /\b(half-?life|cyp\w*|metabol\w*|pharmacokinetic\w*|pk\b|eliminat\w*)\b/, w: 3 },
-      ],
-      aftereffects: [
+      challenges_recovery: [
         { re: /\b(withdrawal|comedown|hangover|aftereffect\w*|next\s+day)\b/, w: 4 },
-      ],
-      measurement: [
-        { re: /\b(scale|weigh|volumetric|mg\s*scale|measure)\b/, w: 3 },
-      ],
-      stacking: [
-        { re: /\b(stack|combo|combine)\b/, w: 3 },
-        { re: /\b(with\s+cacao|with\s+caffeine|lemon\s+tek)\b/, w: 3 },
-        { re: /\b(together|pair(?:ing)?)\b/, w: 2 },
-      ],
-      set_setting_planning: [
-        { re: /\b(set\s+and\s+setting\s+plan|music|playlist|lighting|sitter)\b/, w: 3 },
-      ],
-      sourcing_quality: [
-        { re: /\b(source|quality|storage|contaminant|mold|coa)\b/, w: 3 },
-      ],
-      myths_vs_facts: [
-        { re: /\b(myth|misconception|is\s+it\s+true)\b/, w: 3 },
-      ],
-      glossary: [
-        { re: /\b(define|glossary|term)\b/, w: 2 },
-        { re: /\bwhat\s+does\s+.+\s+mean\b/, w: 4 },
-      ],
-      protocol: [
-        { re: /\b(protocol|step\s+by\s+step|checklist|guide)\b/, w: 4 },
-      ],
-      troubleshooting: [
         { re: /\btroubleshoot\w*\b/, w: 4 },
         { re: /didn['']t\s+feel\s+anything/, w: 4 },
         { re: /\bnausea\b/, w: 2 },
         { re: /\banxiety\s+spike\b/, w: 3 },
         { re: /\boverwhelm\b/, w: 3 },
+        { re: /\b(recover|recovery|healing|heal|overcome|overcoming)\b/, w: 4 },
+        { re: /\b(difficult|challenging|hard|tough|rough|bad|negative|unpleasant)\b/, w: 4 },
+        { re: /\b(how\s+do\s+you\s+recover|how\s+do\s+you\s+heal|how\s+do\s+you\s+overcome)\b/, w: 5 },
+        { re: /\b(what\s+to\s+do\s+if|what\s+should\s+you\s+do\s+if|what\s+can\s+you\s+do\s+if)\b/, w: 4 },
+        { re: /\b(problem|problems|issue|issues|trouble|troubles|difficulty|difficulties)\b/, w: 3 },
+        { re: /\b(help|helping|support|supporting|assist|assisting|guide|guiding)\b/, w: 3 },
+        { re: /\b(integration|process|processing|work\s+through|deal\s+with|cope\s+with)\b/, w: 3 },
+      ],
+      protocols_combinations: [
+        { re: /\b(protocol|step\s+by\s+step|checklist|guide)\b/, w: 4 },
+        { re: /\b(stack|combo|combine)\b/, w: 3 },
+        { re: /\b(with\s+cacao|with\s+caffeine|lemon\s+tek)\b/, w: 3 },
+        { re: /\b(together|pair(?:ing)?)\b/, w: 2 },
+      ],
+      education: [
+        { re: /\b(myth|misconception|is\s+it\s+true)\b/, w: 3 },
+        { re: /\b(define|glossary|term)\b/, w: 2 },
+        { re: /\bwhat\s+does\s+.+\s+mean\b/, w: 4 },
       ],
     };
 
     // Priority order as a final tiebreaker (more specific before general)
     const priority = [
       'compare',
-      'protocol',
+      'protocols_combinations',
       'microdosing',
       'interactions',
-      'stacking',
       'safety',
       'therapy',
       'legality',
@@ -2393,22 +2514,14 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
       'effects',
       'dosing',
       'tolerance',
-      'integration',
-      'testing',
-      'age_pregnancy_populations',
-      'mental_health',
-      'cardiac_risk',
-      'toxicology',
-      'pharmacology_moa',
-      'pharmacokinetics',
-      'aftereffects',
-      'measurement',
-      'stacking',
-      'set_setting_planning',
-      'sourcing_quality',
-      'myths_vs_facts',
-      'glossary',
-      'troubleshooting',
+      'preparation_integration',
+      'safety_quality',
+      'special_populations',
+      'physical_health',
+      'mechanisms_metabolism',
+      'challenges_recovery',
+      'administration_measurement',
+      'education',
     ];
 
     // Score categories
@@ -2431,12 +2544,22 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
       scores.event = Math.max(0, scores.event - 2);
     }
 
-    // If combination/mixing cues are present, boost interactions/stacking and down-weight safety
+    // If combination/mixing cues are present, boost interactions and protocols_combinations
+    // Only down-weight safety if it's not a clear safety question (like emergency/ambulance)
     const combineCue = /\b(combine|combining|mix|mixing|stack|together|pair(?:ing)?|with\s+\w+)\b/;
+    const safetyEmergencyCue = /\b(ambulance|emergency|crisis|dangerous|life.?threatening|severe|critical|immediate|urgent)\b/;
     if (combineCue.test(s)) {
       scores.interactions = (scores.interactions || 0) + 2;
-      scores.stacking = (scores.stacking || 0) + 2;
-      scores.safety = Math.max(0, (scores.safety || 0) - 2);
+      scores.protocols_combinations = (scores.protocols_combinations || 0) + 2;
+      // Only down-weight safety if it's not an emergency question
+      if (!safetyEmergencyCue.test(s)) {
+        scores.safety = Math.max(0, (scores.safety || 0) - 2);
+      }
+    }
+
+    // Emergency questions should strongly favor safety template
+    if (safetyEmergencyCue.test(s)) {
+      scores.safety = (scores.safety || 0) + 3;
     }
 
     // Determine best match
@@ -2455,6 +2578,13 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
           bestType = type;
         }
       }
+    }
+
+    // Debug logging for template selection
+    if (window.location.hostname === 'localhost' || window.location.hostname.includes('local')) {
+      console.log('Template selection debug for question:', q);
+      console.log('Scores:', scores);
+      console.log('Selected template:', bestType, 'with score:', bestScore);
     }
 
     // Minimum threshold to avoid spurious matches
