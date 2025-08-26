@@ -454,22 +454,14 @@ $filter_options = [
                     <div style="font-size: 14px; color: #000;">Negative Reactions</div>
                 </div>
                 <div style="text-align: center;">
-                    <div style="font-size: 24px; font-weight: 700; color: #fff;"><?php echo $csat_data['total_reactions']; ?></div>
-                    <div style="font-size: 14px; color: #000;">Total Responses</div>
+                    <div style="font-size: 24px; font-weight: 700; color: #000000 !important;"><?php echo $csat_data['total_reactions']; ?></div>
+                    <div style="font-size: 14px; color: #000000 !important; font-weight: 500;">Total Responses</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Action Buttons -->
-    <div style="margin-top: 30px; text-align: center; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-        <button type="button" class="button button-primary" id="refresh-csat" style="padding: 10px 20px; font-size: 16px;">
-            🔄 Refresh CSAT Data
-        </button>
-        <button type="button" class="button button-secondary" id="export-csat" style="padding: 10px 20px; font-size: 16px;">
-            📊 Export Data
-        </button>
-    </div>
+
 
 
 </div>
@@ -575,7 +567,7 @@ jQuery(document).ready(function($) {
         
         // Create CSV data
         const csvData = createCSATData();
-        downloadCSV(csvData, 'csat-analytics-<?php echo $current_filter; ?>.csv');
+        downloadCSV(csvData, 'csat-analytics-<?php echo $current_filter; ?>-<?php echo date('Y-m-d'); ?>.csv');
         
         setTimeout(function() {
             button.prop('disabled', false).text('📊 Export Data');
@@ -597,6 +589,7 @@ jQuery(document).ready(function($) {
         validatePhase3();
     });
     
+    // Helper functions for CSV export
     function createCSATData() {
         const data = <?php echo json_encode($csat_data); ?>;
         let csv = 'CSAT Analytics Report - <?php echo $filter_options[$current_filter]; ?>\n\n';
@@ -631,6 +624,7 @@ jQuery(document).ready(function($) {
             document.body.removeChild(link);
         }
     }
+
 });
 
 // 3-Phase Approval System Functions
