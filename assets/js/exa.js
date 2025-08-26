@@ -60,7 +60,7 @@ jQuery(document).ready(function($) {
     const dislikeSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="none" class="tabler-icon tabler-icon-thumb-down-filled reaction-dislike-svg" style="vertical-align:middle;transform:scaleY(-1);"><path d="M13 3a3 3 0 0 1 2.995 2.824l.005 .176v4h2a3 3 0 0 1 2.98 2.65l.015 .174l.005 .176l-.02 .196l-1.006 5.032c-.381 1.626 -1.502 2.796 -2.81 2.78l-.164 -.008h-8a1 1 0 0 1 -.993 -.883l-.007 -.117l.001 -9.536a1 1 0 0 1 .5 -.865a2.998 2.998 0 0 0 1.492 -2.397l.007 -.202v-1a3 3 0 0 1 3 -3z" fill="currentColor"></path><path d="M5 10a1 1 0 0 1 .993 .883l.007 .117v9a1 1 0 0 1 -.883 .993l-.117 .007h-1a2 2 0 0 1 -1.995 -1.85l-.005 -.15v-7a2 2 0 0 1 1.85 -1.995l.15 -.005h1z" fill="currentColor"></path></svg>`;
     const shareSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7999999999999998" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-share-3 "><path d="M13 4v4c-6.575 1.028 -9.02 6.788 -10 12c-.037 .206 5.384 -5.962 10 -6v4l8 -7l-8 -7z"></path></svg>`;
 
-    const rewriteSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M3 21v-5h5"></path></svg>`;
+
 
     const moreSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>`;
 
@@ -531,10 +531,6 @@ jQuery(document).ready(function($) {
                         ${shareSVG}
                         Share
                     </button>
-                    <button class="action-btn rewrite-btn" data-id="${chatlogId}">
-                        ${rewriteSVG}
-                        Rewrite
-                    </button>
                 </div>
                 <div class="reaction-buttons">
                     <span class="reaction-like" data-id="${chatlogId}">${likeSVG}</span>
@@ -543,6 +539,7 @@ jQuery(document).ready(function($) {
                     <span class="dislike-count" id="dislike-count-${chatlogId}">0</span>
                     <span class="reaction-more" data-id="${chatlogId}">${moreSVG}</span>
                 </div>
+                <div class="reaction-options-container" style="display:none;position:absolute;z-index:10;"></div>
             </div>
         `);
         block.append(reactionBar);
@@ -563,28 +560,9 @@ jQuery(document).ready(function($) {
             copyAnswerLink(block, chatlogId);
         });
 
-        reactionBar.find('.rewrite-btn').on('click', function() {
-            rewriteAnswer(block, chatlogId);
-        });
-
         reactionBar.find('.reaction-more').on('click', function() {
             showMoreOptions(block, chatlogId);
         });
-    }
-
-
-
-    // Rewrite answer functionality
-    function rewriteAnswer(block, chatlogId) {
-        const question = block.find('.exa-user-question').text();
-        const answer = block.find('.exa-answer-streaming').html();
-        const container = block.find('.exa-answer-streaming')[0];
-        
-        // Show rewriting indicator
-        container.innerHTML = '<div style="text-align: center; padding: 40px; color: rgba(255,255,255,0.7);">🔄 Rewriting answer...</div>';
-        
-        // Call the rewrite function
-        streamOpenAIRewrite(question, answer, container);
     }
 
 
@@ -2590,88 +2568,6 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     //     }
     // }
 
-    // Optimized rewrite function
-    function streamOpenAIRewrite(query, rawContent, container) {
-        const prompt = `
-            You are a helpful and friendly psychedelic content writer.
-
-            Rewrite the following raw content into a clean, structured answer using HTML.
-
-            Question: "${query}"
-
-            Raw Notes:
-            ${rawContent}
-
-            ✅ Formatting Instructions:
-            - Use <h2>, <p>, <ul>, <li>, <table>, <thead>, <tbody>, <tr>, <td>, <th> only.
-            - Add emojis to headings: 🧠, ⚠️, 🍄
-            - Clean and simplify language for readers.
-            - For tables, use proper structure: <table><thead><tr><th>Header</th></tr></thead><tbody><tr><td>Data</td></tr></tbody></table>
-            - Output pure HTML, no Markdown, no escaping.
-            - Do not include filenames or timestamps.
-        `.trim();
-
-        const url = exa_ajax.ajaxurl + '?action=openai_stream';
-        let buffer = '';
-        container.innerHTML = '';
-
-        // Use fetch with streaming for POST-based approach
-        fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'prompt=' + encodeURIComponent(prompt)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            
-            function readStream() {
-                return reader.read().then(({ done, value }) => {
-                    if (done) {
-                        // Stream complete
-                        container.innerHTML = sanitizeHTML(buffer);
-                        
-                        // Make related questions clickable after content is loaded
-                        makeRelatedQuestionsClickable(container);
-                        
-                        // Apply styling to "Where to Learn More" section
-                        styleWhereToLearnMoreInDOM(container);
-                        return;
-                    }
-                    
-                    // Process the chunk
-                    const chunk = decoder.decode(value, { stream: true });
-                    const lines = chunk.split('\n');
-                    
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.slice(6);
-                            if (data && data !== '[DONE]') {
-                                buffer += data;
-                                
-                                // Update immediately for real-time streaming
-                                container.innerHTML = sanitizeHTML(buffer);
-                            }
-                        }
-                    }
-                    
-                    // Continue reading
-                    return readStream();
-                });
-            }
-            
-            return readStream();
-        })
-        .catch(error => {
-            console.error('Streaming error:', error);
-            container.insertAdjacentHTML('beforeend', '<p><em>⚠️ Error: ' + error.message + '</em></p>');
-        });
-    }
-
     // Optimized local answer streaming
     function streamLocalAnswer(html, container) {
         container.innerHTML = '';
@@ -2774,11 +2670,11 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     function renderReactionOptions(bar, type) {
         const options = type === 'like' ? LIKE_OPTIONS : DISLIKE_OPTIONS;
         const optionsHtml = options.map(opt => `<button class="reaction-option-btn" data-type="${type}" data-option="${opt}">${opt}</button>`).join(' ');
-        let html = `<div class="reaction-options-popup" style="background:#fff;border:1px solid #ccc;padding:10px;margin-top:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        let html = `<div class="reaction-options-popup">
             <div class="reaction-options-list">${optionsHtml}</div>
-            <div class="reaction-custom" style="display:none;margin-top:8px;">
-                <textarea class="reaction-custom-text" rows="2" style="width:100%;margin-bottom:5px;" placeholder="Tell us more..."></textarea>
-                <button class="reaction-custom-submit">Submit</button>
+            <div class="reaction-custom" style="display:none;">
+                <textarea class="reaction-custom-text" rows="3" placeholder="Tell us more about your feedback..."></textarea>
+                <button class="reaction-custom-submit">Submit Feedback</button>
             </div>
         </div>`;
         bar.find('.reaction-options-container').html(html).show();

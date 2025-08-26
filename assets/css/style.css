@@ -499,6 +499,92 @@
     color: #e74c3c;
 }
 
+/* Modern Reaction Options Popup */
+.modern-ui .reaction-options-container {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 1000;
+    margin-top: 8px;
+}
+
+.modern-ui .reaction-options-popup {
+    background: #1a0024;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    min-width: 200px;
+}
+
+.modern-ui .reaction-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.modern-ui .reaction-option-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.modern-ui .reaction-option-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.modern-ui .reaction-custom {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 16px;
+}
+
+.modern-ui .reaction-custom-text {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 12px;
+    border-radius: 8px;
+    width: 100%;
+    margin-bottom: 12px;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 80px;
+}
+
+.modern-ui .reaction-custom-text::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.modern-ui .reaction-custom-submit {
+    background: #3bb273;
+    border: none;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.modern-ui .reaction-custom-submit:hover {
+    background: #2d8f5a;
+}
+
+/* Ensure reaction buttons are properly positioned for popup */
+.modern-ui .reaction-buttons {
+    position: relative;
+}
+
 /* Modern Follow-up Prompts */
 .modern-ui .follow-up-prompt.modern {
     margin-top: 20px;
@@ -1136,4 +1222,84 @@
 .section-related-questions a:hover {
     color: #4ddb8a !important;
     text-decoration: underline !important;
+}  
+
+/* Legacy reaction bar styles for compatibility */
+.answer-reaction-bar {
+    position: relative;
+}
+
+.answer-reaction-bar .reaction-options-container {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 1000;
+    margin-top: 8px;
+}
+
+.answer-reaction-bar .reaction-options-popup {
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-top: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    min-width: 200px;
+    border-radius: 8px;
+}
+
+.answer-reaction-bar .reaction-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.answer-reaction-bar .reaction-option-btn {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #495057;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.answer-reaction-bar .reaction-option-btn:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.answer-reaction-bar .reaction-custom {
+    border-top: 1px solid #dee2e6;
+    padding-top: 12px;
+}
+
+.answer-reaction-bar .reaction-custom-text {
+    background: #fff;
+    border: 1px solid #ced4da;
+    color: #495057;
+    padding: 8px;
+    border-radius: 4px;
+    width: 100%;
+    margin-bottom: 8px;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 60px;
+}
+
+.answer-reaction-bar .reaction-custom-submit {
+    background: #007bff;
+    border: none;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.answer-reaction-bar .reaction-custom-submit:hover {
+    background: #0056b3;
 }  

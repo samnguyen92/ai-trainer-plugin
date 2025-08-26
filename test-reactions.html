@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction System Test</title>
+    <style>
+        body {
+            background: #0C0012;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .answer-block {
+            background: #0C0012;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .answer-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            margin: 0 0 20px 0;
+            line-height: 1.2;
+        }
+        
+        .answer-content {
+            color: #fff;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        /* Modern Reaction Bar Styles */
+        .answer-reaction-bar.modern {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 24px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .action-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .reaction-buttons {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+        }
+        
+        .reaction-like,
+        .reaction-dislike,
+        .reaction-more {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: rgba(255, 255, 255, 0.7);
+            transition: all 0.2s ease;
+        }
+        
+        .reaction-like:hover,
+        .reaction-dislike:hover,
+        .reaction-more:hover {
+            color: #fff;
+        }
+        
+        .like-count,
+        .dislike-count {
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .like-count {
+            color: #3bb273;
+        }
+        
+        .dislike-count {
+            color: #e74c3c;
+        }
+        
+        /* Modern Reaction Options Popup */
+        .reaction-options-container {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            z-index: 1000;
+            margin-top: 8px;
+        }
+        
+        .reaction-options-popup {
+            background: #1a0024;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            min-width: 200px;
+        }
+        
+        .reaction-options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .reaction-option-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: left;
+            transition: all 0.2s ease;
+        }
+        
+        .reaction-option-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .reaction-custom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 16px;
+        }
+        
+        .reaction-custom-text {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            margin-bottom: 12px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .reaction-custom-text::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .reaction-custom-submit {
+            background: #3bb273;
+            border: none;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .reaction-custom-submit:hover {
+            background: #2d8f5a;
+        }
+        
+        .test-results {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧠 Reaction System Test</h1>
+        <p>Testing the reaction system functionality.</p>
+        
+        <div class="answer-block">
+            <div class="answer-header">
+                <h1>Test Question: How do psychedelics affect the brain?</h1>
+            </div>
+            <div class="answer-content">
+                <p>This is a test answer about psychedelics and their effects on the brain. The reaction system should now work properly with both thumbs up/down functionality and note input.</p>
+            </div>
+            
+            <!-- Modern Reaction Bar -->
+            <div class="answer-reaction-bar modern">
+                <div class="action-buttons">
+                    <button class="action-btn share-btn" data-id="test-123">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 4v4c-6.575 1.028 -9.02 6.788 -10 12c-.037 .206 5.384 -5.962 10 -6v4l8 -7l-8 -7z"></path>
+                        </svg>
+                        Share
+                    </button>
+                </div>
+                <div class="reaction-buttons">
+                    <span class="reaction-like" data-id="test-123">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="none" style="vertical-align:middle;">
+                            <path d="M13 3a3 3 0 0 1 2.995 2.824l.005 .176v4h2a3 3 0 0 1 2.98 2.65l.015 .174l.005 .176l-.02 .196l-1.006 5.032c-.381 1.626 -1.502 2.796 -2.81 2.78l-.164 -.008h-8a1 1 0 0 1 -.993 -.883l-.007 -.117l.001 -9.536a1 1 0 0 1 .5 -.865a2.998 2.998 0 0 0 1.492 -2.397l.007 -.202v-1a3 3 0 0 1 3 -3z" fill="currentColor"></path>
+                            <path d="M5 10a1 1 0 0 1 .993 .883l.007 .117v9a1 1 0 0 1 -.883 .993l-.117 .007h-1a2 2 0 0 1 -1.995 -1.85l-.005 -.15v-7a2 2 0 0 1 1.85 -1.995l.15 -.005h1z" fill="currentColor"></path>
+                        </svg>
+                    </span>
+                    <span class="like-count" id="like-count-test-123">0</span>
+                    <span class="reaction-dislike" data-id="test-123">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="none" style="vertical-align:middle;transform:scaleY(-1);">
+                            <path d="M13 3a3 3 0 0 1 2.995 2.824l.005 .176v4h2a3 3 0 0 1 2.98 2.65l.015 .174l.005 .176l-.02 .196l-1.006 5.032c-.381 1.626 -1.502 2.796 -2.81 2.78l-.164 -.008h-8a1 1 0 0 1 -.993 -.883l-.007 -.117l.001 -9.536a1 1 0 0 1 .5 -.865a2.998 2.998 0 0 0 1.492 -2.397l.007 -.202v-1a3 3 0 0 1 3 -3z" fill="currentColor"></path>
+                            <path d="M5 10a1 1 0 0 1 .993 .883l.007 .117v9a1 1 0 0 1 -.883 .993l-.117 .007h-1a2 2 0 0 1 -1.995 -1.85l-.005 -.15v-7a2 2 0 0 1 1.85 -1.995l.15 -.005h1z" fill="currentColor"></path>
+                        </svg>
+                    </span>
+                    <span class="dislike-count" id="dislike-count-test-123">0</span>
+                    <span class="reaction-more" data-id="test-123">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="1"></circle>
+                            <circle cx="19" cy="12" r="1"></circle>
+                            <circle cx="5" cy="12" r="1"></circle>
+                        </svg>
+                    </span>
+                </div>
+                <div class="reaction-options-container" style="display:none;position:absolute;z-index:10;"></div>
+            </div>
+        </div>
+        
+        <div id="test-results" class="test-results">
+            <h3>Test Results</h3>
+            <p>Click the thumbs up/down buttons to test the reaction system.</p>
+            <div id="reaction-log"></div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // Reaction options for like/dislike
+        const LIKE_OPTIONS = [
+            "Accurate",
+            "Clear explanation",
+            "Useful sources",
+            "Other"
+        ];
+        const DISLIKE_OPTIONS = [
+            "Inaccurate",
+            "Unclear",
+            "Missing info",
+            "Other"
+        ];
+
+        // Inject reaction bar UI with options dropdown and textarea
+        function renderReactionOptions(bar, type) {
+            const options = type === 'like' ? LIKE_OPTIONS : DISLIKE_OPTIONS;
+            const optionsHtml = options.map(opt => `<button class="reaction-option-btn" data-type="${type}" data-option="${opt}">${opt}</button>`).join(' ');
+            let html = `<div class="reaction-options-popup">
+                <div class="reaction-options-list">${optionsHtml}</div>
+                <div class="reaction-custom" style="display:none;">
+                    <textarea class="reaction-custom-text" rows="3" placeholder="Tell us more about your feedback..."></textarea>
+                    <button class="reaction-custom-submit">Submit Feedback</button>
+                </div>
+            </div>`;
+            bar.find('.reaction-options-container').html(html).show();
+        }
+
+        // Show options popup on like/dislike click
+        $(document).on('click', '.reaction-like, .reaction-dislike', function(e) {
+            e.preventDefault();
+            const btn = $(this);
+            const bar = btn.closest('.answer-reaction-bar');
+            const type = btn.hasClass('reaction-like') ? 'like' : 'dislike';
+            bar.find('.reaction-like, .reaction-dislike').removeClass('reaction-active');
+            btn.addClass('reaction-active');
+            renderReactionOptions(bar, type);
+            
+            // Log the action
+            $('#reaction-log').append(`<p>✅ Clicked ${type} button</p>`);
+        });
+
+        // Handle option selection
+        $(document).on('click', '.reaction-option-btn', function(e) {
+            e.preventDefault();
+            const btn = $(this);
+            const bar = btn.closest('.answer-reaction-bar');
+            const id = bar.find('.reaction-like, .reaction-dislike').data('id');
+            const type = btn.data('type');
+            const option = btn.data('option');
+            
+            if (option === 'Other') {
+                bar.find('.reaction-custom').show();
+            } else {
+                // Simulate saving reaction
+                saveReactionDetail(id, type, option, '');
+                bar.find('.reaction-options-container').hide();
+            }
+            
+            // Log the action
+            $('#reaction-log').append(`<p>✅ Selected option: ${option}</p>`);
+        });
+
+        // Handle custom feedback submit
+        $(document).on('click', '.reaction-custom-submit', function(e) {
+            e.preventDefault();
+            const bar = $(this).closest('.answer-reaction-bar');
+            const id = bar.find('.reaction-like, .reaction-dislike').data('id');
+            const type = bar.find('.reaction-like').hasClass('reaction-active') ? 'like' : 'dislike';
+            const feedback = bar.find('.reaction-custom-text').val().trim();
+            
+            if (feedback) {
+                // Simulate saving reaction
+                saveReactionDetail(id, type, 'Other', feedback);
+                bar.find('.reaction-options-container').hide();
+                bar.find('.reaction-custom-text').val('');
+                
+                // Log the action
+                $('#reaction-log').append(`<p>✅ Submitted feedback: "${feedback}"</p>`);
+            } else {
+                $('#reaction-log').append(`<p>❌ Please enter feedback text</p>`);
+            }
+        });
+
+        // Simulate saving reaction detail
+        function saveReactionDetail(id, type, option, feedback) {
+            // In a real implementation, this would make an AJAX call
+            console.log('Saving reaction:', { id, type, option, feedback });
+            
+            // Update counts in UI
+            if (type === 'like') {
+                const currentCount = parseInt($(`#like-count-${id}`).text()) || 0;
+                $(`#like-count-${id}`).text(currentCount + 1);
+            } else {
+                const currentCount = parseInt($(`#dislike-count-${id}`).text()) || 0;
+                $(`#dislike-count-${id}`).text(currentCount + 1);
+            }
+            
+            $('#reaction-log').append(`<p>✅ Reaction saved: ${type} - ${option}${feedback ? ` - "${feedback}"` : ''}</p>`);
+        }
+
+        // Add event handlers for action buttons
+        $(document).on('click', '.share-btn', function() {
+            $('#reaction-log').append(`<p>✅ Share button clicked</p>`);
+        });
+
+        $(document).on('click', '.reaction-more', function() {
+            $('#reaction-log').append(`<p>✅ More options button clicked</p>`);
+        });
+    </script>
+</body>
+</html>
