@@ -532,6 +532,9 @@ jQuery(document).ready(function($) {
                         Share
                     </button>
                 </div>
+                <div class="feedback-question">
+                    Did we answer your question?
+                </div>
                 <div class="reaction-buttons">
                     <span class="reaction-like" data-id="${chatlogId}">${likeSVG}</span>
                     <span class="like-count" id="like-count-${chatlogId}">0</span>
@@ -2745,12 +2748,92 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         
         if (!$relatedQuestionsSection.length) return;
         
-        const $relatedQuestionsList = $relatedQuestionsSection.next('ul');
+        // Look for the actual Related Questions list (not the informational content)
+        let $relatedQuestionsList = null;
+        
+        // Look for the ul that comes after the Related Questions h3
+        $relatedQuestionsList = $relatedQuestionsSection.next('ul');
+        
+        // If that doesn't work, look for any ul that comes after the Related Questions h3
+        if (!$relatedQuestionsList.length) {
+            let nextElement = $relatedQuestionsSection.next();
+            while (nextElement.length && nextElement[0].tagName !== 'UL') {
+                nextElement = nextElement.next();
+            }
+            if (nextElement.length && nextElement[0].tagName === 'UL') {
+                $relatedQuestionsList = nextElement;
+            }
+        }
+        
+        // If still not found, look for any ul in the container that comes after the h3 by index
+        if (!$relatedQuestionsList.length) {
+            const allUls = $(container).find('ul');
+            const h3Index = $relatedQuestionsSection.index();
+            
+            allUls.each(function(index) {
+                const ulIndex = $(this).index();
+                if (ulIndex > h3Index) {
+                    $relatedQuestionsList = $(this);
+                    return false; // break the loop
+                }
+            });
+        }
+        
+        // If still not found, use the last ul as it's most likely to be Related Questions
+        if (!$relatedQuestionsList.length) {
+            const allUls = $(container).find('ul');
+            if (allUls.length > 0) {
+                $relatedQuestionsList = allUls.last();
+            }
+        }
+        
+        if (!$relatedQuestionsList.length) return;
+        
+        // Validate that we're not processing informational content
+        const firstItemText = $relatedQuestionsList.find('li').first().text().trim();
+        
+        const hasInfoContent = firstItemText.includes('What it is:') || 
+                              firstItemText.includes('How it works:') || 
+                              firstItemText.includes('Potential benefits:') ||
+                              firstItemText.includes('Key risks:') ||
+                              firstItemText.includes('Legal status:') ||
+                              firstItemText.includes('Who they are:') ||
+                              firstItemText.includes('Era & role:') ||
+                              firstItemText.includes('Known for:') ||
+                              firstItemText.includes('Key works:') ||
+                              firstItemText.includes('Controversies:');
+        
+        // If this list has informational content, try to find the actual Related Questions
+        if (hasInfoContent) {
+            // Look for any ul that doesn't have informational content and comes after the Related Questions h3
+            const allUls = $(container).find('ul');
+            let foundBetterList = false;
+            
+            allUls.each(function(index) {
+                if (foundBetterList) return;
+                
+                const ulContent = $(this).html();
+                const ulIndex = $(this).index();
+                const h3Index = $relatedQuestionsSection.index();
+                
+                // Only look at uls that come after the Related Questions h3
+                if (ulIndex > h3Index && ulContent && !ulContent.includes('<strong>') && 
+                    !ulContent.includes('What it is:') && !ulContent.includes('How it works:') && 
+                    !ulContent.includes('Who they are:')) {
+                    $relatedQuestionsList = $(this);
+                    foundBetterList = true;
+                    return false;
+                }
+            });
+        }
+        
         if (!$relatedQuestionsList.length) return;
         
         const $questionItems = $relatedQuestionsList.find('li');
+        
         $questionItems.each(function(index) {
             const questionText = $(this).text().trim();
+            
             if (questionText && questionText !== '<!-- Q1 -->' && questionText !== '<!-- Q2 -->' && 
                 questionText !== '<!-- Q3 -->' && questionText !== '<!-- Q4 -->' && questionText !== '<!-- Q5 -->') {
                 
@@ -2781,6 +2864,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
                     
                     // Find the input field and populate it with the question
                     const $inputField = $('#exa-input, .exa-input, input[placeholder*="follow up"]');
+                    
                     if ($inputField.length) {
                         $inputField.val(questionText);
                         $inputField.focus();
@@ -2966,5 +3050,95 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
             `);
         });
     }
+
+    // Utility function to format reaction details in a clean, user-friendly way
+    function formatReactionDetail(reactionDetail) {
+        if (!reactionDetail) return '';
+        
+        try {
+            // Try to parse as JSON first
+            const detail = JSON.parse(reactionDetail);
+            if (detail && typeof detail === 'object') {
+                if (detail.option === 'Other' && detail.feedback) {
+                    return detail.feedback;
+                } else if (detail.option) {
+                    return detail.option;
+                }
+            }
+        } catch (e) {
+            // If not JSON, try to extract meaningful content
+            if (typeof reactionDetail === 'string') {
+                // Remove file paths and technical formatting
+                let clean = reactionDetail.replace(/\/[^\s]+\.(php|js|html)/g, '');
+                clean = clean.replace(/\\/g, '');
+                clean = clean.replace(/^.*?:\s*/, ''); // Remove leading path info
+                clean = clean.trim();
+                
+                // If it looks like JSON but failed to parse, try to extract the content
+                if (clean.includes('"option"') || clean.includes('"feedback"')) {
+                    const optionMatch = clean.match(/"option"\s*:\s*"([^"]+)"/);
+                    const feedbackMatch = clean.match(/"feedback"\s*:\s*"([^"]+)"/);
+                    
+                    if (optionMatch && feedbackMatch && feedbackMatch[1]) {
+                        return feedbackMatch[1];
+                    } else if (optionMatch && optionMatch[1] !== 'Other') {
+                        return optionMatch[1];
+                    }
+                }
+                
+                return clean || reactionDetail;
+            }
+        }
+        
+        // Fallback: return the original if we can't parse it
+        return reactionDetail;
+    }
+
+    // Function to automatically format all reaction details on the page
+    function formatAllReactionDetails() {
+        // Find all elements that might contain reaction details
+        $('[data-reaction-detail], .reaction-detail, [class*="reaction"], [id*="reaction"]').each(function() {
+            const $element = $(this);
+            const currentText = $element.text().trim();
+            
+            // Check if this looks like a JSON reaction detail
+            if (currentText && (currentText.includes('"option"') || currentText.includes('"feedback"'))) {
+                const formattedText = formatReactionDetail(currentText);
+                if (formattedText !== currentText) {
+                    $element.text(formattedText);
+                    console.log('Formatted reaction detail:', currentText, '→', formattedText);
+                }
+            }
+        });
+    }
+
+    // Function to format reaction details in any container
+    function formatReactionDetailsInContainer(container) {
+        const $container = $(container);
+        $container.find('[data-reaction-detail], .reaction-detail, [class*="reaction"], [id*="reaction"]').each(function() {
+            const $element = $(this);
+            const currentText = $element.text().trim();
+            
+            if (currentText && (currentText.includes('"option"') || currentText.includes('"feedback"'))) {
+                const formattedText = formatReactionDetail(currentText);
+                if (formattedText !== currentText) {
+                    $element.text(formattedText);
+                }
+            }
+        });
+    }
+
+    // Auto-format reaction details when page loads
+    $(document).ready(function() {
+        // Format any existing reaction details
+        formatAllReactionDetails();
+        
+        // Also format after any AJAX responses that might contain reaction details
+        $(document).ajaxComplete(function(event, xhr, settings) {
+            if (settings.url && settings.url.includes('ajax')) {
+                setTimeout(formatAllReactionDetails, 100);
+            }
+        });
+    });
 
 });
