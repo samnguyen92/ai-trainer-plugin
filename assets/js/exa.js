@@ -830,6 +830,9 @@ jQuery(document).ready(function($) {
             // Apply green color to "Where to Learn More" section
             safe = applyWhereToLearnMoreStyling(safe);
 
+            // Fix truncated years that commonly get cut off
+            safe = fixTruncatedYears(safe);
+
             return safe;
         } catch (e) {
             console.warn('Sanitize error:', e, 'Original HTML:', html);
@@ -869,6 +872,62 @@ jQuery(document).ready(function($) {
         } catch (e) {
             console.warn('Styling error:', e);
             return html; // Return original if styling fails
+        }
+    }
+
+    // Simple function to fix truncated years
+    function fixTruncatedYears(html) {
+        if (!html || typeof html !== 'string') {
+            return html;
+        }
+
+        try {
+            let fixed = html;
+            
+            // Fix the specific patterns from your examples
+            // "196:" -> "1960s:" (when it's clearly a decade reference)
+            fixed = fixed.replace(/\b196:\s/g, '1960s: ');
+            fixed = fixed.replace(/\b202:\s/g, '2020s: ');
+            
+            // Fix malformed decades like "202s" -> "2020s"
+            fixed = fixed.replace(/\b202s\b/g, '2020s');
+            
+            // Fix truncated years in the middle of sentences
+            // "190s" -> "1900s", "196s" -> "1960s", etc.
+            fixed = fixed.replace(/\b190s\b/g, '1900s');
+            fixed = fixed.replace(/\b191s\b/g, '1910s');
+            fixed = fixed.replace(/\b192s\b/g, '1920s');
+            fixed = fixed.replace(/\b193s\b/g, '1930s');
+            fixed = fixed.replace(/\b194s\b/g, '1940s');
+            fixed = fixed.replace(/\b195s\b/g, '1950s');
+            fixed = fixed.replace(/\b196s\b/g, '1960s');
+            fixed = fixed.replace(/\b197s\b/g, '1970s');
+            fixed = fixed.replace(/\b198s\b/g, '1980s');
+            fixed = fixed.replace(/\b199s\b/g, '1990s');
+            fixed = fixed.replace(/\b200s\b/g, '2000s');
+            fixed = fixed.replace(/\b201s\b/g, '2010s');
+            fixed = fixed.replace(/\b202s\b/g, '2020s');
+            fixed = fixed.replace(/\b203s\b/g, '2030s');
+            
+            // Fix any other 3-digit years that should be decades (only for modern years)
+            fixed = fixed.replace(/\b(19[6-9]):\s/g, '$10s: ');
+            fixed = fixed.replace(/\b(20[0-2]):\s/g, '$10s: ');
+            
+            // Catch any remaining truncated year patterns with a more general approach
+            // This will catch patterns like "in the 190s" -> "in the 1900s"
+            fixed = fixed.replace(/\b(\d{3})s\b/g, (match, year) => {
+                const numYear = parseInt(year);
+                // Only fix years that are clearly meant to be decades
+                if (numYear >= 190 && numYear <= 209) {
+                    return numYear + '0s';
+                }
+                return match; // Leave other 3-digit numbers unchanged
+            });
+            
+            return fixed;
+        } catch (e) {
+            console.warn('Year fix error:', e);
+            return html; // Return original if fixing fails
         }
     }
 
@@ -1339,6 +1398,12 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
   - ALWAYS include the "Related Questions" section with exactly 5 relevant follow-up questions.
   - Related questions must be specific, actionable, and directly related to the topic discussed.
   - Each question should explore a different aspect or angle of the subject matter.
+  
+  CRITICAL: When mentioning years, always use the complete 4-digit format:
+  - Use "1960s" not "196" for the 1960s decade
+  - Use "2020s" not "202" for the 2020s decade
+  - Use "1897" not "189" for specific years
+  - Use "c. 150 BCE" for ancient dates
 
   REMINDER: The "Related Questions" section is MANDATORY and must appear in every single response with exactly 5 questions.
 
