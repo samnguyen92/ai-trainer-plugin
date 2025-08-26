@@ -235,6 +235,108 @@ $filter_options = [
     
 
     
+    <!-- Action Buttons -->
+    <div style="margin-bottom: 30px;">
+        <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px;">
+            <h4 style="margin: 0 0 15px 0; color: #000; font-size: 16px;">Data Management</h4>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <button id="refresh-csat" class="button button-primary" style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 16px;">🔄</span>
+                    Refresh CSAT Data
+                </button>
+                <button id="export-csat" class="button" style="display: flex; align-items: center; gap: 8px; border: 1px solid #3bb273; color: #3bb273;">
+                    <span style="font-size: 16px;">📊</span>
+                    Export Data
+                </button>
+                <button id="clear-csat-data" class="button button-danger" style="display: flex; align-items: center; gap: 8px; background: #dc3545; border-color: #dc3545; color: white;">
+                    <span style="font-size: 16px;">🗑️</span>
+                    Clear All CSAT Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3-Phase Approval Modal for Clearing CSAT Data -->
+    <div id="clear-csat-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; min-width: 500px; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <div id="phase-1" class="approval-phase">
+                <h3 style="margin: 0 0 20px 0; color: #dc3545; text-align: center;">⚠️ Phase 1: Confirmation</h3>
+                <p style="margin: 0 0 20px 0; line-height: 1.6; color: #333;">
+                    You are about to <strong>permanently delete ALL CSAT feedback data</strong>. This action cannot be undone.
+                </p>
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 20px 0;">
+                    <h4 style="margin: 0 0 10px 0; color: #856404;">What will be deleted:</h4>
+                    <ul style="margin: 0; padding-left: 20px; color: #856404;">
+                        <li>All thumbs up/down reactions</li>
+                        <li>All feedback categorization data</li>
+                        <li>All CSAT scores and analytics</li>
+                        <li>All reaction details and comments</li>
+                    </ul>
+                </div>
+                <p style="margin: 20px 0; color: #666; font-size: 14px;">
+                    <strong>Current data:</strong> <?php echo $csat_data['total_reactions']; ?> total reactions
+                </p>
+                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 25px;">
+                    <button type="button" class="button" onclick="jQuery.closeClearModal()">Cancel</button>
+                    <button type="button" class="button button-danger" onclick="jQuery.proceedToPhase2()" style="background: #dc3545; border-color: #dc3545; color: white;">
+                        I Understand, Continue to Phase 2
+                    </button>
+                </div>
+            </div>
+
+            <div id="phase-2" class="approval-phase" style="display: none;">
+                <h3 style="margin: 0 0 20px 0; color: #fd7e14; text-align: center;">🔒 Phase 2: Security Check</h3>
+                <p style="margin: 0 0 20px 0; line-height: 1.6; color: #333;">
+                    To proceed, you must confirm your identity and acknowledge the consequences.
+                </p>
+                <div style="margin: 20px 0;">
+                    <label for="admin-password" style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">
+                        Type "1234" to confirm:
+                    </label>
+                    <input type="text" id="admin-password" placeholder="Type 1234" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; text-align: center; font-size: 18px; letter-spacing: 2px;">
+                </div>
+                <div style="margin: 20px 0;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">
+                        <input type="checkbox" id="confirm-deletion" style="margin-right: 8px;">
+                        I confirm that I want to permanently delete all CSAT data
+                    </label>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">
+                        <input type="checkbox" id="confirm-backup" style="margin-right: 8px;">
+                        I have backed up any important data I need to keep
+                    </label>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 25px;">
+                    <button type="button" class="button" onclick="jQuery.backToPhase1()">Back to Phase 1</button>
+                    <button type="button" class="button button-danger" id="phase2-continue" onclick="jQuery.proceedToPhase3()" style="background: #fd7e14; border-color: #fd7e14; color: white;" disabled>
+                        Continue to Phase 3
+                    </button>
+                </div>
+            </div>
+
+            <div id="phase-3" class="approval-phase" style="display: none;">
+                <h3 style="margin: 0 0 20px 0; color: #dc3545; text-align: center;">🚨 Phase 3: Final Warning</h3>
+                <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+                    <h4 style="margin: 0 0 15px 0; color: #721c24; font-size: 18px;">⚠️ FINAL WARNING ⚠️</h4>
+                    <p style="margin: 0; color: #721c24; font-size: 16px; font-weight: 500;">
+                        This is your last chance to cancel. Clicking "DELETE ALL DATA" will permanently remove all CSAT feedback.
+                    </p>
+                </div>
+                <p style="margin: 20px 0; color: #666; font-size: 14px; text-align: center;">
+                    <strong>Type "DELETE"</strong> in the box below to confirm:
+                </p>
+                <div style="margin: 20px 0; text-align: center;">
+                    <input type="text" id="final-confirmation" placeholder="Type DELETE to confirm" style="width: 200px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; text-align: center; text-transform: uppercase;">
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 25px;">
+                    <button type="button" class="button" onclick="jQuery.backToPhase2()">Back to Phase 2</button>
+                    <button type="button" class="button button-danger" id="final-delete-btn" onclick="jQuery.executeDataDeletion()" style="background: #dc3545; border-color: #dc3545; color: white; font-size: 16px; padding: 12px 24px;" disabled>
+                        🗑️ DELETE ALL DATA
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Time Filter Controls -->
     <div class="csat-filters" style="margin-bottom: 30px;">
         <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px;">
@@ -257,7 +359,7 @@ $filter_options = [
                            <?php else: ?>
                                background: rgba(255,255,255,0.1);
                                color: #000;
-                               border: 1px solid rgba(255,255,255,0.2);
+                           border: 1px solid rgba(255,255,255,0.2);
                            <?php endif; ?>
                        ">
                         <?php echo $label; ?>
@@ -450,27 +552,29 @@ $filter_options = [
 </style>
 
 <script>
+// Define ajaxurl for WordPress admin
+var ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
+
 jQuery(document).ready(function($) {
-    // Refresh CSAT data
+    // CSAT Data Management Functions
+    
+    // Refresh CSAT Data
     $('#refresh-csat').on('click', function() {
         const button = $(this);
-        const originalText = button.text();
-        
         button.prop('disabled', true).text('🔄 Refreshing...');
         
-        // Reload the page to refresh data
         setTimeout(function() {
             location.reload();
         }, 1000);
     });
     
-    // Export CSAT data
+    // Export CSAT Data
     $('#export-csat').on('click', function() {
         const button = $(this);
         button.prop('disabled', true).text('📊 Exporting...');
         
         // Create CSV data
-        const csvData = createCSVData();
+        const csvData = createCSATData();
         downloadCSV(csvData, 'csat-analytics-<?php echo $current_filter; ?>.csv');
         
         setTimeout(function() {
@@ -478,7 +582,22 @@ jQuery(document).ready(function($) {
         }, 1000);
     });
     
-    function createCSVData() {
+    // Clear CSAT Data - Start 3-phase approval
+    $('#clear-csat-data').on('click', function() {
+        $('#clear-csat-modal').show();
+    });
+    
+    // Phase 2 validation
+    $('#admin-password, #confirm-deletion, #confirm-backup').on('input change', function() {
+        validatePhase2();
+    });
+    
+    // Phase 3 validation
+    $('#final-confirmation').on('input', function() {
+        validatePhase3();
+    });
+    
+    function createCSATData() {
         const data = <?php echo json_encode($csat_data); ?>;
         let csv = 'CSAT Analytics Report - <?php echo $filter_options[$current_filter]; ?>\n\n';
         csv += 'Overall CSAT Score,' + data.csat_score + '%\n';
@@ -513,4 +632,115 @@ jQuery(document).ready(function($) {
         }
     }
 });
+
+// 3-Phase Approval System Functions
+
+// Attach functions to jQuery object for inline onclick handlers
+jQuery.closeClearModal = function() {
+    jQuery('#clear-csat-modal').hide();
+    resetModal();
+};
+
+function resetModal() {
+    // Reset all phases
+    jQuery('.approval-phase').hide();
+    jQuery('#phase-1').show();
+    
+    // Reset form fields
+    jQuery('#admin-password').val('');
+    jQuery('#confirm-deletion').prop('checked', false);
+    jQuery('#confirm-backup').prop('checked', false);
+    jQuery('#final-confirmation').val('');
+    
+    // Reset buttons
+    jQuery('#phase2-continue').prop('disabled', true);
+    jQuery('#final-delete-btn').prop('disabled', true);
+}
+
+jQuery.proceedToPhase2 = function() {
+    jQuery('#phase-1').hide();
+    jQuery('#phase-2').show();
+    jQuery('#admin-password').focus();
+};
+
+jQuery.backToPhase1 = function() {
+    jQuery('#phase-2').hide();
+    jQuery('#phase-1').show();
+};
+
+function validatePhase2() {
+    const password = jQuery('#admin-password').val();
+    const confirmDeletion = jQuery('#confirm-deletion').is(':checked');
+    const confirmBackup = jQuery('#confirm-backup').is(':checked');
+    
+    if (password === '1234' && confirmDeletion && confirmBackup) {
+        jQuery('#phase2-continue').prop('disabled', false);
+    } else {
+        jQuery('#phase2-continue').prop('disabled', true);
+    }
+}
+
+jQuery.proceedToPhase3 = function() {
+    // Verify the confirmation code
+    const password = jQuery('#admin-password').val();
+    
+    if (password !== '1234') {
+        alert('Please type "1234" to continue.');
+        return;
+    }
+    
+    jQuery('#phase-2').hide();
+    jQuery('#phase-3').show();
+    jQuery('#final-confirmation').focus();
+};
+
+jQuery.backToPhase2 = function() {
+    jQuery('#phase-3').hide();
+    jQuery('#phase-2').show();
+};
+
+function validatePhase3() {
+    const confirmation = jQuery('#final-confirmation').val().toUpperCase();
+    if (confirmation === 'DELETE') {
+        jQuery('#final-delete-btn').prop('disabled', false);
+    } else {
+        jQuery('#final-delete-btn').prop('disabled', true);
+    }
+}
+
+jQuery.executeDataDeletion = function() {
+    if (!confirm('Are you absolutely sure? This will permanently delete ALL CSAT data and cannot be undone!')) {
+        return;
+    }
+    
+    // Show loading state
+    jQuery('#final-delete-btn').prop('disabled', true).text('🗑️ DELETING...');
+    
+    // Debug logging
+    console.log('Executing data deletion...');
+    console.log('Password:', jQuery('#admin-password').val());
+    console.log('Nonce:', '<?php echo wp_create_nonce('ai_clear_csat_data'); ?>');
+    
+    // AJAX call to clear CSAT data
+    jQuery.post(ajaxurl, {
+        action: 'ai_clear_csat_data',
+        password: jQuery('#admin-password').val(),
+        _wpnonce: '<?php echo wp_create_nonce('ai_clear_csat_data'); ?>'
+    })
+    .done(function(response) {
+        console.log('AJAX Response:', response);
+        if (response.success) {
+            alert('All CSAT data has been successfully cleared.');
+            location.reload();
+        } else {
+            alert('Error: ' + (response.data ? response.data.message : 'Failed to clear data'));
+            jQuery('#final-delete-btn').prop('disabled', false).text('🗑️ DELETE ALL DATA');
+        }
+    })
+    .fail(function(xhr, status, error) {
+        console.log('AJAX Error:', {xhr: xhr, status: status, error: error});
+        alert('Network error occurred. Please try again.');
+        jQuery('#final-delete-btn').prop('disabled', false).text('🗑️ DELETE ALL DATA');
+    });
+}
 </script>

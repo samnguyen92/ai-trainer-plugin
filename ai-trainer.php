@@ -1380,6 +1380,53 @@ add_action('wp_ajax_nopriv_ai_get_chatlog_by_id', function() {
     }
 });
 
+// AJAX handler to clear all CSAT data
+add_action('wp_ajax_ai_clear_csat_data', 'ai_trainer_handle_clear_csat_data');
+function ai_trainer_handle_clear_csat_data() {
+    // Check nonce for security
+    if (!wp_verify_nonce($_POST['_wpnonce'], 'ai_clear_csat_data')) {
+        wp_send_json_error(['message' => 'Security check failed']);
+    }
+    
+    // Check if user has admin capabilities
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Insufficient permissions']);
+    }
+    
+    // Verify confirmation code
+    $password = isset($_POST['password']) ? sanitize_text_field($_POST['password']) : '';
+    if ($password !== '1234') {
+        wp_send_json_error(['message' => 'Invalid confirmation code']);
+    }
+    
+    global $wpdb;
+    $chatlog_table = $wpdb->prefix . 'ai_chat_log';
+    
+    // Clear all reaction and reaction_detail data
+    // First, let's check how many rows have reaction data
+    $count_query = $wpdb->prepare("SELECT COUNT(*) FROM $chatlog_table WHERE reaction IS NOT NULL");
+    $rows_with_reactions = $wpdb->get_var($count_query);
+    
+    error_log('CSAT Clear Debug: Found ' . $rows_with_reactions . ' rows with reaction data');
+    
+    // Use a direct SQL query to clear the data
+    $clear_query = $wpdb->prepare("UPDATE $chatlog_table SET reaction = NULL, reaction_detail = NULL WHERE reaction IS NOT NULL");
+    $result = $wpdb->query($clear_query);
+    
+    // Debug logging
+    error_log('CSAT Clear Debug: Attempting to clear CSAT data');
+    error_log('CSAT Clear Debug: Table: ' . $chatlog_table);
+    error_log('CSAT Clear Debug: Result: ' . var_export($result, true));
+    error_log('CSAT Clear Debug: Last SQL Query: ' . $wpdb->last_query);
+    error_log('CSAT Clear Debug: Last SQL Error: ' . $wpdb->last_error);
+    
+    if ($result !== false) {
+        wp_send_json_success(['message' => 'All CSAT data cleared successfully']);
+    } else {
+        wp_send_json_error(['message' => 'Failed to clear CSAT data']);
+    }
+}
+
 
 
 
