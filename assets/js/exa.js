@@ -173,8 +173,6 @@ jQuery(document).ready(function($) {
                 const streamingContainer = block.find('.exa-answer-streaming')[0];
                 if (streamingContainer) {
                     streamOpenAIAnswer(query, sources, block, streamingContainer, chatlogId, conversationHistory);
-                } else {
-                    console.error('Streaming container not found');
                 }
                 
                 addModernReactionBar(block, chatlogId);
@@ -182,7 +180,6 @@ jQuery(document).ready(function($) {
 
             $ticketWrapper.show();
         } catch (error) {
-            console.error('Error in handleSearchResponse:', error);
             $exaAnswer.append(`<p>⚠️ Error processing response: ${error.message}</p>`);
         }
     }
@@ -191,7 +188,6 @@ jQuery(document).ready(function($) {
     function createModernAnswerBlock(questionID, query, results = []) {
         return $(`<div class="answer-block modern-ui" id="${questionID}">
             <div class="answer-header">
-                <h1 class="exa-user-question">${query}</h1>
                 <div class="answer-tabs">
                     <button class="tab-btn active" data-tab="answer">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -242,7 +238,7 @@ jQuery(document).ready(function($) {
                     domain = new URL(item.url).hostname.replace('www.', '');
                 }
             } catch (e) {
-                console.warn('Invalid URL:', item.url);
+                // Invalid URL handled silently
             }
             const isBadFavicon = !item.favicon || item.favicon === "data:," || item.favicon === "about:blank";
             
@@ -297,7 +293,7 @@ jQuery(document).ready(function($) {
                     domain = new URL(item.url).hostname.replace('www.', '');
                 }
             } catch (e) {
-                console.warn('Invalid URL:', item.url);
+                // Invalid URL handled silently
             }
 
             const isBadFavicon = !item.favicon || item.favicon === "data:," || item.favicon === "about:blank";
@@ -533,7 +529,7 @@ jQuery(document).ready(function($) {
                     </button>
                 </div>
                 <div class="feedback-question">
-                    Did we answer your question?
+                    Did we answer your questions?
                 </div>
                 <div class="reaction-buttons">
                     <span class="reaction-like" data-id="${chatlogId}">${likeSVG}</span>
@@ -712,7 +708,7 @@ jQuery(document).ready(function($) {
         const html = `<div>${localAnswer.content}</div>`;
         streamLocalAnswer(html, block.find('.exa-answer-streaming')[0]);
         addModernReactionBar(block, chatlogId);
-        conversationHistory.push({ q: block.find('.exa-user-question').text(), a: '' }); // Empty answer to keep structure
+        conversationHistory.push({ q: query || 'Question', a: '' }); // Empty answer to keep structure
         
         // Limit conversation history to last 5 exchanges to prevent context overflow
         if (conversationHistory.length > 5) {
@@ -1179,7 +1175,7 @@ jQuery(document).ready(function($) {
 
                         // Update conversation history with just the question (not the full answer)
                         const answerBlock = $(container).closest('.answer-block');
-                        const questionText = answerBlock.find('.exa-user-question').text();
+                        const questionText = answerBlock.find('.chatlog-question').text() || 'Question';
                         conversationHistory.push({ q: questionText, a: '' }); // Empty answer to keep structure
                         
                         // Limit conversation history to last 5 exchanges to prevent context overflow
@@ -1255,7 +1251,6 @@ jQuery(document).ready(function($) {
             return readStream();
         })
         .catch(error => {
-            console.error('Streaming error:', error);
             container.insertAdjacentHTML('beforeend', '<p><em>⚠️ Error: ' + error.message + '</em></p>');
         });
     }
@@ -2899,9 +2894,8 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         
         const answerBlock = btn.closest('.answer-block');
         const chatlogQuestion = answerBlock.find('.chatlog-question').text();
-        const exaUserQuestion = answerBlock.find('.exa-user-question').text();
         
-        let questionTitle = chatlogQuestion || exaUserQuestion || '';
+        let questionTitle = chatlogQuestion || '';
         
         // Additional fallback: look for any h1 or h2 elements in the answer block
         if (!questionTitle) {

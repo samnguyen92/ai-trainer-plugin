@@ -18,13 +18,7 @@
     margin-bottom: 24px;
 }
 
-.modern-ui .exa-user-question {
-    font-size: 28px;
-    font-weight: 700;
-    color: #fff;
-    margin: 0 0 20px 0;
-    line-height: 1.2;
-}
+
 
 .modern-ui .answer-tabs {
     display: flex;
@@ -414,11 +408,25 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    margin-top: 24px;
+    padding: 24px 28px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    margin-top: 28px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-ui .answer-reaction-bar.modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(230, 230, 255, 0.3), transparent);
 }
 
 .modern-ui .action-buttons {
@@ -451,6 +459,39 @@
     height: 16px;
     stroke: currentColor;
     fill: none;
+}
+
+.modern-ui .feedback-question {
+    color: #e6e6ff;
+    font-size: 20px;
+    font-weight: 600;
+    text-align: center;
+    flex: 1;
+    margin: 0 24px;
+    text-shadow: 0 2px 8px rgba(230, 230, 255, 0.15);
+    letter-spacing: 0.3px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    position: relative;
+    padding: 8px 0;
+}
+
+.modern-ui .feedback-question::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 0;
+    height: 0;
+    background: linear-gradient(45deg, rgba(230, 230, 255, 0.1), rgba(255, 255, 255, 0.05));
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    z-index: -1;
+}
+
+.modern-ui .feedback-question:hover::before {
+    width: 120px;
+    height: 40px;
 }
 
 .modern-ui .reaction-buttons {
@@ -706,9 +747,7 @@
         margin-bottom: 16px;
     }
     
-    .modern-ui .exa-user-question {
-        font-size: 24px;
-    }
+
     
     .modern-ui .answer-tabs {
         flex-wrap: wrap;
@@ -950,9 +989,7 @@
         box-shadow: none !important;
     }
     
-    .modern-ui .exa-user-question {
-        color: black !important;
-    }
+
     
     .modern-ui .exa-answer-streaming {
         color: black !important;
