@@ -170,6 +170,7 @@ register_activation_hook(__FILE__, function () {
 add_action('admin_menu', function () {
     add_menu_page('AI Trainer', 'AI Trainer', 'manage_options', 'ai-trainer', 'ai_trainer_admin_page', '', 80);
     add_submenu_page('ai-trainer', 'Chat Log', 'Chat Log', 'manage_options', 'ai-trainer-chatlog', 'ai_trainer_chatlog_page');
+    add_submenu_page('ai-trainer', 'CSAT Analytics', 'CSAT Analytics', 'manage_options', 'ai-trainer-csat-analytics', 'ai_trainer_csat_analytics_page');
     add_submenu_page('ai-trainer', 'Psychedelics.com Monitor', 'Psychedelics.com Monitor', 'manage_options', 'ai-trainer-psychedelics-monitor', 'ai_trainer_psychedelics_monitor_page');
 });
 
@@ -183,6 +184,10 @@ function ai_trainer_chatlog_page() {
 
 function ai_trainer_psychedelics_monitor_page() {
     include AI_TRAINER_PATH . 'admin/tabs/psychedelics-monitor.php';
+}
+
+function ai_trainer_csat_analytics_page() {
+    include AI_TRAINER_PATH . 'admin/tabs/csat-analytics.php';
 }
 
 function ai_trainer_insert_chat_log($user_id, $question, $answer) {
@@ -1374,6 +1379,8 @@ add_action('wp_ajax_nopriv_ai_get_chatlog_by_id', function() {
         wp_send_json_error(['message' => 'Not found', 'id' => $id]);
     }
 });
+
+
 
 
 class Exa_AI_Integration {

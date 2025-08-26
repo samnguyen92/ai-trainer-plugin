@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reaction System Test</title>
+    <title>CSAT Panel</title>
     <style>
         body {
             background: #0C0012;
@@ -14,7 +14,7 @@
         }
         
         .test-container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
         }
         
@@ -40,7 +40,7 @@
             margin-bottom: 20px;
         }
         
-        /* Modern Reaction Bar Styles */
+        /* Modern Reaction Bar Styles (Visual Only) */
         .answer-reaction-bar.modern {
             display: flex;
             justify-content: space-between;
@@ -77,6 +77,17 @@
             border-color: rgba(255, 255, 255, 0.2);
         }
         
+        .feedback-question {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            text-align: center;
+            flex: 1;
+            margin: 0 20px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+            letter-spacing: 0.5px;
+        }
+        
         .reaction-buttons {
             display: flex;
             align-items: center;
@@ -101,6 +112,15 @@
             color: #fff;
         }
         
+        .reaction-like svg,
+        .reaction-dislike svg,
+        .reaction-more svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            fill: none;
+        }
+        
         .like-count,
         .dislike-count {
             font-size: 13px;
@@ -115,87 +135,6 @@
             color: #e74c3c;
         }
         
-        /* Modern Reaction Options Popup */
-        .reaction-options-container {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            z-index: 1000;
-            margin-top: 8px;
-        }
-        
-        .reaction-options-popup {
-            background: #1a0024;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            padding: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            min-width: 200px;
-        }
-        
-        .reaction-options-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-        
-        .reaction-option-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-            padding: 10px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            text-align: left;
-            transition: all 0.2s ease;
-        }
-        
-        .reaction-option-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-        
-        .reaction-custom {
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            padding-top: 16px;
-        }
-        
-        .reaction-custom-text {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-            padding: 12px;
-            border-radius: 8px;
-            width: 100%;
-            margin-bottom: 12px;
-            font-size: 14px;
-            resize: vertical;
-            min-height: 80px;
-        }
-        
-        .reaction-custom-text::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-        
-        .reaction-custom-submit {
-            background: #3bb273;
-            border: none;
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-        
-        .reaction-custom-submit:hover {
-            background: #2d8f5a;
-        }
-        
         .test-results {
             margin-top: 20px;
             padding: 20px;
@@ -203,47 +142,114 @@
             border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
+
+        /* CSAT Dashboard Styles */
+        .csat-score-card {
+            background: linear-gradient(135deg, #3bb273, #2d8f5a);
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .thumbs-up-breakdown {
+            background: rgba(59, 178, 115, 0.1);
+            border: 1px solid rgba(59, 178, 115, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .thumbs-down-breakdown {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .csat-breakdown {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .csat-summary {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .progress-bar {
+            background: rgba(255,255,255,0.1);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.positive {
+            background: #3bb273;
+        }
+
+        .progress-fill.negative {
+            background: #e74c3c;
+        }
+
+        @media (max-width: 768px) {
+            .csat-breakdown {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="test-container">
-        <h1>🧠 Reaction System Test</h1>
-        <p>Testing the reaction system functionality.</p>
+        <h1>🧠 CSAT Panel</h1>
+        <p>Customer Satisfaction Analytics Dashboard</p>
         
         <div class="answer-block">
             <div class="answer-header">
-                <h1>Test Question: How do psychedelics affect the brain?</h1>
+                <h1>Sample Question: How do psychedelics affect the brain?</h1>
             </div>
             <div class="answer-content">
-                <p>This is a test answer about psychedelics and their effects on the brain. The reaction system should now work properly with both thumbs up/down functionality and note input.</p>
+                <p>This is a sample answer about psychedelics and their effects on the brain. The reaction system below is now just a visual display.</p>
             </div>
             
-            <!-- Modern Reaction Bar -->
+            <!-- Modern Reaction Bar (Visual Only) -->
             <div class="answer-reaction-bar modern">
                 <div class="action-buttons">
-                    <button class="action-btn share-btn" data-id="test-123">
+                    <button class="action-btn share-btn" data-id="sample-123">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M13 4v4c-6.575 1.028 -9.02 6.788 -10 12c-.037 .206 5.384 -5.962 10 -6v4l8 -7l-8 -7z"></path>
                         </svg>
                         Share
                     </button>
                 </div>
+                <div class="feedback-question">
+                    Did we answer your question?
+                </div>
                 <div class="reaction-buttons">
-                    <span class="reaction-like" data-id="test-123">
+                    <span class="reaction-like" data-id="sample-123">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="none" style="vertical-align:middle;">
                             <path d="M13 3a3 3 0 0 1 2.995 2.824l.005 .176v4h2a3 3 0 0 1 2.98 2.65l.015 .174l.005 .176l-.02 .196l-1.006 5.032c-.381 1.626 -1.502 2.796 -2.81 2.78l-.164 -.008h-8a1 1 0 0 1 -.993 -.883l-.007 -.117l.001 -9.536a1 1 0 0 1 .5 -.865a2.998 2.998 0 0 0 1.492 -2.397l.007 -.202v-1a3 3 0 0 1 3 -3z" fill="currentColor"></path>
                             <path d="M5 10a1 1 0 0 1 .993 .883l.007 .117v9a1 1 0 0 1 -.883 .993l-.117 .007h-1a2 2 0 0 1 -1.995 -1.85l-.005 -.15v-7a2 2 0 0 1 1.85 -1.995l.15 -.005h1z" fill="currentColor"></path>
                         </svg>
                     </span>
-                    <span class="like-count" id="like-count-test-123">0</span>
-                    <span class="reaction-dislike" data-id="test-123">
+                    <span class="like-count" id="like-count-sample-123">0</span>
+                    <span class="reaction-dislike" data-id="sample-123">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="none" style="vertical-align:middle;transform:scaleY(-1);">
                             <path d="M13 3a3 3 0 0 1 2.995 2.824l.005 .176v4h2a3 3 0 0 1 2.98 2.65l.015 .174l.005 .176l-.02 .196l-1.006 5.032c-.381 1.626 -1.502 2.796 -2.81 2.78l-.164 -.008h-8a1 1 0 0 1 -.993 -.883l-.007 -.117l.001 -9.536a1 1 0 0 1 .5 -.865a2.998 2.998 0 0 0 1.492 -2.397l.007 -.202v-1a3 3 0 0 1 3 -3z" fill="currentColor"></path>
                             <path d="M5 10a1 1 0 0 1 .993 .883l.007 .117v9a1 1 0 0 1 -.883 .993l-.117 .007h-1a2 2 0 0 1 -1.995 -1.85l-.005 -.15v-7a2 2 0 0 1 1.85 -1.995l.15 -.005h1z" fill="currentColor"></path>
                         </svg>
                     </span>
-                    <span class="dislike-count" id="dislike-count-test-123">0</span>
-                    <span class="reaction-more" data-id="test-123">
+                    <span class="dislike-count" id="dislike-count-sample-123">0</span>
+                    <span class="reaction-more" data-id="sample-123">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="1"></circle>
                             <circle cx="19" cy="12" r="1"></circle>
@@ -251,127 +257,138 @@
                         </svg>
                     </span>
                 </div>
-                <div class="reaction-options-container" style="display:none;position:absolute;z-index:10;"></div>
             </div>
         </div>
         
         <div id="test-results" class="test-results">
-            <h3>Test Results</h3>
-            <p>Click the thumbs up/down buttons to test the reaction system.</p>
-            <div id="reaction-log"></div>
+            <h3>CSAT Analytics</h3>
+            <p>Customer Satisfaction Score and Detailed Feedback Analysis</p>
+            <div id="csat-dashboard"></div>
         </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        // Reaction options for like/dislike
-        const LIKE_OPTIONS = [
-            "Accurate",
-            "Clear explanation",
-            "Useful sources",
-            "Other"
-        ];
-        const DISLIKE_OPTIONS = [
-            "Inaccurate",
-            "Unclear",
-            "Missing info",
-            "Other"
-        ];
+        // Sample data - in real implementation, this would come from your database
+        const sampleData = {
+            totalReactions: 150,
+            thumbsUp: {
+                total: 120,
+                breakdown: {
+                    "Accurate": 45,
+                    "Clear explanation": 38,
+                    "Useful sources": 22,
+                    "Other": 15
+                }
+            },
+            thumbsDown: {
+                total: 30,
+                breakdown: {
+                    "Inaccurate": 12,
+                    "Unclear": 8,
+                    "Missing info": 6,
+                    "Other": 4
+                }
+            }
+        };
 
-        // Inject reaction bar UI with options dropdown and textarea
-        function renderReactionOptions(bar, type) {
-            const options = type === 'like' ? LIKE_OPTIONS : DISLIKE_OPTIONS;
-            const optionsHtml = options.map(opt => `<button class="reaction-option-btn" data-type="${type}" data-option="${opt}">${opt}</button>`).join(' ');
-            let html = `<div class="reaction-options-popup">
-                <div class="reaction-options-list">${optionsHtml}</div>
-                <div class="reaction-custom" style="display:none;">
-                    <textarea class="reaction-custom-text" rows="3" placeholder="Tell us more about your feedback..."></textarea>
-                    <button class="reaction-custom-submit">Submit Feedback</button>
+        // Calculate CSAT Score
+        function calculateCSATScore() {
+            const total = sampleData.totalReactions;
+            const positive = sampleData.thumbsUp.total;
+            const percentage = total > 0 ? Math.round((positive / total) * 100) : 0;
+            return percentage;
+        }
+
+        // Render CSAT Dashboard
+        function renderCSATDashboard() {
+            const csatScore = calculateCSATScore();
+            const totalReactions = sampleData.totalReactions;
+            const thumbsUpTotal = sampleData.thumbsUp.total;
+            const thumbsDownTotal = sampleData.thumbsDown.total;
+
+            const dashboardHTML = `
+                <div class="csat-overview" style="margin-bottom: 30px;">
+                    <div class="csat-score-card">
+                        <h2 style="font-size: 48px; margin: 0; color: #fff; font-weight: 700;">${csatScore}%</h2>
+                        <p style="font-size: 18px; margin: 10px 0 0 0; color: rgba(255,255,255,0.9);">Customer Satisfaction Score</p>
+                        <div style="margin-top: 15px; font-size: 14px; color: rgba(255,255,255,0.8);">
+                            ${thumbsUpTotal} positive • ${thumbsDownTotal} negative • ${totalReactions} total
+                        </div>
+                    </div>
                 </div>
-            </div>`;
-            bar.find('.reaction-options-container').html(html).show();
+
+                <div class="csat-breakdown">
+                    <div class="thumbs-up-breakdown">
+                        <h4 style="color: #3bb273; margin: 0 0 20px 0; font-size: 20px; display: flex; align-items: center; gap: 8px;">
+                            👍 Thumbs Up Breakdown (${thumbsUpTotal})
+                        </h4>
+                        ${Object.entries(sampleData.thumbsUp.breakdown).map(([option, count]) => {
+                            const percentage = thumbsUpTotal > 0 ? Math.round((count / thumbsUpTotal) * 100) : 0;
+                            return `
+                                <div style="margin-bottom: 15px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                        <span style="color: #fff; font-weight: 500;">${option}</span>
+                                        <span style="color: #3bb273; font-weight: 600;">${count} (${percentage}%)</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill positive" style="width: ${percentage}%;"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    <div class="thumbs-down-breakdown">
+                        <h4 style="color: #e74c3c; margin: 0 0 20px 0; font-size: 20px; display: flex; align-items: center; gap: 8px;">
+                            👎 Thumbs Down Breakdown (${thumbsDownTotal})
+                        </h4>
+                        ${Object.entries(sampleData.thumbsDown.breakdown).map(([option, count]) => {
+                            const percentage = thumbsDownTotal > 0 ? Math.round((count / thumbsDownTotal) * 100) : 0;
+                            return `
+                                <div style="margin-bottom: 15px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                        <span style="color: #fff; font-weight: 500;">${option}</span>
+                                        <span style="color: #e74c3c; font-weight: 600;">${count} (${percentage}%)</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill negative" style="width: ${percentage}%;"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <div class="csat-summary">
+                    <h4 style="margin: 0 0 15px 0; color: #fff;">Summary</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: #3bb273;">${csatScore}%</div>
+                            <div style="font-size: 14px; color: rgba(255,255,255,0.7);">Overall Satisfaction</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: #3bb273;">${thumbsUpTotal}</div>
+                            <div style="font-size: 14px; color: rgba(255,255,255,0.7);">Positive Reactions</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: #e74c3c;">${thumbsDownTotal}</div>
+                            <div style="font-size: 14px; color: rgba(255,255,255,0.7);">Negative Reactions</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: #fff;">${totalReactions}</div>
+                            <div style="font-size: 14px; color: rgba(255,255,255,0.7);">Total Responses</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            $('#csat-dashboard').html(dashboardHTML);
         }
 
-        // Show options popup on like/dislike click
-        $(document).on('click', '.reaction-like, .reaction-dislike', function(e) {
-            e.preventDefault();
-            const btn = $(this);
-            const bar = btn.closest('.answer-reaction-bar');
-            const type = btn.hasClass('reaction-like') ? 'like' : 'dislike';
-            bar.find('.reaction-like, .reaction-dislike').removeClass('reaction-active');
-            btn.addClass('reaction-active');
-            renderReactionOptions(bar, type);
-            
-            // Log the action
-            $('#reaction-log').append(`<p>✅ Clicked ${type} button</p>`);
-        });
-
-        // Handle option selection
-        $(document).on('click', '.reaction-option-btn', function(e) {
-            e.preventDefault();
-            const btn = $(this);
-            const bar = btn.closest('.answer-reaction-bar');
-            const id = bar.find('.reaction-like, .reaction-dislike').data('id');
-            const type = btn.data('type');
-            const option = btn.data('option');
-            
-            if (option === 'Other') {
-                bar.find('.reaction-custom').show();
-            } else {
-                // Simulate saving reaction
-                saveReactionDetail(id, type, option, '');
-                bar.find('.reaction-options-container').hide();
-            }
-            
-            // Log the action
-            $('#reaction-log').append(`<p>✅ Selected option: ${option}</p>`);
-        });
-
-        // Handle custom feedback submit
-        $(document).on('click', '.reaction-custom-submit', function(e) {
-            e.preventDefault();
-            const bar = $(this).closest('.answer-reaction-bar');
-            const id = bar.find('.reaction-like, .reaction-dislike').data('id');
-            const type = bar.find('.reaction-like').hasClass('reaction-active') ? 'like' : 'dislike';
-            const feedback = bar.find('.reaction-custom-text').val().trim();
-            
-            if (feedback) {
-                // Simulate saving reaction
-                saveReactionDetail(id, type, 'Other', feedback);
-                bar.find('.reaction-options-container').hide();
-                bar.find('.reaction-custom-text').val('');
-                
-                // Log the action
-                $('#reaction-log').append(`<p>✅ Submitted feedback: "${feedback}"</p>`);
-            } else {
-                $('#reaction-log').append(`<p>❌ Please enter feedback text</p>`);
-            }
-        });
-
-        // Simulate saving reaction detail
-        function saveReactionDetail(id, type, option, feedback) {
-            // In a real implementation, this would make an AJAX call
-            console.log('Saving reaction:', { id, type, option, feedback });
-            
-            // Update counts in UI
-            if (type === 'like') {
-                const currentCount = parseInt($(`#like-count-${id}`).text()) || 0;
-                $(`#like-count-${id}`).text(currentCount + 1);
-            } else {
-                const currentCount = parseInt($(`#dislike-count-${id}`).text()) || 0;
-                $(`#dislike-count-${id}`).text(currentCount + 1);
-            }
-            
-            $('#reaction-log').append(`<p>✅ Reaction saved: ${type} - ${option}${feedback ? ` - "${feedback}"` : ''}</p>`);
-        }
-
-        // Add event handlers for action buttons
-        $(document).on('click', '.share-btn', function() {
-            $('#reaction-log').append(`<p>✅ Share button clicked</p>`);
-        });
-
-        $(document).on('click', '.reaction-more', function() {
-            $('#reaction-log').append(`<p>✅ More options button clicked</p>`);
+        // Initialize dashboard when page loads
+        $(document).ready(function() {
+            renderCSATDashboard();
         });
     </script>
 </body>
