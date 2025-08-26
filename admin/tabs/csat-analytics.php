@@ -72,9 +72,6 @@ function get_csat_data($time_filter = 'all_time') {
     ];
     
     foreach ($reactions as $reaction) {
-        // Debug: Log each reaction for troubleshooting
-        error_log("Processing reaction: " . print_r($reaction, true));
-        
         $reaction_data = json_decode($reaction->reaction, true);
         
         if (is_array($reaction_data)) {
@@ -100,32 +97,23 @@ function get_csat_data($time_filter = 'all_time') {
                             $detail = json_decode(str_replace('\\"', '"', $reaction->reaction_detail), true);
                         }
                     }
-                    error_log("Reaction detail decoded: " . print_r($detail, true));
-                    error_log("Reaction detail raw: " . $reaction->reaction_detail);
-                    
                     if (is_array($detail) && isset($detail['option'])) {
                         $option = $detail['option'];
-                        error_log("Processing option: '{$option}'");
                         // Map common variations to our standard categories
                         $mapped_option = map_feedback_option($option, 'positive');
-                        error_log("Mapped option '{$option}' to '{$mapped_option}'");
                         
                         if (isset($thumbs_up_breakdown[$mapped_option])) {
                             $thumbs_up_breakdown[$mapped_option] += $reaction_data['like'];
-                            error_log("Added {$reaction_data['like']} to category '{$mapped_option}'");
                         } else {
                             $thumbs_up_breakdown['Other'] += $reaction_data['like'];
-                            error_log("Category '{$mapped_option}' not found, added to Other");
                         }
                     } else {
                         // No specific category, count as "Other"
                         $thumbs_up_breakdown['Other'] += $reaction_data['like'];
-                        error_log("No specific category found, counting as Other. Detail structure: " . print_r($detail, true));
                     }
                 } else {
                     // No reaction detail, count as "Other"
                     $thumbs_up_breakdown['Other'] += $reaction_data['like'];
-                    error_log("No reaction detail, counting as Other");
                 }
             }
             
@@ -151,41 +139,29 @@ function get_csat_data($time_filter = 'all_time') {
                             $detail = json_decode(str_replace('\\"', '"', $reaction->reaction_detail), true);
                         }
                     }
-                    error_log("Reaction detail decoded: " . print_r($detail, true));
-                    error_log("Reaction detail raw: " . $reaction->reaction_detail);
-                    
                     if (is_array($detail) && isset($detail['option'])) {
                         $option = $detail['option'];
-                        error_log("Processing option: '{$option}'");
                         // Map common variations to our standard categories
                         $mapped_option = map_feedback_option($option, 'negative');
-                        error_log("Mapped option '{$option}' to '{$mapped_option}'");
                         
                         if (isset($thumbs_down_breakdown[$mapped_option])) {
                             $thumbs_down_breakdown[$mapped_option] += $reaction_data['dislike'];
-                            error_log("Added {$reaction_data['dislike']} to category '{$mapped_option}'");
                         } else {
                             $thumbs_down_breakdown['Other'] += $reaction_data['dislike'];
-                            error_log("Category '{$mapped_option}' not found, added to Other");
                         }
                     } else {
                         // No specific category, count as "Other"
                         $thumbs_down_breakdown['Other'] += $reaction_data['dislike'];
-                        error_log("No specific category found, counting as Other. Detail structure: " . print_r($detail, true));
                     }
                 } else {
                     // No reaction detail, count as "Other"
                     $thumbs_down_breakdown['Other'] += $reaction_data['dislike'];
-                    error_log("No reaction detail, counting as Other");
                 }
             }
         }
     }
     
-    // Debug: Log final counts
-    error_log("Final counts - Thumbs up: {$thumbs_up_total}, Thumbs down: {$thumbs_down_total}");
-    error_log("Thumbs up breakdown: " . print_r($thumbs_up_breakdown, true));
-    error_log("Thumbs down breakdown: " . print_r($thumbs_down_breakdown, true));
+
     
     $total_reactions = $thumbs_up_total + $thumbs_down_total;
     $csat_score = $total_reactions > 0 ? round(($thumbs_up_total / $total_reactions) * 100) : 0;
@@ -250,26 +226,14 @@ $filter_options = [
     'all_time' => 'All Time'
 ];
 
-// Debug: Show current filter and data
-error_log("Current filter: " . $current_filter);
-error_log("CSAT data: " . print_r($csat_data, true));
+
 ?>
 
 <div class="wrap">
     <h1>🧠 CSAT Analytics</h1>
     <p>Customer Satisfaction Score and Detailed Feedback Analysis</p>
     
-    <!-- Debug Info (remove in production) -->
-    <?php if (defined('WP_DEBUG') && WP_DEBUG): ?>
-    <div style="background: #f0f0f0; border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 5px;">
-        <strong>Debug Info:</strong><br>
-        Current Filter: <?php echo $current_filter; ?><br>
-        Total Reactions: <?php echo $csat_data['total_reactions']; ?><br>
-        Thumbs Up: <?php echo $csat_data['thumbs_up']['total']; ?><br>
-        Thumbs Down: <?php echo $csat_data['thumbs_down']['total']; ?><br>
-        CSAT Score: <?php echo $csat_data['csat_score']; ?>%
-    </div>
-    <?php endif; ?>
+
     
     <!-- Time Filter Controls -->
     <div class="csat-filters" style="margin-bottom: 30px;">
@@ -405,78 +369,7 @@ error_log("CSAT data: " . print_r($csat_data, true));
         </button>
     </div>
 
-    <!-- Temporary Debug Display -->
-    <div style="background: #f0f0f0; border: 1px solid #ccc; padding: 15px; margin: 15px 0; border-radius: 5px; font-family: monospace; font-size: 12px;">
-        <strong>🔍 DEBUG INFO:</strong><br>
-        <strong>WordPress Debug:</strong> <?php echo defined('WP_DEBUG') && WP_DEBUG ? 'ENABLED' : 'DISABLED'; ?><br>
-        <strong>Debug Log:</strong> <?php echo defined('WP_DEBUG_LOG') && WP_DEBUG_LOG ? 'ENABLED' : 'DISABLED'; ?><br>
-        <strong>Current Filter:</strong> <?php echo $current_filter; ?><br>
-        <strong>Total Reactions:</strong> <?php echo $csat_data['total_reactions']; ?><br>
-        <strong>Thumbs Up Total:</strong> <?php echo $csat_data['thumbs_up']['total']; ?><br>
-        <strong>Thumbs Down Total:</strong> <?php echo $csat_data['thumbs_down']['total']; ?><br>
-        <strong>CSAT Score:</strong> <?php echo $csat_data['csat_score']; ?>%<br>
-        <br>
-        <strong>Thumbs Up Breakdown:</strong><br>
-        <?php foreach ($csat_data['thumbs_up']['breakdown'] as $category => $count): ?>
-            &nbsp;&nbsp;• <?php echo $category; ?>: <?php echo $count; ?><br>
-        <?php endforeach; ?>
-        <br>
-        <strong>Thumbs Down Breakdown:</strong><br>
-        <?php foreach ($csat_data['thumbs_down']['breakdown'] as $category => $count): ?>
-            &nbsp;&nbsp;• <?php echo $category; ?>: <?php echo $count; ?><br>
-        <?php endforeach; ?>
-        <br>
-        <strong>🔍 RAW DATA DEBUG:</strong><br>
-        <?php
-        // Get the raw data to see what's actually in the database
-        global $wpdb;
-        $chatlog_table = $wpdb->prefix . 'ai_chat_log';
-        $reactions = $wpdb->get_results("
-            SELECT reaction, reaction_detail, created_at
-            FROM {$chatlog_table} 
-            WHERE reaction IS NOT NULL AND reaction != ''
-            ORDER BY created_at DESC
-            LIMIT 5
-        ");
-        
-        foreach ($reactions as $reaction) {
-            echo "<strong>Reaction:</strong> " . htmlspecialchars($reaction->reaction) . "<br>";
-            echo "<strong>Reaction Detail:</strong> " . htmlspecialchars($reaction->reaction_detail) . "<br>";
-            echo "<strong>Created:</strong> " . $reaction->created_at . "<br>";
-            
-            // Test JSON parsing with enhanced handling
-            $reaction_data = json_decode($reaction->reaction, true);
-            
-            // Handle escaped JSON strings (with backslashes before quotes)
-            $detail = $reaction->reaction_detail;
-            if (is_string($detail)) {
-                // First, try to decode as-is
-                $detail = json_decode($detail, true);
-                
-                // If that fails or returns null, try with stripslashes
-                if ($detail === null) {
-                    $detail = json_decode(stripslashes($detail), true);
-                }
-                
-                // If still fails, try with addslashes removed
-                if ($detail === null) {
-                    $detail = json_decode(str_replace('\\"', '"', $reaction->reaction_detail), true);
-                }
-            }
-            
-            echo "<strong>Parsed Reaction:</strong> " . print_r($reaction_data, true) . "<br>";
-            echo "<strong>Parsed Detail:</strong> " . print_r($detail, true) . "<br>";
-            
-            if (is_array($detail) && isset($detail['option'])) {
-                echo "<strong>Option Found:</strong> " . $detail['option'] . "<br>";
-                echo "<strong>Mapped To:</strong> " . map_feedback_option($detail['option'], 'positive') . "<br>";
-            } else {
-                echo "<strong>No Option Found</strong><br>";
-            }
-            echo "<br>";
-        }
-        ?>
-    </div>
+
 </div>
 
 <style>

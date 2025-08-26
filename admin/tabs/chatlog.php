@@ -47,6 +47,30 @@ if (!empty($logs)) {
     }
 }
 ?>
+<style>
+.chatlog-reaction {
+    text-align: center;
+    font-size: 14px;
+}
+
+.chatlog-reaction span {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.chatlog-reaction-detail {
+    max-width: 200px;
+    word-wrap: break-word;
+}
+
+.chatlog-reaction-detail span {
+    display: inline-block;
+    margin: 2px 0;
+}
+</style>
+
 <div class="wrap">
     <h1>AI Chat Log</h1>
     <div id="chatlog-notices"></div>
@@ -60,15 +84,15 @@ if (!empty($logs)) {
                 <th>Answer</th>
                 <th>Date</th>
                 <th>Training Status</th>
-                <th>Reaction</th>
-                <th>Reaction Detail</th>
+                <th>Feedback Count</th>
+                <th>Feedback Type</th>
                 <th>Beta Feedback</th>
                 <th>Action</th>
             </tr>
         </thead>
         <tbody>
             <?php if (empty($logs)): ?>
-                <tr><td colspan="8">No chat logs found.</td></tr>
+                <tr><td colspan="10">No chat logs found.</td></tr>
             <?php else: ?>
                 <?php foreach ($logs as $log):
                     $in_training = isset($training_status_cache[$log['question']]);
@@ -82,25 +106,63 @@ if (!empty($logs)) {
                         <td><?php echo esc_html($log['created_at']); ?></td>
                         <td class="training-status" style="text-align:center;"><?php if ($in_training): ?><span style="color:green;font-size:18px;">&#10003;</span><?php endif; ?></td>
                         <td class="chatlog-reaction">
-                            <span class="reaction-like" data-id="<?php echo esc_attr($log['id']); ?>" style="cursor:pointer;">&#128077;</span>
-                            <span class="like-count" id="like-count-<?php echo esc_attr($log['id']); ?>"><?php echo intval($reactions['like']); ?></span>
-                            &nbsp;&nbsp;
-                            <span class="reaction-dislike" data-id="<?php echo esc_attr($log['id']); ?>" style="cursor:pointer;">&#128078;</span>
-                            <span class="dislike-count" id="dislike-count-<?php echo esc_attr($log['id']); ?>"><?php echo intval($reactions['dislike']); ?></span>
+                            <?php if ($reactions['like'] > 0): ?>
+                                <span style="color: #4CAF50;">&#128077; <?php echo intval($reactions['like']); ?></span>
+                            <?php endif; ?>
+                            <?php if ($reactions['dislike'] > 0): ?>
+                                <?php if ($reactions['like'] > 0): ?>&nbsp;&nbsp;<?php endif; ?>
+                                <span style="color: #f44336;">&#128078; <?php echo intval($reactions['dislike']); ?></span>
+                            <?php endif; ?>
+                            <?php if ($reactions['like'] == 0 && $reactions['dislike'] == 0): ?>
+                                <span style="color: #999;">No reactions</span>
+                            <?php endif; ?>
                         </td>
                         <td class="chatlog-reaction-detail">
                             <?php 
                                 if (!empty($log['reaction_detail'])) {
-                                    $detail = json_decode($log['reaction_detail'], true);
+                                    // Handle escaped JSON strings (with backslashes before quotes) - same as CSAT analytics
+                                    $detail = $log['reaction_detail'];
+                                    if (is_string($detail)) {
+                                        // First, try to decode as-is
+                                        $detail = json_decode($detail, true);
+                                        
+                                        // If that fails or returns null, try with stripslashes
+                                        if ($detail === null) {
+                                            $detail = json_decode(stripslashes($detail), true);
+                                        }
+                                        
+                                        // If still fails, try with addslashes removed
+                                        if ($detail === null) {
+                                            $detail = json_decode(str_replace('\\"', '"', $log['reaction_detail']), true);
+                                        }
+                                    }
+                                    
                                     if (is_array($detail) && isset($detail['option'])) {
-                                        if ($detail['option'] === 'Other' && !empty($detail['feedback'])) {
-                                            echo '<strong>Other:</strong> ' . esc_html($detail['feedback']);
+                                        $option = $detail['option'];
+                                        $feedback = isset($detail['feedback']) ? $detail['feedback'] : '';
+                                        
+                                        // Display the selected feedback option with better formatting
+                                        if ($option === 'Other' && !empty($feedback)) {
+                                            echo '<span style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px; font-size: 12px;">';
+                                            echo '<strong>Other:</strong> ' . esc_html($feedback);
+                                            echo '</span>';
                                         } else {
-                                            echo esc_html($detail['option']);
+                                            echo '<span style="background: #e3f2fd; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #1976d2;">';
+                                            echo esc_html($option);
+                                            echo '</span>';
+                                        }
+                                        
+                                        // Show additional feedback if provided
+                                        if (!empty($feedback) && $option !== 'Other') {
+                                            echo '<br><small style="color: #666; margin-top: 4px; display: block;">';
+                                            echo esc_html($feedback);
+                                            echo '</small>';
                                         }
                                     } else {
-                                        echo esc_html($log['reaction_detail']);
+                                        echo '<span style="color: #999; font-style: italic;">Invalid format</span>';
                                     }
+                                } else {
+                                    echo '<span style="color: #999; font-style: italic;">No feedback</span>';
                                 }
                             ?>
                         </td>
@@ -337,29 +399,7 @@ jQuery(document).ready(function($){
             });
         },
         
-        updateReaction: function() {
-            const btn = $(this);
-            const id = btn.data('id');
-            const type = btn.hasClass('reaction-like') ? 'like' : 'dislike';
-            
-            $.post(ajaxurl, {
-                action: 'ai_update_chatlog_reaction',
-                id: id,
-                reaction: type,
-                _wpnonce: '<?php echo wp_create_nonce('ai_update_chatlog_answer'); ?>'
-            })
-            .done(function(resp) {
-                if (resp.success && resp.data) {
-                    $(`#like-count-${id}`).text(resp.data.like);
-                    $(`#dislike-count-${id}`).text(resp.data.dislike);
-                } else {
-                    alert('Failed to update reaction.');
-                }
-            })
-            .fail(function() {
-                alert('Failed to update reaction.');
-            });
-        },
+
         
         handleSelectAll: function() {
             $('.select-chatlog').prop('checked', $(this).prop('checked'));
@@ -386,7 +426,7 @@ jQuery(document).ready(function($){
     $('#select-all-chatlogs').on('change', handlers.handleSelectAll);
     $(document).on('change', '.select-chatlog', handlers.handleIndividualSelect);
     $('#delete-selected-chatlogs').on('click', handlers.deleteSelected);
-    $(document).on('click', '.reaction-like, .reaction-dislike', handlers.updateReaction);
+
     
     // Global function for streaming answer updates
     window.saveStreamingAnswerToChatlog = function(question, answer) {
