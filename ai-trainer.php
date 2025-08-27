@@ -1652,44 +1652,64 @@ class Exa_AI_Integration {
             $best_match = $top_chunks[0]['chunk'];
         }
         
-        // ENHANCED: Dual-query strategy to ensure psychedelics.com content
+        // ENHANCED: Tier-guaranteed search strategy to ensure proper result ordering
         $all_results = [];
-        $psychedelics_com_results = [];
+        $tiered_results = [
+            1 => [], // Tier 1 results (psychedelics.com, reddit.com, etc.)
+            2 => [], // Tier 2 results
+            3 => [], // Tier 3 results
+            4 => []  // Tier 4 results
+        ];
         
-        // Primary Query: Current EXA search with domain priorities
-        $primary_results = $this->execute_exa_search($conversational_prompt, $query);
-        if (!empty($primary_results)) {
-            $all_results = array_merge($all_results, $primary_results);
+        // Step 1: Guaranteed psychedelics.com search (always first)
+        $psychedelics_results = $this->execute_psychedelics_com_fallback($conversational_prompt, $query);
+        if (!empty($psychedelics_results)) {
+            $tiered_results[1] = array_merge($tiered_results[1], $psychedelics_results);
+            error_log('Psychedelics.com guaranteed results: ' . count($psychedelics_results));
         }
         
-        // Check if we have psychedelics.com results in primary search
-        $has_psychedelics_com = $this->has_domain_results($all_results, 'psychedelics.com');
+        // Step 2: Tier-specific searches to ensure coverage
+        $tiered_domains = ai_trainer_get_domains_with_tiers();
         
-        // ENHANCED: Apply relevance filtering to primary search psychedelics.com results
-        if ($has_psychedelics_com) {
-            $primary_psychedelics = $this->extract_psychedelics_com_results($all_results);
-            $filtered_primary_psychedelics = $this->filter_psychedelics_com_by_relevance($primary_psychedelics, $query);
-            
-            // Replace primary results with filtered psychedelics.com results
-            $all_results = $this->replace_psychedelics_com_results($all_results, $filtered_primary_psychedelics);
-            
-            error_log('Primary search psychedelics.com results filtered by relevance: ' . count($filtered_primary_psychedelics) . ' relevant results');
-        }
-        
-        // Fallback Query: If no psychedelics.com results, run specific search
-        if (!$has_psychedelics_com) {
-            error_log('No psychedelics.com results found in primary search, running fallback query');
-            $fallback_results = $this->execute_psychedelics_com_fallback($conversational_prompt, $query);
-            if (!empty($fallback_results)) {
-                $psychedelics_com_results = $fallback_results;
-                // Merge fallback results with primary results, prioritizing psychedelics.com
-                $all_results = $this->merge_results_with_psychedelics_priority($all_results, $psychedelics_com_results);
+        // Search for each tier separately to ensure coverage
+        foreach ($tiered_domains as $domain => $tier) {
+            if ($tier == 1 && $domain !== 'psychedelics.com') {
+                // Tier 1 domains (excluding psychedelics.com which we already have)
+                $tier1_results = $this->execute_tier_specific_search($conversational_prompt, $query, [$domain], $tier);
+                if (!empty($tier1_results)) {
+                    $tiered_results[1] = array_merge($tiered_results[1], $tier1_results);
+                    error_log("Tier 1 domain $domain results: " . count($tier1_results));
+                }
+            } elseif ($tier == 2) {
+                // Tier 2 domains
+                $tier2_results = $this->execute_tier_specific_search($conversational_prompt, $query, [$domain], $tier);
+                if (!empty($tier2_results)) {
+                    $tiered_results[2] = array_merge($tiered_results[2], $tier2_results);
+                }
+            } elseif ($tier == 3) {
+                // Tier 3 domains
+                $tier3_results = $this->execute_tier_specific_search($conversational_prompt, $query, [$domain], $tier);
+                if (!empty($tier3_results)) {
+                    $tiered_results[3] = array_merge($tiered_results[3], $tier3_results);
+                }
+            } elseif ($tier == 4) {
+                // Tier 4 domains
+                $tier4_results = $this->execute_tier_specific_search($conversational_prompt, $query, [$domain], $tier);
+                if (!empty($tier4_results)) {
+                    $tiered_results[4] = array_merge($tiered_results[4], $tier4_results);
+                }
             }
         }
         
-        // Enhanced tier-based reordering with psychedelics.com guarantee
-        if (!empty($all_results)) {
-            $all_results = $this->enhanced_reorder_with_psychedelics_guarantee($all_results);
+        // Step 3: Merge all results in tier order
+        $all_results = [];
+        foreach ($tiered_results as $tier => $results) {
+            if (!empty($results)) {
+                // Within each tier, sort by relevance
+                $sorted_tier_results = $this->sort_results_by_relevance($results, $query);
+                $all_results = array_merge($all_results, $sorted_tier_results);
+                error_log("Tier $tier results added: " . count($sorted_tier_results));
+            }
         }
         
         // ENHANCED: Verify psychedelics.com guarantee compliance
@@ -1856,6 +1876,83 @@ class Exa_AI_Integration {
             });
             
         return array_values($filtered_results);
+    }
+    
+    // NEW: Execute tier-specific search for guaranteed coverage
+    private function execute_tier_specific_search($conversational_prompt, $query, $domains, $tier) {
+        $headers = [
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $this->exa_api_key
+        ];
+        
+        // Create domain-specific query for better results
+        $domain_hints = implode(' ', array_map(function($domain) {
+            return "site:$domain";
+        }, $domains));
+        
+        $enhanced_query = $conversational_prompt . " " . $domain_hints;
+        
+        $body = json_encode([
+            'query' => $enhanced_query,
+            'contents' => [ 'text' => true ],
+            'numResults' => 10, // Limit per tier to avoid overwhelming results
+            'include_domains' => $domains,
+            'type' => 'neural'
+        ]);
+        
+        error_log("Executing Tier $tier search for domains: " . implode(', ', $domains));
+        
+        $response = wp_remote_post('https://api.exa.ai/search', [
+            'headers' => $headers,
+            'body' => $body,
+            'timeout' => 15
+        ]);
+        
+        if (is_wp_error($response)) {
+            error_log("Tier $tier search failed: " . $response->get_error_message());
+            return [];
+        }
+        
+        $data = json_decode(wp_remote_retrieve_body($response), true);
+        if (!is_array($data) || empty($data['results'])) {
+            error_log("Tier $tier search returned no results");
+            return [];
+        }
+        
+        // Filter to only the specified domains
+        $filtered_results = array_filter($data['results'], function($result) use ($domains) {
+            if (empty($result['url'])) return false;
+            $host = parse_url($result['url'], PHP_URL_HOST);
+            $host = strtolower($host);
+            $host_nw = preg_replace('/^www\./', '', $host);
+            return in_array($host, $domains) || in_array($host_nw, $domains);
+        });
+        
+        error_log("Tier $tier search returned " . count($filtered_results) . " valid results");
+        return array_values($filtered_results);
+    }
+    
+    // NEW: Sort results by relevance within each tier
+    private function sort_results_by_relevance($results, $query) {
+        if (empty($results)) return $results;
+        
+        // Score each result for relevance
+        $scored_results = [];
+        foreach ($results as $result) {
+            $relevance_score = $this->calculate_relevance_score($result, $query);
+            $scored_results[] = [
+                'result' => $result,
+                'relevance_score' => $relevance_score
+            ];
+        }
+        
+        // Sort by relevance score (highest first)
+        usort($scored_results, function($a, $b) {
+            return $b['relevance_score'] <=> $a['relevance_score'];
+        });
+        
+        // Return just the results, not the scores
+        return array_column($scored_results, 'result');
     }
     
     // NEW: Execute fallback search specifically for psychedelics.com
@@ -2146,77 +2243,11 @@ class Exa_AI_Integration {
         return $deduplicated_results;
     }
     
-    // ENHANCED: Reorder results with psychedelics.com guarantee
+    // NEW: Tier-guaranteed result ordering (replaces old enhanced reordering)
     private function enhanced_reorder_with_psychedelics_guarantee($results) {
-        if (empty($results)) return $results;
-        
-        $tiered_domains = ai_trainer_get_domains_with_tiers();
-        
-        // Group results by tier
-        $tiered_results = [
-            1 => [], // Highest priority (psychedelics.com, etc.)
-            2 => [],
-            3 => [],
-            4 => []
-        ];
-        
-        foreach ($results as $result) {
-            if (empty($result['url'])) continue;
-            
-            $host = parse_url($result['url'], PHP_URL_HOST);
-            $host = strtolower($host);
-            $host_nw = preg_replace('/^www\./', '', $host);
-            
-            // Find the tier for this domain
-            $tier = 4; // Default to lowest tier
-            if (isset($tiered_domains[$host])) {
-                $tier = $tiered_domains[$host];
-            } elseif (isset($tiered_domains[$host_nw])) {
-                $tier = $tiered_domains[$host_nw];
-            }
-            
-            $tiered_results[$tier][] = $result;
-        }
-        
-        // ENHANCED: Ensure psychedelics.com results are always at the very top
-        $psychedelics_com_results = [];
-        $other_tier1_results = [];
-        
-        // Separate psychedelics.com from other tier 1 results
-        foreach ($tiered_results[1] as $result) {
-            $host = parse_url($result['url'], PHP_URL_HOST);
-            $host = strtolower($host);
-            $host_nw = preg_replace('/^www\./', '', $host);
-            
-            if ($host === 'psychedelics.com' || $host_nw === 'psychedelics.com') {
-                $psychedelics_com_results[] = $result;
-            } else {
-                $other_tier1_results[] = $result;
-            }
-        }
-        
-        // Reorder results: psychedelics.com first, then other tier 1, then tier 2, etc.
-        $reordered_results = [];
-        
-        // 1. Psychedelics.com results first (guaranteed)
-        $reordered_results = array_merge($reordered_results, $psychedelics_com_results);
-        
-        // 2. Other tier 1 results
-        $reordered_results = array_merge($reordered_results, $other_tier1_results);
-        
-        // 3. Tier 2, 3, 4 results
-        for ($tier = 2; $tier <= 4; $tier++) {
-            $reordered_results = array_merge($reordered_results, $tiered_results[$tier]);
-        }
-        
-        // Log the enhanced reordering for debugging
-        error_log('Enhanced reordering - Psychedelics.com: ' . count($psychedelics_com_results) . 
-                 ', Other Tier 1: ' . count($other_tier1_results) . 
-                 ', Tier 2: ' . count($tiered_results[2]) . 
-                 ', Tier 3: ' . count($tiered_results[3]) . 
-                 ', Tier 4: ' . count($tiered_results[4]));
-        
-        return $reordered_results;
+        // This function is now handled by the new tier-based search strategy
+        // Results are already ordered by tier in the main search function
+        return $results;
     }
 
     //Getting Embedding of query
