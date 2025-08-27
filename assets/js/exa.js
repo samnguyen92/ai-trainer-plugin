@@ -275,6 +275,9 @@ jQuery(document).ready(function($) {
 
     // Populate Sources tab with detailed source information
     function populateSourcesTab(block, results) {
+        // Store the original results data in the block for filtering
+        block.data('original-results', results);
+        
         if (!results || !Array.isArray(results) || results.length === 0) {
             block.find('.sources-content').html(`
                 <div class="sources-empty-state">
@@ -358,7 +361,9 @@ jQuery(document).ready(function($) {
 
     // Setup source filtering functionality
     function setupSourceFilters(block) {
-        block.find('.filter-btn').on('click', function() {
+        const filterButtons = block.find('.filter-btn');
+        
+        filterButtons.on('click', function() {
             const filterType = $(this).data('filter');
             
             // Update active filter button
@@ -375,15 +380,36 @@ jQuery(document).ready(function($) {
         const sourceItems = block.find('.source-item');
         const sourcesContent = block.find('.sources-content');
         
+        // Get the original results data from the block's data attribute
+        const originalResults = block.data('original-results');
+        
         // Store original order if not already stored
         if (!sourcesContent.data('original-order')) {
             const originalOrder = [];
             sourceItems.each(function(index) {
+                const resultData = originalResults ? originalResults[index] : {};
+                
+                // Get the most relevant date: publishedDate -> date_updated -> published_date -> date_created
+                let timestamp = 0;
+                if (resultData.publishedDate) {
+                    timestamp = new Date(resultData.publishedDate).getTime();
+                } else if (resultData.date_updated) {
+                    timestamp = new Date(resultData.date_updated).getTime();
+                } else if (resultData.published_date) {
+                    timestamp = new Date(resultData.published_date).getTime();
+                } else if (resultData.date_created) {
+                    timestamp = new Date(resultData.date_created).getTime();
+                }
+                
+                // Get relevance score, default to 0 if not available
+                const relevance = resultData.score ? parseFloat(resultData.score) : 0;
+                
                 originalOrder.push({
                     element: $(this),
                     index: index,
-                    timestamp: Date.now() - (Math.random() * 1000000), // Simulate different timestamps
-                    relevance: Math.random() // Simulate relevance scores
+                    timestamp: timestamp,
+                    relevance: relevance,
+                    resultData: resultData
                 });
             });
             sourcesContent.data('original-order', originalOrder);
@@ -419,15 +445,23 @@ jQuery(document).ready(function($) {
         // Reorder the DOM
         const sourcesContainer = block.find('.sources-content');
         const header = sourcesContainer.find('.sources-tab-header');
-        const itemsContainer = sourcesContainer.find('.source-item').parent();
         
         // Remove header temporarily
         header.detach();
         
         // Clear and re-add items in new order
         sourceItems.detach();
-        filteredItems.forEach(item => {
+        
+        filteredItems.forEach((item, index) => {
             sourcesContainer.append(item);
+            
+            // Add temporary highlight to show reordering worked
+            if (filterType !== 'all') {
+                item.addClass('filtered-highlight');
+                setTimeout(() => {
+                    item.removeClass('filtered-highlight');
+                }, 2000);
+            }
         });
         
         // Re-add header at the top

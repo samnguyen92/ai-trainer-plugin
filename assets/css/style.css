@@ -1339,4 +1339,12 @@
 
 .answer-reaction-bar .reaction-custom-submit:hover {
     background: #0056b3;
+}
+
+/* Filter highlight effect */
+.filtered-highlight {
+    background: rgba(59, 178, 115, 0.1) !important;
+    border: 2px solid #3bb273 !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
 }  
