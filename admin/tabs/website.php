@@ -1,4 +1,35 @@
 <?php
+/**
+ * Website Management Tab - AI Trainer Plugin
+ * 
+ * This file provides the admin interface for managing allowed websites (domains)
+ * that are permitted in Exa search results. It allows administrators to add,
+ * edit, and manage website sources with tier-based prioritization.
+ * 
+ * FUNCTIONALITY OVERVIEW:
+ * - Add new websites with title, URL, and priority tier
+ * - Edit existing website entries inline
+ * - Tier-based prioritization system (1-4 levels)
+ * - AJAX-powered table management
+ * - Form validation and security
+ * 
+ * TIER SYSTEM:
+ * - Tier 1: Highest Priority (most trusted sources)
+ * - Tier 2: High Priority (very trusted sources)
+ * - Tier 3: Medium Priority (moderately trusted sources)
+ * - Tier 4: Low Priority (least trusted sources)
+ * 
+ * SECURITY FEATURES:
+ * - WordPress nonce verification
+ * - Input sanitization
+ * - ABSPATH validation
+ * - Required function checks
+ * 
+ * @package AI_Trainer
+ * @subpackage Admin_Tabs
+ * @since 1.0
+ */
+
 // Ensure ABSPATH is defined for includes
 if (!defined('ABSPATH')) define('ABSPATH', dirname(__FILE__, 5) . '/');
 if (!function_exists('sanitize_text_field')) require_once(ABSPATH . 'wp-includes/formatting.php');
@@ -6,9 +37,14 @@ if (!function_exists('esc_url')) require_once(ABSPATH . 'wp-includes/formatting.
 if (!function_exists('wp_nonce_field')) require_once(ABSPATH . 'wp-includes/functions.php');
 
 ?>
-<h2>Website</h2>
-<p>Add allowed websites (domains) for Exa search. When you add a URL, its domain is added to the allowed list.</p>
+<h2>Website Management</h2>
+<p>Add allowed websites (domains) for Exa search. When you add a URL, its domain is added to the allowed list. 
+   Websites are prioritized by tier level, with Tier 1 being the highest priority and most trusted sources.</p>
+
+<!-- Notification area for user feedback -->
 <div id="website-notices"></div>
+
+<!-- Add Website Form -->
 <form id="add-website-form" method="post" style="margin-bottom: 16px;">
     <input type="text" name="website_title" placeholder="Website Title" style="width: 25%; margin-right: 8px;" required>
     <input type="url" name="website_url" placeholder="https://example.com" style="width: 35%; margin-right: 8px;" required>
@@ -21,6 +57,8 @@ if (!function_exists('wp_nonce_field')) require_once(ABSPATH . 'wp-includes/func
     </select>
     <button type="submit" class="button button-primary">Add Website</button>
 </form>
+
+<!-- Dynamic table container for website sources -->
 <div id="website-sources-table"></div>
 
 <!-- Inline Edit Modal for Website -->
@@ -51,11 +89,21 @@ if (!function_exists('wp_nonce_field')) require_once(ABSPATH . 'wp-includes/func
         </form>
     </div>
 </div>
+
 <script>
+/**
+ * Website Management JavaScript
+ * 
+ * This script handles the dynamic loading and management of the website sources table
+ * through AJAX calls to the WordPress backend.
+ */
 jQuery(function($){
     // On page load, load the website table via AJAX
     if ($('#website-sources-table').length) {
-        $.post(ai_trainer_ajax.ajaxurl, { action: 'ai_get_website_table', nonce: ai_trainer_ajax.nonce }, function (response) {
+        $.post(ai_trainer_ajax.ajaxurl, { 
+            action: 'ai_get_website_table', 
+            nonce: ai_trainer_ajax.nonce 
+        }, function (response) {
             if (response.html) $('#website-sources-table').html(response.html);
             if (response.notice) {
                 $('#website-notices').html(response.notice).show();

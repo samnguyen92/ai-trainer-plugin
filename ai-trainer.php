@@ -1,198 +1,294 @@
 <?php
 
 /**
- * Plugin Name: AI Trainer Dashboard
- * Description: Training for Search AI.
- * Version: 1.0
- * Author: Psychedelic
+ * AI Trainer Dashboard - WordPress Plugin
+ * 
+ * This plugin provides an AI-powered training dashboard that integrates with Exa.ai and OpenAI
+ * to create a RAG (Retrieval-Augmented Generation) system for psychedelic information.
+ * 
+ * ARCHITECTURE OVERVIEW:
+ * - Main plugin file (this file) handles WordPress integration, admin menus, and AJAX endpoints
+ * - Includes/ directory contains core functionality (OpenAI, utilities, auto-page creation)
+ * - Admin/ directory contains the WordPress admin interface with tabbed navigation
+ * - Assets/ directory contains frontend CSS, JS, and images
+ * - Build/ directory contains compiled assets from the build system
+ * 
+ * KEY FEATURES:
+ * - Knowledge management (Q&A, files, text, websites)
+ * - AI-powered search with domain prioritization
+ * - CSAT analytics for user satisfaction tracking
+ * - Psychedelics.com content guarantee system
+ * - Modern UI with reaction system
+ * 
+ * DATABASE TABLES:
+ * - ai_knowledge: Main knowledge base for training data
+ * - ai_chat_log: User conversation history with reactions
+ * - ai_knowledge_chunks: Text chunks for better search
+ * - ai_allowed_domains: Domain priorities and sources
+ * - ai_blocked_domains: Blocked content sources
+ * 
+ * @package AI_Trainer
+ * @version 1.0
+ * @author Psychedelic
+ * @since 2025
  */
 
 if (!defined('ABSPATH')) exit;
 
+// Define plugin constants for easy reference throughout the codebase
 define('AI_TRAINER_PATH', plugin_dir_path(__FILE__));
+define('AI_TRAINER_URL', plugin_dir_url(__FILE__));
+define('AI_TRAINER_VERSION', '1.0');
 
-require_once AI_TRAINER_PATH . 'includes/openai.php';
-require_once AI_TRAINER_PATH . 'includes/utils.php';
-require_once AI_TRAINER_PATH . 'includes/autopage.php';
+// Load required core functionality files
+require_once AI_TRAINER_PATH . 'includes/openai.php';      // OpenAI API integration
+require_once AI_TRAINER_PATH . 'includes/utils.php';       // Utility functions
+require_once AI_TRAINER_PATH . 'includes/autopage.php';    // Auto-page creation system
 
+// Initialize the auto-page creation system
 AI_Trainer_Auto_Page::boot(__FILE__);
 
+// Load Composer autoloader for external dependencies
 if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     require_once __DIR__ . '/vendor/autoload.php';
 }
 
+// Load environment variables from .env file
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->safeLoad();
 
+// Define API keys from environment variables with fallbacks
 define('EXA_API_KEY', isset($_ENV['EXA_API_KEY']) ? $_ENV['EXA_API_KEY'] : '');
 define('OPENAI_API_KEY', isset($_ENV['OPENAI_API_KEY']) ? $_ENV['OPENAI_API_KEY'] : '');
 
-// ENHANCED: Configuration for psychedelics.com guarantee
-define('PSYCHEDELICS_COM_GUARANTEE', true); // Set to false to disable the guarantee
-define('PSYCHEDELICS_COM_FALLBACK_ENABLED', true); // Set to false to disable fallback search
-define('PSYCHEDELICS_COM_MIN_RESULTS', 3); // Minimum psychedelics.com results to include
-define('PSYCHEDELICS_COM_MAX_RESULTS', 5); // Maximum psychedelics.com results to include
-define('PSYCHEDELICS_COM_MIN_RELEVANCE', 0.5); // Minimum relevance score (0.0-1.0) for psychedelics.com results
+// ============================================================================
+// PSYCHEDELICS.COM CONTENT GUARANTEE SYSTEM CONFIGURATION
+// ============================================================================
+// This system ensures that every search query includes relevant content from
+// psychedelics.com, our primary trusted source. It implements a dual-query
+// strategy with intelligent result merging and positioning.
 
-// Configuration for main search results
-// To change the number of sources returned, modify these values:
-// - MAIN_SEARCH_MAX_RESULTS: How many results to request from Exa API (higher = more sources but slower)
-// - MAIN_SEARCH_TARGET_RESULTS: Target number of results after filtering (should be lower than MAX_RESULTS)
-define('MAIN_SEARCH_MAX_RESULTS', 100); // Maximum results to request from Exa API (default: 100)
-define('MAIN_SEARCH_TARGET_RESULTS', 80); // Target results after filtering (default: 80)
+define('PSYCHEDELICS_COM_GUARANTEE', true);           // Master switch for the guarantee system
+define('PSYCHEDELICS_COM_FALLBACK_ENABLED', true);    // Enable fallback search if needed
+define('PSYCHEDELICS_COM_MIN_RESULTS', 3);            // Minimum results required from psychedelics.com
+define('PSYCHEDELICS_COM_MAX_RESULTS', 5);            // Maximum results to include
+define('PSYCHEDELICS_COM_MIN_RELEVANCE', 0.5);        // Minimum relevance score (0.0-1.0)
+
+// ============================================================================
+// MAIN SEARCH CONFIGURATION
+// ============================================================================
+// These settings control the overall search performance and result quality.
+// Adjust based on your needs - higher values = more sources but slower performance.
+
+define('MAIN_SEARCH_MAX_RESULTS', 100);        // Maximum results to request from Exa API
+define('MAIN_SEARCH_TARGET_RESULTS', 80);      // Target results after filtering
+
+// ============================================================================
+// PLUGIN ACTIVATION HOOK
+// ============================================================================
+// This runs when the plugin is first activated and creates all necessary
+// database tables for the knowledge base system.
 
 register_activation_hook(__FILE__, function () {
     global $wpdb;
-    $table = $wpdb->prefix . 'ai_knowledge';
-    $chatlog_table = $wpdb->prefix . 'ai_chat_log';
-    $chunk_table = $wpdb->prefix . 'ai_knowledge_chunks';
-    $domains_table = $wpdb->prefix . 'ai_allowed_domains';
-    $blocked_domains_table = $wpdb->prefix . 'ai_blocked_domains';
+    
+    // Define table names with WordPress prefix
+    $table = $wpdb->prefix . 'ai_knowledge';           // Main knowledge base
+    $chatlog_table = $wpdb->prefix . 'ai_chat_log';    // User conversation history
+    $chunk_table = $wpdb->prefix . 'ai_knowledge_chunks'; // Text chunks for search
+    $domains_table = $wpdb->prefix . 'ai_allowed_domains'; // Allowed content sources
+    $blocked_domains_table = $wpdb->prefix . 'ai_blocked_domains'; // Blocked sources
+    
+    // Get proper charset for the database
     $charset = $wpdb->get_charset_collate();
+    
+    // SQL for main knowledge base table
     $sql1 = "CREATE TABLE $table (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255),
-        source_type VARCHAR(50),
-        content LONGTEXT,
-        embedding LONGTEXT,
-        metadata LONGTEXT,
+        title VARCHAR(255),                    -- Title of the knowledge entry
+        source_type VARCHAR(50),               -- Type: 'qna', 'file', 'text', 'website'
+        content LONGTEXT,                      -- Main content or text
+        embedding LONGTEXT,                    -- AI-generated embedding vector
+        metadata LONGTEXT,                     -- Additional data in JSON format
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) $charset;";
+    
+    // SQL for chat log table
     $sql2 = "CREATE TABLE $chatlog_table (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id BIGINT UNSIGNED,
-        question TEXT,
-        answer LONGTEXT,
+        user_id BIGINT UNSIGNED,               -- WordPress user ID
+        question TEXT,                          -- User's question
+        answer LONGTEXT,                        -- AI-generated answer
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) $charset;";
+    
+    // SQL for text chunks table (for better search granularity)
     $sql3 = "CREATE TABLE $chunk_table (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        parent_id INT,
-        source_type VARCHAR(50),
-        chunk_index INT,
-        content LONGTEXT,
-        embedding LONGTEXT,
-        metadata LONGTEXT,
+        parent_id INT,                          -- Reference to main knowledge entry
+        source_type VARCHAR(50),                -- Type of source
+        chunk_index INT,                        -- Order of chunk in original text
+        content LONGTEXT,                       -- Chunk content
+        embedding LONGTEXT,                     -- Chunk-specific embedding
+        metadata LONGTEXT,                      -- Chunk metadata
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) $charset;";
+    
+    // SQL for allowed domains table
     $sql4 = "CREATE TABLE $domains_table (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255),
-        url VARCHAR(255),
-        domain VARCHAR(255),
-        tier INT DEFAULT 3,
+        title VARCHAR(255),                     -- Human-readable domain name
+        url VARCHAR(255),                       -- Full URL
+        domain VARCHAR(255),                    -- Domain only (e.g., 'psychedelics.com')
+        tier INT DEFAULT 3,                     -- Priority tier (1=highest, 4=lowest)
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) $charset;";
+    
+    // SQL for blocked domains table
     $sql5 = "CREATE TABLE $blocked_domains_table (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255),
-        url VARCHAR(255),
-        domain VARCHAR(255),
+        title VARCHAR(255),                     -- Human-readable domain name
+        url VARCHAR(255),                       -- Full URL
+        domain VARCHAR(255),                    -- Domain only
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) $charset;";
+    
+    // Include WordPress database upgrade functions
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+    
+    // Create all tables using WordPress's dbDelta function
     dbDelta($sql1);
     dbDelta($sql2);
     dbDelta($sql3);
     dbDelta($sql4);
     dbDelta($sql5);
 
-    // Note: Default domains are now managed through the admin interface
-    // No hardcoded defaults to avoid conflicts with manual domain management
-
-    // Add this to the activation hook to add the reaction column if not exists
-    $columns = $wpdb->get_results("SHOW COLUMNS FROM $chatlog_table LIKE 'reaction'");
-    if (empty($columns)) {
-        $wpdb->query("ALTER TABLE $chatlog_table ADD COLUMN reaction LONGTEXT NULL");
-    }
-    // Add reaction_detail column if not exists
-    $columns_detail = $wpdb->get_results("SHOW COLUMNS FROM $chatlog_table LIKE 'reaction_detail'");
-    if (empty($columns_detail)) {
-        $wpdb->query("ALTER TABLE $chatlog_table ADD COLUMN reaction_detail LONGTEXT NULL");
-    }
-    // Add beta_feedback column if not exists
-    $columns_beta = $wpdb->get_results("SHOW COLUMNS FROM $chatlog_table LIKE 'beta_feedback'");
-    if (empty($columns_beta)) {
-        $wpdb->query("ALTER TABLE $chatlog_table ADD COLUMN beta_feedback LONGTEXT NULL");
-    }
-    // Add psychedelics.com guarantee tracking columns
-    $psychedelics_columns = [
-        'psychedelics_com_included' => 'TINYINT(1) DEFAULT 0',
-        'psychedelics_com_count' => 'INT DEFAULT 0',
-        'psychedelics_com_guarantee_status' => 'VARCHAR(50) DEFAULT "Unknown"',
-        'psychedelics_com_guarantee_details' => 'TEXT NULL'
+    // ============================================================================
+    // DEFAULT DOMAIN CONFIGURATION
+    // ============================================================================
+    // Set up initial domain priorities for the content guarantee system.
+    // These domains are automatically added with their respective priority tiers.
+    
+    $default_tiers = [
+        // Tier 1 (Highest Priority) - Primary trusted sources
+        'psychedelics.com' => 1,
+        'doubleblindmag.com' => 1,
+        'psychedelicstoday.com' => 1,
+        
+        // Tier 2 (High Priority) - Secondary trusted sources
+        'dancesafe.org' => 2,
+        'blossomanalysis.com' => 2,
+        'erowid.org' => 2,
+        'shroomery.org' => 2,
+        
+        // Tier 3 (Medium Priority) - Additional sources
+        'psychedelicspotlight.com' => 3,
+        'psychedelicalpha.com' => 3,
     ];
     
-    foreach ($psychedelics_columns as $column => $definition) {
-        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $chatlog_table LIKE '$column'");
-        if (empty($column_exists)) {
-            $wpdb->query("ALTER TABLE $chatlog_table ADD COLUMN $column $definition");
-        }
+    // Update existing domains with their tier priorities
+    foreach ($default_tiers as $domain => $tier) {
+        $wpdb->update(
+            $wpdb->prefix . 'ai_allowed_domains',
+            ['tier' => $tier],
+            ['domain' => $domain]
+        );
     }
     
-    // Add tier column to domains table if not exists
-    $tier_column = $wpdb->get_results("SHOW COLUMNS FROM $domains_table LIKE 'tier'");
-    if (empty($tier_column)) {
-        $wpdb->query("ALTER TABLE $domains_table ADD COLUMN tier INT DEFAULT 3");
-        
-        // Set default tiers for existing domains based on user specifications
-        $default_tiers = [
-            // Tier 1 (Highest Priority)
-            'psychedelics.com' => 1,
-            'doubleblindmag.com' => 1,
-            'psychedelicstoday.com' => 1,
-            'lucid.news' => 1,
-            'chacruna.net' => 1,
-            'realitysandwich.com' => 1,
-            
-            // Tier 2 (High Priority)
-            'dancesafe.org' => 2,
-            'blossomanalysis.com' => 2,
-            'erowid.org' => 2,
-            'shroomery.org' => 2,
-            
-            // Tier 3 (Medium Priority)
-            'psychedelicspotlight.com' => 3,
-            'psychedelicalpha.com' => 3,
-        ];
-        
-        foreach ($default_tiers as $domain => $tier) {
-            $wpdb->update(
-                $wpdb->prefix . 'ai_allowed_domains',
-                ['tier' => $tier],
-                ['domain' => $domain]
-            );
-        }
-    }
-
+    // Note: Default domains are now managed through the admin interface
+    // You can modify these priorities in the WordPress admin under AI Trainer > Website
 });
+
+// ============================================================================
+// ADMIN MENU SETUP
+// ============================================================================
+// Creates the main admin menu and submenu items for managing the AI Trainer system.
+// Each submenu item corresponds to a different aspect of the knowledge base.
 
 add_action('admin_menu', function () {
-    add_menu_page('AI Trainer', 'AI Trainer', 'manage_options', 'ai-trainer', 'ai_trainer_admin_page', '', 80);
-    add_submenu_page('ai-trainer', 'Chat Log', 'Chat Log', 'manage_options', 'ai-trainer-chatlog', 'ai_trainer_chatlog_page');
-    add_submenu_page('ai-trainer', 'CSAT Analytics', 'CSAT Analytics', 'manage_options', 'ai-trainer-csat-analytics', 'ai_trainer_csat_analytics_page');
-    add_submenu_page('ai-trainer', 'Psychedelics.com Monitor', 'Psychedelics.com Monitor', 'manage_options', 'ai-trainer-psychedelics-monitor', 'ai_trainer_psychedelics_monitor_page');
+    // Main menu page
+    add_menu_page(
+        'AI Trainer',                           // Page title
+        'AI Trainer',                           // Menu title
+        'manage_options',                       // Required capability
+        'ai-trainer',                           // Menu slug
+        'ai_trainer_admin_page',                // Callback function
+        '',                                     // Icon (default)
+        80                                      // Position in menu
+    );
+    
+    // Submenu pages for different functionality
+    add_submenu_page(
+        'ai-trainer',                           // Parent slug
+        'Chat Log',                             // Page title
+        'Chat Log',                             // Menu title
+        'manage_options',                       // Required capability
+        'ai-trainer-chatlog',                   // Menu slug
+        'ai_trainer_chatlog_page'               // Callback function
+    );
+    
+    add_submenu_page(
+        'ai-trainer',
+        'CSAT Analytics',                       // Customer Satisfaction Analytics
+        'CSAT Analytics',
+        'manage_options',
+        'ai-trainer-csat-analytics',
+        'ai_trainer_csat_analytics_page'
+    );
+    
+    add_submenu_page(
+        'ai-trainer',
+        'Psychedelics.com Monitor',             // Content guarantee monitoring
+        'Psychedelics.com Monitor',
+        'manage_options',
+        'ai-trainer-psychedelics-monitor',
+        'ai_trainer_psychedelics_monitor_page'
+    );
 });
 
+// ============================================================================
+// ADMIN PAGE CALLBACK FUNCTIONS
+// ============================================================================
+// These functions handle the display of different admin pages by including
+// the appropriate tab content files.
+
 function ai_trainer_admin_page() {
+    // Main admin dashboard with tabbed interface
     include AI_TRAINER_PATH . 'admin/admin-ui.php';
 }
 
 function ai_trainer_chatlog_page() {
+    // Chat history and conversation logs
     include AI_TRAINER_PATH . 'admin/tabs/chatlog.php';
 }
 
 function ai_trainer_psychedelics_monitor_page() {
+    // Monitor the content guarantee system performance
     include AI_TRAINER_PATH . 'admin/tabs/psychedelics-monitor.php';
 }
 
 function ai_trainer_csat_analytics_page() {
+    // Customer satisfaction analytics and reporting
     include AI_TRAINER_PATH . 'admin/tabs/csat-analytics.php';
 }
 
+// ============================================================================
+// CHAT LOG MANAGEMENT FUNCTIONS
+// ============================================================================
+// These functions handle storing and retrieving user conversation history
+// for analytics and debugging purposes.
+
+/**
+ * Insert a new chat log entry into the database
+ * 
+ * @param int $user_id WordPress user ID (0 for anonymous users)
+ * @param string $question User's question or query
+ * @param string $answer AI-generated response
+ * @return int|false The number of rows inserted, or false on error
+ */
 function ai_trainer_insert_chat_log($user_id, $question, $answer) {
     global $wpdb;
-    $wpdb->insert(
+    return $wpdb->insert(
         $wpdb->prefix . 'ai_chat_log',
         [
             'user_id' => $user_id,
@@ -203,26 +299,48 @@ function ai_trainer_insert_chat_log($user_id, $question, $answer) {
     );
 }
 
+/**
+ * Retrieve chat logs from the database with pagination
+ * 
+ * @param int $limit Maximum number of records to return
+ * @param int $offset Number of records to skip (for pagination)
+ * @return array Array of chat log records
+ */
 function ai_trainer_get_chat_logs($limit = 100, $offset = 0) {
     global $wpdb;
-    return $wpdb->get_results("SELECT * FROM {$wpdb->prefix}ai_chat_log ORDER BY created_at DESC LIMIT $limit OFFSET $offset", ARRAY_A);
+    return $wpdb->get_results(
+        "SELECT * FROM {$wpdb->prefix}ai_chat_log ORDER BY created_at DESC LIMIT $limit OFFSET $offset", 
+        ARRAY_A
+    );
 }
 
+// ============================================================================
+// ADMIN ASSETS ENQUEUE
+// ============================================================================
+// Loads CSS, JavaScript, and other assets needed for the admin interface.
+// Only loads on AI Trainer admin pages to avoid conflicts.
+
 add_action('admin_enqueue_scripts', function ($hook) {
+    // Only load assets on AI Trainer admin pages
     if (strpos($hook, 'ai-trainer') === false) return;
     
+    // Enqueue admin-specific CSS and JavaScript
     wp_enqueue_style('ai-trainer-css', plugin_dir_url(__FILE__) . 'assets/css/admin.css');
     wp_enqueue_script('ai-trainer-js', plugin_dir_url(__FILE__) . 'assets/js/admin.js', ['jquery'], null, true);
 
+    // Load TinyMCE editor for rich text editing
     wp_enqueue_script('tinymce-vendor', plugin_dir_url(__FILE__) . 'vendor/tinymce/tinymce/tinymce.min.js', array(), '5.10.0', true);
     
-    // Enqueue TinyMCE editor with all plugins
-    // wp_enqueue_editor();
+    // Note: TinyMCE editor is loaded but not automatically initialized
+    // It's initialized per-field as needed in the admin interface
     
+    // Localize script with AJAX URL and nonce for security
     wp_localize_script('ai-trainer-js', 'ai_trainer_ajax', array(
         'ajaxurl' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('ai_trainer_nonce')
     ));
+    
+    // Configure TinyMCE paths for proper asset loading
     wp_localize_script('ai-trainer-js', 'tinymcePaths', [
         'baseUrl'  => plugin_dir_url(__FILE__) . 'vendor/tinymce/tinymce',
         'skinUrl'  => plugin_dir_url(__FILE__) . 'vendor/tinymce/tinymce/skins/ui/oxide',
@@ -230,17 +348,26 @@ add_action('admin_enqueue_scripts', function ($hook) {
     ]);
 });
 
-function ai_editor_styles()
-{
+// ============================================================================
+// EDITOR STYLES AND BLOCK SUPPORT
+// ============================================================================
+// Adds support for custom editor styles and Gutenberg blocks in the admin area.
+
+function ai_editor_styles() {
     add_theme_support('editor-styles');
     add_theme_support('wp-block-styles');
     wp_enqueue_style('core-style', plugin_dir_url(__FILE__) . '/build/index.css'); 
 }
 add_action('admin_init', 'ai_editor_styles');
 
-// Global TinyMCE configuration to disable superscript and subscript
+// ============================================================================
+// TINYMCE CONFIGURATION
+// ============================================================================
+// Customizes the TinyMCE editor to remove unwanted formatting options
+// and ensure clean content output.
+
 function ai_tinymce_config($init) {
-    // Remove superscript and subscript formats
+    // Remove superscript and subscript formats to prevent formatting issues
     $init['formats'] = isset($init['formats']) ? $init['formats'] : '';
     $init['formats'] .= 'superscript: { inline: "sup", remove: "all" },subscript: { inline: "sub", remove: "all" },';
     

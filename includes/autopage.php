@@ -1,49 +1,128 @@
 <?php
+/**
+ * Auto-Page Creation System - AI Trainer Plugin
+ * 
+ * This file handles the automatic creation and management of the Psybrarian
+ * assistant page within WordPress. It creates a custom page template and
+ * ensures the page exists with proper configuration.
+ * 
+ * ARCHITECTURE OVERVIEW:
+ * - Automatic page creation on plugin activation
+ * - Custom block template registration
+ * - Template assignment and management
+ * - WordPress hooks integration
+ * - Block theme compatibility
+ * 
+ * KEY FEATURES:
+ * - Self-contained page creation system
+ * - Block template support for modern themes
+ * - Automatic template assignment
+ * - Plugin activation integration
+ * - Template refresh capabilities
+ * 
+ * TEMPLATE SYSTEM:
+ * - Creates 'psybrarian' template
+ * - Supports both classic and block themes
+ * - Automatic template assignment to page
+ * - Template refresh via AJAX
+ * 
+ * @package AI_Trainer
+ * @subpackage Includes
+ * @since 1.0
+ */
 
 if (!defined('ABSPATH')) exit;
 
 if (!class_exists('AI_Trainer_Auto_Page')) {
 
+/**
+ * AI Trainer Auto-Page Creation Class
+ * 
+ * This class handles all aspects of creating and managing the Psybrarian
+ * assistant page, including page creation, template management, and
+ * WordPress integration.
+ */
 class AI_Trainer_Auto_Page {
+    // Page configuration constants
     const PAGE_SLUG   = 'psybrarian-assistant';
     const PAGE_TITLE  = "Psybrarian's Assistant";
 
+    // Template configuration constants
     const TEMPLATE_SLUG  = 'psybrarian';                
     const TEMPLATE_TITLE = 'Psybrarian Template';
 
+    // Main plugin file reference
     private static $main_file;
 
+    /**
+     * Initialize the auto-page system
+     * 
+     * This method sets up all necessary WordPress hooks and actions
+     * for the auto-page creation system.
+     * 
+     * @param string $main_plugin_file Path to the main plugin file
+     * @return void
+     */
     public static function boot($main_plugin_file) {
         self::$main_file = $main_plugin_file;
 
+        // Register activation hook for page creation
         register_activation_hook(self::$main_file, [__CLASS__, 'on_activate']);
+        
+        // Ensure page exists on init
         add_action('init', [__CLASS__, 'ensure_page_exists']);
+        
+        // Add action links to plugin page
         add_filter('plugin_action_links_' . plugin_basename(self::$main_file), [__CLASS__, 'action_links']);
+        
+        // Display admin notices
         add_action('admin_notices', [__CLASS__, 'soft_notices']);
         
+        // Force template usage for the page
         add_filter('template_include', [__CLASS__, 'force_template'], 999);
         
+        // Register block template for modern themes
         add_filter('get_block_templates', [__CLASS__, 'register_block_template'], 10, 3);
         add_filter('pre_get_block_file_template', [__CLASS__, 'override_block_template'], 10, 3);
         
+        // Override page template selection
         add_filter('get_page_template', [__CLASS__, 'get_page_template_override'], 10, 2);
         
+        // Admin-specific functionality
         if (is_admin()) {
             add_action('wp_ajax_refresh_psybrarian_template', [__CLASS__, 'ajax_refresh_template']);
         }
     }
 
+    /**
+     * Handle plugin activation
+     * 
+     * This method is called when the plugin is activated and ensures
+     * the Psybrarian page and template are properly created.
+     * 
+     * @return void
+     */
     public static function on_activate() {
         self::ensure_block_template();
         $page_id = self::create_or_update_page();  
         self::assign_block_template_to_page($page_id);
     }
 
+    /**
+     * Ensure the Psybrarian page exists
+     * 
+     * This method checks if the required page exists and creates it
+     * if necessary. It also handles page restoration from trash.
+     * 
+     * @return void
+     */
     public static function ensure_page_exists() {
         self::ensure_block_template();
 
+        // Check if page exists by path
         $page = get_page_by_path(self::PAGE_SLUG);
         if (!$page) {
+            // Search for page in various post statuses
             $maybe = get_posts([
                 'post_type'      => 'page',
                 'name'           => self::PAGE_SLUG,
@@ -54,8 +133,10 @@ class AI_Trainer_Auto_Page {
 
             if (!empty($maybe)) {
                 $page_id = $maybe[0];
+                // Restore page if it's in trash
                 if (get_post_status($page_id) === 'trash') wp_untrash_post($page_id);
 
+                // Update page with current configuration
                 $theme = function_exists('get_stylesheet') ? get_stylesheet() : '';
                 wp_update_post([
                     'ID'           => $page_id,
@@ -71,14 +152,23 @@ class AI_Trainer_Auto_Page {
                 return;
             }
 
+            // Create new page if none exists
             $page_id = self::create_or_update_page();   
             self::assign_block_template_to_page($page_id);
         } else {
+            // Ensure template is assigned to existing page
             self::assign_block_template_to_page($page->ID);
         }
     }
 
-
+    /**
+     * Ensure block template exists for modern themes
+     * 
+     * This method creates the necessary block template for themes
+     * that support the block template system.
+     * 
+     * @return void
+     */
     private static function ensure_block_template() {
         if (!function_exists('wp_is_block_theme') || !wp_is_block_theme()) return;
     
@@ -96,6 +186,16 @@ class AI_Trainer_Auto_Page {
     }
     
 
+        /**
+         * Ensure block template exists for a specific theme
+         * 
+         * This method creates or updates the block template for a given theme,
+         * ensuring compatibility with modern WordPress block themes.
+         * 
+         * @param string $theme Theme slug
+         * @param string $content Template content
+         * @return void
+         */
         private static function ensure_block_template_for_theme($theme, $content) {
         $existing = get_posts([
             'post_type'      => 'wp_template',

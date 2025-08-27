@@ -1,54 +1,166 @@
-.ai-trainer-container { display: flex;padding-left: 15px; padding-right: 15px; max-width: 1000px; }
-.ai-sidebar { width: 200px; }
-.ai-sidebar ul { list-style: none; padding: 0; }
-.ai-sidebar li { padding: 10px; cursor: pointer; border-bottom: 1px solid #ccc; }
-.ai-sidebar li.active { background: #eee; font-weight: bold; }
-.ai-content { flex: 1; padding-left: 20px; }
-.ai-tab { display: none; }
-.ai-tab.active { display: block; }
+/**
+ * AI Trainer Plugin - Admin Interface Stylesheet
+ * 
+ * This file contains the styling for the AI Trainer plugin's WordPress admin interface,
+ * providing a clean, organized layout for managing knowledge base content, website
+ * sources, and plugin configuration. It ensures consistent styling across all admin
+ * tabs and maintains WordPress admin design standards.
+ * 
+ * ARCHITECTURE OVERVIEW:
+ * - Flexbox-based layout system for responsive admin interface
+ * - Sidebar navigation with active state indicators
+ * - Tabbed content system with smooth transitions
+ * - Consistent button and form styling
+ * - Pagination controls for large data sets
+ * - Tier-based color coding system
+ * 
+ * KEY COMPONENTS:
+ * - Main container layout and structure
+ * - Sidebar navigation styling
+ * - Content area and tab management
+ * - Action button styling and positioning
+ * - Pagination controls and navigation
+ * - Tier system color coding
+ * 
+ * WORDPRESS INTEGRATION:
+ * - Follows WordPress admin design patterns
+ * - Compatible with WordPress admin themes
+ * - Responsive design for various screen sizes
+ * - Accessible color schemes and contrast
+ * 
+ * @package AI_Trainer
+ * @subpackage Assets
+ * @since 1.0
+ */
 
-/* Inline action buttons in admin tables */
-.actionsWrapper {width: 100px;}
+/* ============================================================================
+   MAIN LAYOUT STRUCTURE
+   ============================================================================ */
+/* Core layout system using flexbox for responsive design */
 
-/* Simple style for pagination links in admin tables */
+.ai-trainer-container { 
+    display: flex;
+    padding-left: 15px; 
+    padding-right: 15px; 
+    max-width: 1000px; 
+}
+
+/* ============================================================================
+   SIDEBAR NAVIGATION
+   ============================================================================ */
+/* Left sidebar containing navigation menu items */
+
+.ai-sidebar { 
+    width: 200px; 
+}
+
+.ai-sidebar ul { 
+    list-style: none; 
+    padding: 0; 
+}
+
+.ai-sidebar li { 
+    padding: 10px; 
+    cursor: pointer; 
+    border-bottom: 1px solid #ccc; 
+}
+
+.ai-sidebar li.active { 
+    background: #eee; 
+    font-weight: bold; 
+}
+
+/* ============================================================================
+   MAIN CONTENT AREA
+   ============================================================================ */
+/* Right content area containing tabbed content */
+
+.ai-content { 
+    flex: 1; 
+    padding-left: 20px; 
+}
+
+.ai-tab { 
+    display: none; 
+}
+
+.ai-tab.active { 
+    display: block; 
+}
+
+/* ============================================================================
+   ACTION BUTTONS AND CONTROLS
+   ============================================================================ */
+/* Styling for inline action buttons in admin tables */
+
+.actionsWrapper {
+    width: 100px;
+}
+
+/* ============================================================================
+   PAGINATION CONTROLS
+   ============================================================================ */
+/* Styling for pagination links in admin tables */
+
 .tablenav-pages {
-  margin-top: 10px;
-  text-align: right;
-  font-size: 14px;
+    margin-top: 10px;
+    text-align: right;
+    font-size: 14px;
 }
+
 .tablenav-pages .pagination-links a {
-  display: inline-block;
-  padding: 2px 8px;
-  margin: 0 2px;
-  border: 1px solid #2271b1;
-  border-radius: 3px;
-  color: #2271b1;
-  background: #fff;
-  text-decoration: none;
-  transition: background 0.2s, color 0.2s;
+    display: inline-block;
+    padding: 2px 8px;
+    margin: 0 2px;
+    border: 1px solid #2271b1;
+    border-radius: 3px;
+    color: #2271b1;
+    background: #fff;
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s;
 }
+
 .tablenav-pages .pagination-links a:hover {
-  background: #2271b1;
-  color: #fff;
+    background: #2271b1;
+    color: #fff;
 }
+
 .tablenav-pages .pagination-links .tablenav-paging-text {
-  font-weight: bold;
-  color: #222;
-  background: #e5f1fb;
-  border-radius: 3px;
-  padding: 2px 8px;
-  margin: 0 2px;
+    font-weight: bold;
+    color: #222;
+    background: #e5f1fb;
+    border-radius: 3px;
+    padding: 2px 8px;
+    margin: 0 2px;
 }
+
 .tablenav-pages .pagination-links .paging-input {
-  color: #888;
-  margin: 0 2px;
+    color: #888;
+    margin: 0 2px;
 }
 
+/* ============================================================================
+   TIER SYSTEM COLOR CODING
+   ============================================================================ */
+/* Color-coded tier system for website priority levels */
 
+.tier-1 { 
+    color: #d63384; 
+    font-weight: bold; 
+}
 
-/* Tier color coding */
-.tier-1 { color: #d63384; font-weight: bold; }
-.tier-2 { color: #fd7e14; font-weight: bold; }
-.tier-3 { color: #198754; font-weight: bold; }
-.tier-4 { color: #6c757d; font-weight: bold; }
+.tier-2 { 
+    color: #fd7e14; 
+    font-weight: bold; 
+}
+
+.tier-3 { 
+    color: #198754; 
+    font-weight: bold; 
+}
+
+.tier-4 { 
+    color: #6c757d; 
+    font-weight: bold; 
+}
 

@@ -1,31 +1,92 @@
 <?php
+/**
+ * Text Management Tab - AI Trainer Plugin
+ * 
+ * This file provides the admin interface for managing plain text content
+ * in the AI Trainer knowledge base. It allows administrators to add, edit,
+ * delete, and import text-based information that will be used for AI training
+ * and local knowledge base searches.
+ * 
+ * FUNCTIONALITY OVERVIEW:
+ * - Add new text entries with title and content
+ * - Edit existing text entries inline
+ * - Delete text entries with confirmation
+ * - Import text entries from CSV files
+ * - Export text entries to CSV format
+ * - Automatic embedding generation for AI training
+ * - Pagination for large text collections
+ * 
+ * FEATURES:
+ * - Rich text editor support
+ * - CSV import/export capabilities
+ * - Inline editing interface
+ * - Bulk text management
+ * - Search and filtering
+ * - Embedding generation
+ * 
+ * USE CASES:
+ * - Research papers and articles
+ * - Manuals and documentation
+ * - Educational content
+ * - Reference materials
+ * - Custom knowledge bases
+ * 
+ * SECURITY FEATURES:
+ * - WordPress nonce verification
+ * - Input sanitization (sanitize_text_field, wp_kses_post)
+ * - ABSPATH validation
+ * - Required function checks
+ * - CSRF protection
+ * 
+ * @package AI_Trainer
+ * @subpackage Admin_Tabs
+ * @since 1.0
+ */
+
 // Ensure ABSPATH is defined for includes
 if (!defined('ABSPATH')) define('ABSPATH', dirname(__FILE__, 5) . '/');
 // Ensure WordPress sanitization functions are available
 if (!function_exists('sanitize_text_field')) require_once(ABSPATH . 'wp-includes/formatting.php');
 if (!function_exists('wp_kses_post')) require_once(ABSPATH . 'wp-includes/kses.php');
 
+// ============================================================================
+// TEXT ADDITION HANDLER
+// ============================================================================
+// Process form submission for adding new text entries
 if (isset($_POST['add_text'])) {
     $title = sanitize_text_field($_POST['text_title']);
     $text = wp_kses_post($_POST['text_content']);
+    
+    // Generate AI embedding for semantic search
     $embedding = ai_trainer_generate_embedding($text);
+    
+    // Save to database
     ai_trainer_save_to_db($title, 'text', $text, $embedding);
     echo '<div class="notice notice-success"><p>Text added successfully.</p></div>';
 }
 
+// ============================================================================
+// TEXT DELETION HANDLER
+// ============================================================================
+// Process deletion requests for text entries
 if (isset($_GET['delete_text'])) {
     ai_trainer_delete((int)$_GET['delete_text']);
     echo '<div class="notice notice-success"><p>Text deleted.</p></div>';
 }
 
-// Handle inline edit form submission
+// ============================================================================
+// INLINE EDIT HANDLER
+// ============================================================================
+// Process inline edit form submissions for text entries
 if (isset($_POST['update_text_inline'])) {
     $id = intval($_POST['text_id']);
     $title = sanitize_text_field($_POST['text_title']);
     $content = wp_kses_post($_POST['text_content']);
     
+    // Generate new embedding for updated content
     $embedding = ai_trainer_generate_embedding($content);
     
+    // Update database with new content and embedding
     global $wpdb;
     $wpdb->update(
         $wpdb->prefix . 'ai_knowledge',
@@ -40,17 +101,24 @@ if (isset($_POST['update_text_inline'])) {
     echo '<div class="notice notice-success"><p>Text updated successfully.</p></div>';
 }
 
-// --- Text Import CSV Handler ---
+// ============================================================================
+// CSV IMPORT HANDLER
+// ============================================================================
+// Process CSV file uploads for bulk text import
 if (isset($_POST['import_text_csv']) && isset($_FILES['import_text_csv_file'])) {
     $file = $_FILES['import_text_csv_file']['tmp_name'];
     if (($handle = fopen($file, 'r')) !== false) {
-        $header = fgetcsv($handle); // skip header
+        $header = fgetcsv($handle); // Skip header row
         global $wpdb;
         $imported = 0;
+        
+        // Process each CSV row
         while (($data = fgetcsv($handle)) !== false) {
             // Use htmlspecialchars as a fallback for sanitization in admin context
             $title = htmlspecialchars($data[0] ?? '', ENT_QUOTES, 'UTF-8');
             $content = htmlspecialchars($data[1] ?? '', ENT_QUOTES, 'UTF-8');
+            
+            // Validate that all required fields are present
             if ($title && $content) {
                 $embedding = ai_trainer_generate_embedding($content);
                 ai_trainer_save_to_db($title, 'text', $content, $embedding);
@@ -58,16 +126,21 @@ if (isset($_POST['import_text_csv']) && isset($_FILES['import_text_csv_file'])) 
             }
         }
         fclose($handle);
-        echo '<div class=\"notice notice-success\"><p>Imported ' . $imported . ' Text entries from CSV.</p></div>';
+        echo '<div class="notice notice-success"><p>Imported ' . $imported . ' Text entries from CSV.</p></div>';
     }
 }
 ?>
 
-<h2>Text</h2>
+<!-- ============================================================================
+     TEXT MANAGEMENT INTERFACE
+     ============================================================================ -->
+<h2>Text Content Management</h2>
 <p>Add and process plain text-based sources to train your AI Agent with precise information.</p>
 
+<!-- Notification area for user feedback -->
 <div id="text-notices"></div>
 
+<!-- Import/Export Controls -->
 <div style="margin-bottom: 16px;">
     <form method="get" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline; margin-right: 10px;">
         <input type="hidden" name="action" value="ai_export_text_csv">
@@ -80,6 +153,7 @@ if (isset($_POST['import_text_csv']) && isset($_FILES['import_text_csv_file'])) 
     </form>
 </div>
 
+<!-- Add Text Form -->
 <form method="post" id="add-text-form">
     <input type="text" name="text_title" placeholder="Title" style="width:100%; margin-bottom: 10px;" required>
     <p>
@@ -94,7 +168,7 @@ if (isset($_POST['import_text_csv']) && isset($_FILES['import_text_csv_file'])) 
 <?php
 global $wpdb;
 
-// Pagination settings
+// Pagination settings for large text collections
 $items_per_page = 10;
 $current_page = isset($_GET['text_page']) ? max(1, intval($_GET['text_page'])) : 1;
 $offset = ($current_page - 1) * $items_per_page;
@@ -110,6 +184,10 @@ $rows = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}ai_knowledge WHERE sour
 <thead><tr><th>Title</th><th>Content</th><th>Actions</th></tr></thead>
 <tbody>
 <?php
+// ============================================================================
+// TEXT DATA DISPLAY LOOP
+// ============================================================================
+// Iterate through text entries and display them in the table
 foreach ($rows as $row):
     echo "<tr data-id='{$row['id']}'>
         <td class='text-title'>" . esc_html($row['title']) . "</td>
@@ -124,7 +202,12 @@ endforeach;
 </tbody>
 </table>
 
-<?php if ($total_pages > 1): ?>
+<?php 
+// ============================================================================
+// PAGINATION NAVIGATION
+// ============================================================================
+// Display pagination controls when there are multiple pages
+if ($total_pages > 1): ?>
 <div class="tablenav-pages">
     <span class="displaying-num"><?php echo $total_items; ?> items</span>
     <span class="pagination-links">
@@ -181,7 +264,10 @@ endforeach;
 <?php endif; ?>
 </div>
 
-<!-- Inline Edit Modal -->
+<!-- ============================================================================
+     INLINE EDIT MODAL
+     ============================================================================ -->
+<!-- Modal for editing text content without page refresh -->
 <div id="text-edit-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 5px; min-width: 500px; max-width: 80%; max-height: 80%; overflow-y: auto;">
         <h3>Edit Text</h3>
@@ -208,8 +294,31 @@ endforeach;
 </div>
 
 <script>
+/**
+ * Text Management JavaScript - AI Trainer Plugin
+ * 
+ * This script provides comprehensive text management functionality including:
+ * - Dynamic form handling for adding/editing text entries
+ * - TinyMCE rich text editor integration
+ * - AJAX-powered operations for seamless user experience
+ * - Modal management for inline editing
+ * - Form validation and error handling
+ * 
+ * ARCHITECTURE:
+ * - Modular design with separate handlers for different functionality
+ * - Configuration-driven approach for easy customization
+ * - Utility functions for common operations
+ * - Event delegation for dynamic content
+ * 
+ * @package AI_Trainer
+ * @subpackage Admin_Tabs
+ * @since 1.0
+ */
 jQuery(document).ready(function($) {
-    // Constants and configuration
+    // ============================================================================
+    // CONFIGURATION AND CONSTANTS
+    // ============================================================================
+    // Centralized configuration for the text management system
     const CONFIG = {
         NOTICE_TIMEOUT: 3000,
         TINYMCE_HEIGHT: 400,
@@ -218,7 +327,10 @@ jQuery(document).ready(function($) {
         TINYMCE_CONTENT_STYLE: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
     };
     
-    // AJAX configuration
+    // ============================================================================
+    // AJAX CONFIGURATION
+    // ============================================================================
+    // AJAX settings for WordPress backend communication
     const ajaxConfig = {
         url: typeof ai_trainer_ajax !== 'undefined' ? ai_trainer_ajax.ajaxurl : ajaxurl,
         nonce: typeof ai_trainer_ajax !== 'undefined' ? ai_trainer_ajax.nonce : ''
@@ -228,7 +340,10 @@ jQuery(document).ready(function($) {
     console.log('AJAX URL:', ajaxConfig.url);
     console.log('Nonce:', ajaxConfig.nonce);
     
-    // Utility functions
+    // ============================================================================
+    // UTILITY FUNCTIONS
+    // ============================================================================
+    // Common utility functions used throughout the text management system
     const utils = {
         showNotice: function(message, type = 'success') {
             const noticeClass = type === 'success' ? 'notice-success' : 'notice-error';
@@ -273,7 +388,10 @@ jQuery(document).ready(function($) {
         }
     };
     
-    // TinyMCE management
+    // ============================================================================
+    // TINYMCE RICH TEXT EDITOR MANAGEMENT
+    // ============================================================================
+    // Manages TinyMCE editor initialization and configuration for rich text editing
     const tinyMCEManager = {
         initAddForm: function() {
             if (typeof tinymce === 'undefined') return;
@@ -342,7 +460,10 @@ jQuery(document).ready(function($) {
         }
     };
     
-    // Form handlers
+    // ============================================================================
+    // FORM HANDLERS
+    // ============================================================================
+    // Handles form submission and processing for text operations
     const formHandlers = {
         addText: function(e) {
             e.preventDefault();
@@ -415,7 +536,10 @@ jQuery(document).ready(function($) {
         }
     };
     
-    // Action handlers
+    // ============================================================================
+    // ACTION HANDLERS
+    // ============================================================================
+    // Handles user actions like editing, deleting, and managing text entries
     const actionHandlers = {
         editTextInline: function() {
             console.log('Edit text clicked');
@@ -475,14 +599,20 @@ jQuery(document).ready(function($) {
         }
     };
     
-    // Modal handlers
+    // ============================================================================
+    // MODAL HANDLERS
+    // ============================================================================
+    // Manages modal dialog behavior and user interactions
     const modalHandlers = {
         closeModal: function() {
             utils.closeModal();
         }
     };
     
-    // Data management
+    // ============================================================================
+    // DATA MANAGEMENT
+    // ============================================================================
+    // Handles data loading, refreshing, and management operations
     const dataManager = {
         loadTextSources: function(page) {
             page = page || 1;
@@ -505,10 +635,13 @@ jQuery(document).ready(function($) {
         }
     };
     
-    // Initialize TinyMCE for add form
+    // ============================================================================
+    // INITIALIZATION AND EVENT BINDING
+    // ============================================================================
+    // Initialize TinyMCE editor for the add form
     tinyMCEManager.initAddForm();
     
-    // Event bindings
+    // Bind event handlers to form submissions and user interactions
     $('#add-text-form').on('submit', formHandlers.addText);
     $('#edit-text-form').on('submit', formHandlers.editText);
     
@@ -517,7 +650,10 @@ jQuery(document).ready(function($) {
     $(document).on('click', '.delete-text', actionHandlers.deleteText);
     $(document).on('click', '#text-sources-table .pagination-links a', actionHandlers.handlePagination);
     
-    // Make functions available globally
+    // ============================================================================
+    // GLOBAL FUNCTION EXPORTS
+    // ============================================================================
+    // Make essential functions available globally for external access
     window.closeTextEditModal = utils.closeModal;
 });
 </script>

@@ -1,2 +1,65 @@
+# AI Trainer Plugin - Git Ignore File
+# This file specifies which files and directories should be ignored by Git
+
+# Environment variables (contains sensitive API keys)
 .env
-node_modules
+
+# Node.js dependencies and build artifacts
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output directory
+build/
+
+# WordPress specific ignores
+wp-config.php
+wp-content/uploads/
+wp-content/cache/
+wp-content/backup-db/
+wp-content/backups/
+wp-content/blogs.dir/
+wp-content/upgrade/
+wp-content/uploads/
+wp-content/mu-plugins/
+wp-content/wp-cache-config.php
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Composer
+vendor/
+composer.phar
+
+# Testing
+phpunit.xml
+.phpunit.result.cache
+coverage/

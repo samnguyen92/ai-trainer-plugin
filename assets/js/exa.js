@@ -220,8 +220,30 @@ jQuery(document).ready(function($) {
         </div>`);
     }
 
-    // Create modern source cards with horizontal scrolling
+    /**
+     * Create modern source cards with horizontal scrolling
+     * 
+     * This function creates a horizontal scrolling list of source cards that
+     * display website information including favicons, domains, and titles.
+     * Each card is clickable and opens the source in a new tab.
+     * 
+     * FEATURES:
+     * - Horizontal scrolling with navigation buttons
+     * - Favicon display with fallback to Google favicon API
+     * - Domain extraction and display
+     * - Clickable source links
+     * - Responsive design for mobile and desktop
+     * 
+     * @param {jQuery} block - The answer block container
+     * @param {Array} results - Array of search result objects
+     * @returns {void}
+     * 
+     * @example
+     * createModernSourceCards(answerBlock, searchResults);
+     * // Creates scrollable source cards in the answer block
+     */
     function createModernSourceCards(block, results) {
+        // Handle empty or invalid results
         if (!results || !Array.isArray(results) || results.length === 0) {
             block.find('.exa-results').html(`
                 <div class="sources-header">
@@ -231,15 +253,19 @@ jQuery(document).ready(function($) {
             return;
         }
         
+        // Create source cards for each result
         const cards = results.map(item => {
+            // Extract domain from URL for display
             let domain = 'unknown';
             try {
                 if (item.url) {
                     domain = new URL(item.url).hostname.replace('www.', '');
                 }
             } catch (e) {
-                // Invalid URL handled silently
+                // Invalid URL handled silently - use default domain
             }
+            
+            // Check if favicon is valid or use fallback
             const isBadFavicon = !item.favicon || item.favicon === "data:," || item.favicon === "about:blank";
             
             // Use Google favicon API as fallback when Exa doesn't provide a favicon
@@ -250,17 +276,22 @@ jQuery(document).ready(function($) {
                 faviconUrl = item.favicon;
             }
             
+            // Fallback icon for cases where both favicon and Google API fail
             const fallbackIcon = (typeof exaSettings !== 'undefined' && exaSettings.fallbackIcon) ? exaSettings.fallbackIcon : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiByeD0iNCIgZmlsbD0iIzY2NjY2NiIvPgo8L3N2Zz4K';
             const image = `<img src="${faviconUrl}" alt="favicon" class="exa-favicon" onerror="this.src='${fallbackIcon}'">`;
             
+            // Return HTML for individual source card
             return `<div class="source-card">
                 <div class="source-card-header">${image}<span class="exa-domain">${domain}</span></div>
                 <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="source-title">${item.title}</a>
             </div>`;
         }).join('');
 
+        // Get source count and display information
         const sourceCount = results.length;
         const displayCount = sourceCount; // Show all sources, no cap
+        
+        // Create the complete source cards container with navigation
         block.find('.exa-results').html(`
             <div class="sources-header">
                 <span>📚 ${displayCount} source${displayCount !== 1 ? 's' : ''} found</span>
@@ -273,11 +304,33 @@ jQuery(document).ready(function($) {
         `);
     }
 
-    // Populate Sources tab with detailed source information
+    /**
+     * Populate Sources tab with detailed source information
+     * 
+     * This function creates a comprehensive view of all sources in the Sources tab,
+     * including detailed information, filtering options, and action buttons for
+     * each source (open, copy URL, etc.).
+     * 
+     * FEATURES:
+     * - Detailed source information display
+     * - Favicon and domain information
+     * - Action buttons for each source
+     * - Filtering system (All, Recent, Relevance)
+     * - Responsive design with proper spacing
+     * 
+     * @param {jQuery} block - The answer block container
+     * @param {Array} results - Array of search result objects
+     * @returns {void}
+     * 
+     * @example
+     * populateSourcesTab(answerBlock, searchResults);
+     * // Populates the Sources tab with detailed source information
+     */
     function populateSourcesTab(block, results) {
-        // Store the original results data in the block for filtering
+        // Store the original results data in the block for filtering functionality
         block.data('original-results', results);
         
+        // Handle empty results case
         if (!results || !Array.isArray(results) || results.length === 0) {
             block.find('.sources-content').html(`
                 <div class="sources-empty-state">
@@ -289,7 +342,9 @@ jQuery(document).ready(function($) {
             return;
         }
 
+        // Create detailed HTML for each source item
         const sourcesHtml = results.map((item, index) => {
+            // Extract domain from URL
             let domain = 'unknown';
             try {
                 if (item.url) {
@@ -299,10 +354,12 @@ jQuery(document).ready(function($) {
                 // Invalid URL handled silently
             }
 
+            // Handle favicon with fallback
             const isBadFavicon = !item.favicon || item.favicon === "data:," || item.favicon === "about:blank";
             const fallbackIcon = (typeof exaSettings !== 'undefined' && exaSettings.fallbackIcon) ? exaSettings.fallbackIcon : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiByeD0iNCIgZmlsbD0iIzY2NjY2NiIvPgo8L3N2Zz4K';
             const faviconUrl = isBadFavicon ? `https://www.google.com/s2/favicons?sz=64&domain=${domain}` : item.favicon;
 
+            // Return HTML for individual source item with actions
             return `
                 <div class="source-item" data-index="${index}">
                     <div class="source-item-header">
@@ -339,6 +396,7 @@ jQuery(document).ready(function($) {
             `;
         }).join('');
 
+        // Create header with source count and filter buttons
         const sourcesHeader = `
             <div class="sources-tab-header">
                 <div class="sources-count">
@@ -353,29 +411,58 @@ jQuery(document).ready(function($) {
             </div>
         `;
 
+        // Combine header and source items
         block.find('.sources-content').html(sourcesHeader + sourcesHtml);
         
-        // Add filter functionality
+        // Set up filtering functionality for the sources
         setupSourceFilters(block);
     }
 
-    // Setup source filtering functionality
+    /**
+     * Setup source filtering functionality
+     * 
+     * This function adds click event handlers to the filter buttons
+     * and manages the active state of filter selections.
+     * 
+     * @param {jQuery} block - The answer block container
+     * @returns {void}
+     * 
+     * @example
+     * setupSourceFilters(answerBlock);
+     * // Enables filtering functionality for sources
+     */
     function setupSourceFilters(block) {
         const filterButtons = block.find('.filter-btn');
         
+        // Add click handlers for each filter button
         filterButtons.on('click', function() {
             const filterType = $(this).data('filter');
             
-            // Update active filter button
+            // Update active filter button state
             block.find('.filter-btn').removeClass('active');
             $(this).addClass('active');
             
-            // Apply filter logic
+            // Apply the selected filter
             applySourceFilter(block, filterType);
         });
     }
 
-    // Apply source filtering
+    /**
+     * Apply source filtering based on selected filter type
+     * 
+     * This function reorders the source items based on the selected filter:
+     * - All: Original order from search results
+     * - Recent: Sorted by publication/update date (newest first)
+     * - Relevance: Sorted by relevance score (highest first)
+     * 
+     * @param {jQuery} block - The answer block container
+     * @param {string} filterType - Type of filter to apply ('all', 'recent', 'relevance')
+     * @returns {void}
+     * 
+     * @example
+     * applySourceFilter(answerBlock, 'recent');
+     * // Sorts sources by recency
+     */
     function applySourceFilter(block, filterType) {
         const sourceItems = block.find('.source-item');
         const sourcesContent = block.find('.sources-content');
@@ -383,7 +470,7 @@ jQuery(document).ready(function($) {
         // Get the original results data from the block's data attribute
         const originalResults = block.data('original-results');
         
-        // Store original order if not already stored
+        // Store original order if not already stored (for performance)
         if (!sourcesContent.data('original-order')) {
             const originalOrder = [];
             sourceItems.each(function(index) {
@@ -418,6 +505,7 @@ jQuery(document).ready(function($) {
         const originalOrder = sourcesContent.data('original-order');
         let filteredItems = [];
         
+        // Apply different sorting logic based on filter type
         switch (filterType) {
             case 'all':
                 // Show all items in original order
@@ -442,11 +530,11 @@ jQuery(document).ready(function($) {
                 filteredItems = originalOrder.map(item => item.element);
         }
         
-        // Reorder the DOM
+        // Reorder the DOM elements based on filtered results
         const sourcesContainer = block.find('.sources-content');
         const header = sourcesContainer.find('.sources-tab-header');
         
-        // Remove header temporarily
+        // Remove header temporarily to avoid interference
         header.detach();
         
         // Clear and re-add items in new order
@@ -467,13 +555,27 @@ jQuery(document).ready(function($) {
         // Re-add header at the top
         sourcesContainer.prepend(header);
         
-        // Add visual feedback
+        // Show visual feedback for the applied filter
         showFilterFeedback(filterType);
     }
 
-    // Show filter feedback
+    /**
+     * Show filter feedback message to user
+     * 
+     * Displays a temporary message indicating which filter has been applied
+     * and how the sources are now sorted.
+     * 
+     * @param {string} filterType - Type of filter that was applied
+     * @returns {void}
+     * 
+     * @example
+     * showFilterFeedback('recent');
+     * // Shows "Sources sorted by recency (newest first)"
+     */
     function showFilterFeedback(filterType) {
         let message = '';
+        
+        // Create appropriate message based on filter type
         switch (filterType) {
             case 'all':
                 message = 'Showing all sources in original order';
@@ -493,6 +595,7 @@ jQuery(document).ready(function($) {
             $('body').append(feedbackEl);
         }
         
+        // Show feedback message
         feedbackEl.text(message).addClass('show');
         
         // Hide after 2 seconds
@@ -503,23 +606,43 @@ jQuery(document).ready(function($) {
 
     // copyToClipboard function is now defined globally above
 
-    // Setup modern slider buttons
+    /**
+     * Setup modern slider buttons for source card navigation
+     * 
+     * This function adds horizontal scrolling functionality to the source cards
+     * container, allowing users to navigate through sources using previous/next
+     * buttons with smooth scrolling behavior.
+     * 
+     * FEATURES:
+     * - Smooth horizontal scrolling
+     * - Dynamic button opacity based on scroll position
+     * - Responsive navigation controls
+     * - Touch-friendly scrolling
+     * 
+     * @returns {void}
+     * 
+     * @example
+     * setupModernSliderButtons();
+     * // Enables horizontal scrolling for all source card containers
+     */
     function setupModernSliderButtons() {
         document.querySelectorAll('.exa-results').forEach(block => {
             const wrapper = block.querySelector('.top-sources-wrapper');
             const prevBtn = block.querySelector('.prev-btn');
             const nextBtn = block.querySelector('.next-btn');
 
+            // Setup previous button functionality
             if (prevBtn && wrapper) {
                 prevBtn.addEventListener('click', () => {
-                    const scrollAmount = -1280;
+                    const scrollAmount = -1280; // Scroll left by 1280px
                     wrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                 });
             }
 
+            // Setup next button functionality
             if (nextBtn && wrapper) {
                 nextBtn.addEventListener('click', () => {
-                    const scrollAmount = 1280;
+                    const scrollAmount = 1280; // Scroll right by 1280px
                     wrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                 });
             }
@@ -530,6 +653,7 @@ jQuery(document).ready(function($) {
                     const isAtStart = wrapper.scrollLeft <= 0;
                     const isAtEnd = wrapper.scrollLeft >= wrapper.scrollWidth - wrapper.clientWidth;
                     
+                    // Adjust button opacity based on scroll position
                     if (prevBtn) prevBtn.style.opacity = isAtStart ? '0.5' : '1';
                     if (nextBtn) nextBtn.style.opacity = isAtEnd ? '0.5' : '1';
                 });
@@ -537,13 +661,26 @@ jQuery(document).ready(function($) {
         });
     }
 
+    /**
+     * Handle tab switching functionality for answer blocks
+     * 
+     * This event handler manages the switching between different tabs
+     * (Answer, Sources, Images) within each answer block.
+     * 
+     * @param {Event} e - Click event object
+     * @returns {void}
+     * 
+     * @example
+     * // Automatically bound to .tab-btn elements
+     * // Clicking a tab button switches to that tab
+     */
     // Tab switching functionality
     $(document).on('click', '.tab-btn', function(e) {
         e.preventDefault();
         const tabName = $(this).data('tab');
         const answerBlock = $(this).closest('.answer-block');
         
-        // Update active tab button
+        // Update active tab button state
         answerBlock.find('.tab-btn').removeClass('active');
         $(this).addClass('active');
         
@@ -552,8 +689,29 @@ jQuery(document).ready(function($) {
         answerBlock.find(`[data-tab="${tabName}"]`).addClass('active');
     });
 
-    // Add modern reaction bar with action buttons
+    /**
+     * Add modern reaction bar with action buttons
+     * 
+     * This function creates a reaction bar below each answer that allows users
+     * to provide feedback (like/dislike) and perform actions like sharing.
+     * 
+     * FEATURES:
+     * - Like/dislike reaction buttons
+     * - Share functionality
+     * - More options menu
+     * - Real-time reaction counts
+     * - Modern UI design
+     * 
+     * @param {jQuery} block - The answer block container
+     * @param {string} chatlogId - Unique identifier for the chat log entry
+     * @returns {void}
+     * 
+     * @example
+     * addModernReactionBar(answerBlock, 'chat-123');
+     * // Adds reaction bar with like/dislike and share buttons
+     */
     function addModernReactionBar(block, chatlogId) {
+        // Create the reaction bar HTML structure
         const reactionBar = $(`
             <div class="answer-reaction-bar modern" style="margin-top:20px;">
                 <div class="action-buttons">
@@ -575,9 +733,11 @@ jQuery(document).ready(function($) {
                 <div class="reaction-options-container" style="display:none;position:absolute;z-index:10;"></div>
             </div>
         `);
+        
+        // Append reaction bar to the answer block
         block.append(reactionBar);
         
-        // Fetch initial counts from backend
+        // Fetch initial reaction counts from backend
         $.post(exa_ajax.ajaxurl, {
             action: 'ai_get_chatlog_reaction_counts',
             id: chatlogId
@@ -598,8 +758,20 @@ jQuery(document).ready(function($) {
         });
     }
 
-
-
+    /**
+     * Show more options functionality for reaction bar
+     * 
+     * This function creates and displays a dropdown menu with additional
+     * options when the "more" button is clicked in the reaction bar.
+     * 
+     * @param {jQuery} block - The answer block container
+     * @param {string} chatlogId - Unique identifier for the chat log entry
+     * @returns {void}
+     * 
+     * @example
+     * showMoreOptions(answerBlock, 'chat-123');
+     * // Shows dropdown menu with additional options
+     */
     // Show more options functionality
     function showMoreOptions(block, chatlogId) {
         const moreBtn = block.find('.reaction-more');
@@ -634,7 +806,20 @@ jQuery(document).ready(function($) {
         }
     }
 
-    // Copy answer link functionality
+    /**
+     * Copy answer link functionality
+     * 
+     * This function copies a shareable link to the current answer to the user's clipboard.
+     * The link includes the chatlog ID for direct access to the specific conversation.
+     * 
+     * @param {jQuery} block - The answer block container
+     * @param {string} chatlogId - Unique identifier for the chat log entry
+     * @returns {void}
+     * 
+     * @example
+     * copyAnswerLink(answerBlock, 'chat-123');
+     * // Copies shareable link to clipboard
+     */
     function copyAnswerLink(block, chatlogId) {
         const url = window.location.origin + window.location.pathname + '?chatlog_id=' + chatlogId;
         
@@ -654,7 +839,26 @@ jQuery(document).ready(function($) {
         }
     }
 
-    // Report issue functionality
+    /**
+     * Report issue functionality
+     * 
+     * This function creates a modal dialog that allows users to report issues
+     * with specific answers or the system in general.
+     * 
+     * FEATURES:
+     * - Modal dialog with issue description textarea
+     * - Cancel and submit buttons
+     * - Form validation
+     * - Backend integration for issue reporting
+     * 
+     * @param {jQuery} block - The answer block container
+     * @param {string} chatlogId - Unique identifier for the chat log entry
+     * @returns {void}
+     * 
+     * @example
+     * reportIssue(answerBlock, 'chat-123');
+     * // Opens issue reporting modal
+     */
     function reportIssue(block, chatlogId) {
         const reportForm = $(`
             <div class="report-form" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1a0024; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 24px; z-index: 10000; min-width: 400px; max-width: 500px;">
@@ -687,7 +891,28 @@ jQuery(document).ready(function($) {
 
 
 
-    // Show notification functionality
+    /**
+     * Show notification functionality
+     * 
+     * This function displays temporary notification messages to users with
+     * different types (success, error, info) and automatic dismissal.
+     * 
+     * FEATURES:
+     * - Multiple notification types (success, error, info)
+     * - Smooth slide-in/slide-out animations
+     * - Auto-dismissal after 3 seconds
+     * - Fixed positioning for consistent display
+     * - Color-coded by notification type
+     * 
+     * @param {string} message - The notification message to display
+     * @param {string} type - Notification type ('success', 'error', 'info')
+     * @returns {void}
+     * 
+     * @example
+     * showNotification('Operation completed successfully!', 'success');
+     * showNotification('An error occurred', 'error');
+     * showNotification('Processing...', 'info');
+     */
     function showNotification(message, type = 'info') {
         const notification = $(`
             <div class="notification ${type}" style="position: fixed; top: 20px; right: 20px; background: ${type === 'success' ? '#3bb273' : type === 'error' ? '#e74c3c' : '#3498db'}; color: #fff; padding: 12px 20px; border-radius: 8px; z-index: 10001; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transform: translateX(400px); transition: transform 0.3s ease;">
@@ -712,7 +937,27 @@ jQuery(document).ready(function($) {
     // Make showNotification globally accessible
     window.showNotification = showNotification;
 
-    // Dedicated function for beta feedback submission (like reaction custom submit)
+    /**
+     * Dedicated function for beta feedback submission
+     * 
+     * This function handles the submission of beta feedback from users,
+     * sending it to the backend for processing and storage.
+     * 
+     * FEATURES:
+     * - AJAX submission to WordPress backend
+     * - Success/error message handling
+     * - Form state management
+     * - User feedback confirmation
+     * 
+     * @param {string} chatlogId - Unique identifier for the chat log entry
+     * @param {string} feedback - User's feedback text
+     * @param {jQuery} form - The feedback form element
+     * @returns {void}
+     * 
+     * @example
+     * submitBetaFeedback('chat-123', 'Great answer, very helpful!', feedbackForm);
+     * // Submits feedback to backend and shows confirmation
+     */
     function submitBetaFeedback(chatlogId, feedback, form) {
         // Remove previous error messages
         form.find('span').remove();
@@ -737,7 +982,28 @@ jQuery(document).ready(function($) {
         });
     }
 
-    // Handle local answer
+    /**
+     * Handle local answer from knowledge base
+     * 
+     * This function processes answers that come from the local knowledge base
+     * instead of AI streaming, setting up the UI and interaction elements.
+     * 
+     * FEATURES:
+     * - Local answer display
+     * - Reaction bar setup
+     * - Follow-up prompts
+     * - Beta feedback integration
+     * - Conversation history management
+     * 
+     * @param {Object} localAnswer - Local answer object with content
+     * @param {jQuery} block - The answer block container
+     * @param {string} chatlogId - Unique identifier for the chat log entry
+     * @returns {void}
+     * 
+     * @example
+     * handleLocalAnswer({content: 'Local answer content'}, answerBlock, 'chat-123');
+     * // Processes and displays local knowledge base answer
+     */
     function handleLocalAnswer(localAnswer, block, chatlogId) {
         const html = `<div>${localAnswer.content}</div>`;
         streamLocalAnswer(html, block.find('.exa-answer-streaming')[0]);
@@ -796,7 +1062,23 @@ jQuery(document).ready(function($) {
         }, 100); // Small delay to ensure reaction bar is added
     }
 
-    // Add reaction bar (legacy)
+    /**
+     * Add reaction bar (legacy version)
+     * 
+     * This is the legacy version of the reaction bar that provides
+     * basic like/dislike functionality with older styling.
+     * 
+     * NOTE: This function is maintained for backward compatibility.
+     * New implementations should use addModernReactionBar().
+     * 
+     * @param {jQuery} block - The answer block container
+     * @param {string} chatlogId - Unique identifier for the chat log entry
+     * @returns {void}
+     * 
+     * @example
+     * addReactionBar(answerBlock, 'chat-123');
+     * // Adds legacy reaction bar with basic styling
+     */
     function addReactionBar(block, chatlogId) {
         const reactionBar = $(`
             <div class="answer-reaction-bar" style="margin-top:10px; display:flex; align-items:center; gap:12px;">
@@ -821,7 +1103,27 @@ jQuery(document).ready(function($) {
         });
     }
 
-    // Optimized HTML sanitization
+    /**
+     * Optimized HTML sanitization
+     * 
+     * This function cleans and sanitizes HTML content for safe display,
+     * removing potentially harmful elements while preserving formatting.
+     * 
+     * FEATURES:
+     * - Script and style tag removal
+     * - List structure fixing
+     * - Table structure optimization
+     * - Content truncation for display
+     * - Special styling for specific sections
+     * - Year truncation fixing
+     * 
+     * @param {string} html - Raw HTML content to sanitize
+     * @returns {string} Sanitized and cleaned HTML content
+     * 
+     * @example
+     * const cleanHtml = sanitizeHTML(rawHtmlContent);
+     * // Returns safe HTML for display
+     */
     function sanitizeHTML(html) {
         if (!html || typeof html !== 'string') {
             return '';
@@ -874,7 +1176,20 @@ jQuery(document).ready(function($) {
         }
     }
 
-    // Apply green color to specific sections only
+    /**
+     * Apply green color to specific sections only
+     * 
+     * This function applies special styling to specific content sections
+     * like "Where to Learn More" and "Related Questions" by changing
+     * the color of list items to green (#3bb273).
+     * 
+     * @param {string} html - HTML content to style
+     * @returns {string} HTML with applied styling
+     * 
+     * @example
+     * const styledHtml = applyWhereToLearnMoreStyling(htmlContent);
+     * // Returns HTML with green styling for specific sections
+     */
     function applyWhereToLearnMoreStyling(html) {
         if (!html || typeof html !== 'string') {
             return html;
@@ -909,7 +1224,25 @@ jQuery(document).ready(function($) {
         }
     }
 
-    // Simple function to fix truncated years
+    /**
+     * Simple function to fix truncated years
+     * 
+     * This function fixes common year truncation issues in HTML content,
+     * particularly for decade references that get cut off during processing.
+     * 
+     * FIXES APPLIED:
+     * - "196:" -> "1960s:" (decade references)
+     * - "202:" -> "2020s:" (decade references)
+     * - "190s" -> "1900s" (century references)
+     * - Various other truncated year patterns
+     * 
+     * @param {string} html - HTML content with potential year truncation
+     * @returns {string} HTML with fixed year references
+     * 
+     * @example
+     * const fixedHtml = fixTruncatedYears(htmlContent);
+     * // Returns HTML with corrected year references
+     */
     function fixTruncatedYears(html) {
         if (!html || typeof html !== 'string') {
             return html;
@@ -965,7 +1298,19 @@ jQuery(document).ready(function($) {
         }
     }
 
-    // Function to apply styling to existing DOM elements
+    /**
+     * Function to apply styling to existing DOM elements
+     * 
+     * This function applies green styling to specific sections in existing
+     * DOM elements, working with live content rather than HTML strings.
+     * 
+     * @param {Element} container - DOM container element to style
+     * @returns {void}
+     * 
+     * @example
+     * styleWhereToLearnMoreInDOM(document.querySelector('.content-container'));
+     * // Applies green styling to specific sections in the container
+     */
     function styleWhereToLearnMoreInDOM(container) {
         if (!container) return;
         
@@ -988,7 +1333,25 @@ jQuery(document).ready(function($) {
         }
     }
 
-    // Set up MutationObserver to automatically style new content
+    /**
+     * Set up MutationObserver to automatically style new content
+     * 
+     * This function creates a MutationObserver that automatically applies
+     * styling to new content as it's added to the DOM, ensuring consistent
+     * appearance for dynamically loaded content.
+     * 
+     * FEATURES:
+     * - Automatic styling for new content
+     * - Watches for DOM mutations
+     * - Applies green styling to specific sections
+     * - Handles both new nodes and existing content
+     * 
+     * @returns {void}
+     * 
+     * @example
+     * setupWhereToLearnMoreObserver();
+     * // Sets up automatic styling for new content
+     */
     function setupWhereToLearnMoreObserver() {
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
@@ -1042,7 +1405,19 @@ jQuery(document).ready(function($) {
         setupWhereToLearnMoreObserver();
     }
 
-    // Fix list structure
+    /**
+     * Fix list structure in HTML documents
+     * 
+     * This function ensures proper list structure by converting text nodes
+     * to list items and moving non-list elements outside of lists.
+     * 
+     * @param {Document} doc - DOM document to process
+     * @returns {void}
+     * 
+     * @example
+     * fixListStructure(document);
+     * // Fixes list structure throughout the document
+     */
     function fixListStructure(doc) {
         doc.querySelectorAll('ul, ol').forEach(list => {
             const children = Array.from(list.childNodes);
@@ -1065,7 +1440,19 @@ jQuery(document).ready(function($) {
         });
     }
 
-    // Fix table structure
+    /**
+     * Fix table structure in HTML documents
+     * 
+     * This function ensures proper table structure by adding missing tbody
+     * elements and converting non-table cells to proper td/th elements.
+     * 
+     * @param {Document} doc - DOM document to process
+     * @returns {void}
+     * 
+     * @example
+     * fixTableStructure(document);
+     * // Fixes table structure throughout the document
+     */
     function fixTableStructure(doc) {
         doc.querySelectorAll('table').forEach(table => {
             if (!table.querySelector('tbody')) {
@@ -1094,7 +1481,19 @@ jQuery(document).ready(function($) {
         });
     }
 
-    // Clean table nodes specifically
+    /**
+     * Clean table nodes specifically
+     * 
+     * This function processes table-related DOM nodes, ensuring they
+     * conform to proper HTML table structure and removing invalid elements.
+     * 
+     * @param {Node} node - DOM node to clean
+     * @returns {void}
+     * 
+     * @example
+     * cleanTableNodes(tableElement);
+     * // Cleans and validates table structure
+     */
     function cleanTableNodes(node) {
         if (!node || node.nodeType !== Node.ELEMENT_NODE) {
             return;
@@ -1132,7 +1531,19 @@ jQuery(document).ready(function($) {
         }
     }
 
-    // Simple and safe node cleaning
+    /**
+     * Simple and safe node cleaning
+     * 
+     * This function provides a safer alternative to cleanNodes that
+     * processes DOM nodes without aggressive removal of elements.
+     * 
+     * @param {Node} node - DOM node to clean
+     * @returns {void}
+     * 
+     * @example
+     * safeCleanNodes(element);
+     * // Safely cleans DOM node
+     */
     function safeCleanNodes(node) {
         if (!node || node.nodeType !== Node.ELEMENT_NODE) {
             return;
@@ -1163,7 +1574,21 @@ jQuery(document).ready(function($) {
         }
     }
 
-    // Original cleanNodes function (kept for reference)
+    /**
+     * Original cleanNodes function (kept for reference)
+     * 
+     * This is the original node cleaning function that aggressively
+     * removes disallowed elements. Kept for reference and backward compatibility.
+     * 
+     * NOTE: New implementations should use safeCleanNodes() for better safety.
+     * 
+     * @param {Node} node - DOM node to clean
+     * @returns {void}
+     * 
+     * @example
+     * cleanNodes(element);
+     * // Aggressively cleans DOM node (use with caution)
+     */
     function cleanNodes(node) {
         if (!node || node.nodeType !== Node.ELEMENT_NODE) {
             return;
@@ -1194,7 +1619,19 @@ jQuery(document).ready(function($) {
         }
     }
 
-    // Apply regex fixes
+    /**
+     * Apply regex fixes to HTML content
+     * 
+     * This function applies various regex-based fixes to clean up
+     * common HTML formatting issues and inconsistencies.
+     * 
+     * @param {string} html - HTML content to fix
+     * @returns {string} Fixed HTML content
+     * 
+     * @example
+     * const fixedHtml = applyRegexFixes(rawHtml);
+     * // Returns HTML with applied regex fixes
+     */
     function applyRegexFixes(html) {
         if (!html) return '';
         
@@ -1209,7 +1646,19 @@ jQuery(document).ready(function($) {
             .trim();
     }
 
-    // Truncate HTML safely
+    /**
+     * Truncate HTML safely
+     * 
+     * This function truncates HTML content to a specified maximum length
+     * while preserving HTML structure and avoiding broken tags.
+     * 
+     * @param {string} html - HTML content to truncate
+     * @returns {string} Truncated HTML content
+     * 
+     * @example
+     * const truncatedHtml = truncateHTML(longHtmlContent);
+     * // Returns HTML truncated to MAX_LENGTH
+     */
     function truncateHTML(html) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = html;
@@ -1231,7 +1680,31 @@ jQuery(document).ready(function($) {
         return tempDiv.innerHTML;
     }
 
-    // Optimized streaming functions
+    /**
+     * Optimized streaming functions for OpenAI responses
+     * 
+     * This function handles real-time streaming of AI responses from OpenAI,
+     * providing a smooth user experience with progressive content loading.
+     * 
+     * FEATURES:
+     * - Real-time content streaming
+     * - Progressive HTML updates
+     * - Content sanitization and cleaning
+     * - Conversation history management
+     * - Follow-up prompts and feedback integration
+     * 
+     * @param {string} query - User's search query
+     * @param {string} sources - Source information for the query
+     * @param {string} block - Blocked domain information
+     * @param {Element} container - DOM container for streaming content
+     * @param {string} chatlogId - Unique identifier for the chat log entry
+     * @param {Array} conversationHistory - Array of previous conversation exchanges
+     * @returns {void}
+     * 
+     * @example
+     * streamOpenAIAnswer('What is psilocybin?', sources, blockedDomains, container, 'chat-123', history);
+     * // Streams AI response in real-time
+     */
     function streamOpenAIAnswer(query, sources, block, container, chatlogId, conversationHistory) {
         const contextBlock = buildContextBlock(conversationHistory);
         const prompt = buildPrompt(query, sources, block, contextBlock);
@@ -1348,7 +1821,19 @@ jQuery(document).ready(function($) {
         });
     }
 
-    // Build context block
+    /**
+     * Build context block from conversation history
+     * 
+     * This function creates a context block from previous conversation
+     * exchanges to provide AI with conversation context for better responses.
+     * 
+     * @param {Array} conversationHistory - Array of conversation exchanges
+     * @returns {string} Formatted context block string
+     * 
+     * @example
+     * const context = buildContextBlock(conversationHistory);
+     * // Returns formatted context for AI prompt
+     */
     function buildContextBlock(conversationHistory) {
         if (!Array.isArray(conversationHistory)) return '';
         
@@ -1375,6 +1860,30 @@ jQuery(document).ready(function($) {
 
 /* =========================== Core Builder =========================== */
 
+/**
+ * Build AI prompt for OpenAI streaming
+ * 
+ * This function constructs a comprehensive prompt for the AI system,
+ * incorporating user query, sources, context, and template selection.
+ * 
+ * FEATURES:
+ * - Template-based prompt generation
+ * - Source and context integration
+ * - Auto-detection of query type
+ * - Template override capabilities
+ * - Comprehensive prompt formatting
+ * 
+ * @param {string} query - User's search query
+ * @param {string} sources - Trusted source information
+ * @param {string} block - Blocked domain information
+ * @param {string} contextBlock - Conversation context
+ * @param {Object} opts - Options object with optional type override
+ * @returns {string} Complete AI prompt string
+ * 
+ * @example
+ * const prompt = buildPrompt('What is LSD?', sources, blockedDomains, context, { type: 'overview' });
+ * // Returns formatted prompt for AI processing
+ */
 function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     const safeSources = String(sources || '').trim();
     if (safeSources.length < 3) {
@@ -2167,7 +2676,27 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
   
   /* ============================ Helpers ============================== */
   
-  // Robust intent detection using weighted word-boundary scoring
+  /**
+   * Robust intent detection using weighted word-boundary scoring
+   * 
+   * This function analyzes user queries to automatically detect the most
+   * appropriate template type for AI responses using sophisticated pattern
+   * matching and weighted scoring.
+   * 
+   * FEATURES:
+   * - Pattern-based query classification
+   * - Weighted scoring system for accuracy
+   * - Support for 21 different template types
+   * - Unicode normalization and text preprocessing
+   * - Fallback to overview template
+   * 
+   * @param {string} q - User query string to analyze
+   * @returns {string} Template type identifier
+   * 
+   * @example
+   * const templateType = detectType('What is the dose of psilocybin?');
+   * // Returns 'dosing' for dose-related queries
+   */
   function detectType(q) {
     let s = String(q || '').toLowerCase();
     // Normalize common unicode and spacing to reduce mismatches
@@ -2626,6 +3155,26 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     return bestType;
   }
   
+  /**
+   * Derive title from user query
+   * 
+   * This function processes user queries to create clean, formatted titles
+   * suitable for display, removing filler words and applying proper formatting.
+   * 
+   * FEATURES:
+   * - Text normalization and cleaning
+   * - Common term corrections
+   * - Filler word removal
+   * - Auto-punctuation for questions
+   * - Title case formatting with acronym preservation
+   * 
+   * @param {string} q - User query string
+   * @returns {string} Clean, formatted title
+   * 
+   * @example
+   * const title = deriveTitle('what is the dose of psilocybin?');
+   * // Returns 'What Is the Dose of Psilocybin?'
+   */
   function deriveTitle(q) {
     let s = String(q || '').trim();
     // Trim outer dashes/spaces and normalize quotes/spacing
@@ -2662,6 +3211,25 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     return s;
   }
 
+  /**
+   * Convert text to title case while preserving acronyms
+   * 
+   * This function converts text to proper title case format while maintaining
+   * the correct capitalization of common acronyms and technical terms.
+   * 
+   * FEATURES:
+   * - Title case conversion
+   * - Acronym preservation (SSRI, LSD, MDMA, etc.)
+   * - Minor word handling (a, an, the, etc.)
+   * - Punctuation preservation
+   * 
+   * @param {string} input - Input text to convert
+   * @returns {string} Title case text with preserved acronyms
+   * 
+   * @example
+   * const title = toTitleCasePreserveAcronyms('ssri and lsd interactions');
+   * // Returns 'SSRI and LSD Interactions'
+   */
   function toTitleCasePreserveAcronyms(input) {
     if (!input) return '';
     const minor = new Set(['a','an','and','the','for','of','in','on','to','from','by','or','as','at','but','nor','per','vs','via']);
@@ -2689,7 +3257,29 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
       .join(' ');
   }
   
-  // Base template builder
+  /**
+   * Base template builder for AI prompts
+   * 
+   * This function creates the foundation template structure for AI responses,
+   * including bullet points, safety information, and optional sections.
+   * 
+   * @param {Object} options - Template configuration options
+   * @param {Array} options.bullets - Array of [label, hint] pairs for bullet points
+   * @param {string} options.quickOverviewHint - Hint for quick overview section
+   * @param {boolean} options.addSafety - Whether to include safety snapshot
+   * @param {Array} options.sections - Custom HTML sections to include
+   * @param {boolean} options.includeAdditional - Whether to include additional context
+   * @param {boolean} options.includePractical - Whether to include practical advice
+   * @param {boolean} options.includeSources - Whether to include sources section
+   * @returns {Object} Template object with glance and extra properties
+   * 
+   * @example
+   * const template = baseTemplate({
+   *   bullets: [['What it is', 'Definition'], ['How it works', 'Mechanism']],
+   *   addSafety: true,
+   *   includeAdditional: true
+   * });
+   */
   function baseTemplate({
     bullets = [],
     quickOverviewHint = '',
@@ -2708,7 +3298,27 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     return { glance, quickOverviewHint, extra };
   }
   
-  // Comparison/table template builder
+  /**
+   * Comparison/table template builder for AI prompts
+   * 
+   * This function creates comparison templates that display information
+   * in a structured table format for comparing different options.
+   * 
+   * @param {Object} options - Template configuration options
+   * @param {Array} options.rows - Array of [parameter, optionA, optionB] arrays
+   * @param {boolean} options.addSafety - Whether to include safety snapshot
+   * @param {Array} options.sections - Custom HTML sections to include
+   * @param {boolean} options.includeAdditional - Whether to include additional context
+   * @param {boolean} options.includePractical - Whether to include practical advice
+   * @param {boolean} options.includeSources - Whether to include sources section
+   * @returns {Object} Template object with glance and extra properties
+   * 
+   * @example
+   * const template = tableTemplate({
+   *   rows: [['Effects', 'LSD effects', 'Psilocybin effects']],
+   *   addSafety: true
+   * });
+   */
   function tableTemplate({
     rows = [],
     addSafety = false,
@@ -2726,7 +3336,26 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     return { glance: mapped, extra };
   }
   
-  // Standardized optional blocks + custom sections injector
+  /**
+   * Standardized optional blocks + custom sections injector
+   * 
+   * This function renders standardized sections (Additional, Practical, Sources)
+   * along with custom HTML sections for AI prompt templates.
+   * 
+   * @param {Object} options - Section configuration options
+   * @param {Array} options.sections - Custom HTML sections to include
+   * @param {boolean} options.includeAdditional - Whether to include additional context
+   * @param {boolean} options.includePractical - Whether to include practical advice
+   * @param {boolean} options.includeSources - Whether to include sources section
+   * @returns {string} Combined HTML for all sections
+   * 
+   * @example
+   * const sections = renderSections({
+   *   sections: [{html: '<h3>Custom Section</h3>'}],
+   *   includeAdditional: true,
+   *   includeSources: true
+   * });
+   */
   function renderSections({ sections = [], includeAdditional = true, includePractical = true, includeSources = true }) {
     const custom = sections.map(s => s && s.html ? s.html : '').join('\n');
   
@@ -2755,7 +3384,19 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     return `${custom}${additional}${practical}${sources}`;
   }
   
-  // Optional Safety Snapshot, injected only when addSafety=true
+  /**
+   * Optional Safety Snapshot, injected only when addSafety=true
+   * 
+   * This function provides a standardized safety information section
+   * that can be included in AI prompt templates when safety information
+   * is relevant to the query.
+   * 
+   * @returns {string} HTML for safety tips section
+   * 
+   * @example
+   * const safetyHtml = safetySnapshot();
+   * // Returns HTML with medication, mental health, physical health, and set & setting tips
+   */
   function safetySnapshot() {
     return `
   <h3>Safety Tips</h3>
@@ -2767,7 +3408,19 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
   </ul>`;
   }
   
-  // Escaper
+  /**
+   * HTML escaper for safe text output
+   * 
+   * This function escapes HTML special characters to prevent XSS attacks
+   * and ensure safe display of user-generated content.
+   * 
+   * @param {string} s - String to escape
+   * @returns {string} HTML-escaped string
+   * 
+   * @example
+   * const safe = escapeHtml('<script>alert("xss")</script>');
+   * // Returns '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
+   */
   function escapeHtml(s) {
     return String(s || '')
       .replaceAll('&', '&amp;')
@@ -2795,7 +3448,26 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     //     }
     // }
 
-    // Optimized local answer streaming
+    /**
+     * Optimized local answer streaming
+     * 
+     * This function provides a streaming effect for local knowledge base answers,
+     * creating a progressive loading animation similar to AI streaming.
+     * 
+     * FEATURES:
+     * - Progressive content display
+     * - Smooth streaming animation
+     * - Related questions clickability setup
+     * - Styling application after completion
+     * 
+     * @param {string} html - HTML content to stream
+     * @param {Element} container - DOM container for streaming content
+     * @returns {void}
+     * 
+     * @example
+     * streamLocalAnswer(answerHtml, document.querySelector('.streaming-container'));
+     * // Streams local answer with progressive loading effect
+     */
     function streamLocalAnswer(html, container) {
         container.innerHTML = '';
         const temp = document.createElement('div');
@@ -2819,7 +3491,26 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         streamStep();
     }
 
-    // Sanitize HTML for chatlog storage (no truncation)
+    /**
+     * Sanitize HTML for chatlog storage (no truncation)
+     * 
+     * This function cleans HTML content for safe storage in chatlogs without
+     * truncating the content, preserving the full response for future reference.
+     * 
+     * FEATURES:
+     * - Script and style tag removal
+     * - List and table structure fixing
+     * - Node cleaning for table-related tags
+     * - Basic regex fixes
+     * - No content truncation
+     * 
+     * @param {string} html - Raw HTML content to sanitize
+     * @returns {string} Sanitized HTML content
+     * 
+     * @example
+     * const cleanHtml = sanitizeHTMLForChatlog(rawAnswerHtml);
+     * // Returns sanitized HTML safe for chatlog storage
+     */
     function sanitizeHTMLForChatlog(html) {
         if (!html || typeof html !== 'string') {
             return '';
@@ -2893,7 +3584,26 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         "Other"
     ];
 
-    // Inject reaction bar UI with options dropdown and textarea
+    /**
+     * Inject reaction bar UI with options dropdown and textarea
+     * 
+     * This function creates the reaction options interface that appears when
+     * users click like/dislike buttons, providing structured feedback options.
+     * 
+     * FEATURES:
+     * - Predefined feedback options
+     * - Custom feedback textarea
+     * - Dynamic UI injection
+     * - Type-specific options (like/dislike)
+     * 
+     * @param {jQuery} bar - Reaction bar jQuery element
+     * @param {string} type - Reaction type ('like' or 'dislike')
+     * @returns {void}
+     * 
+     * @example
+     * renderReactionOptions(reactionBar, 'like');
+     * // Creates like reaction options interface
+     */
     function renderReactionOptions(bar, type) {
         const options = type === 'like' ? LIKE_OPTIONS : DISLIKE_OPTIONS;
         const optionsHtml = options.map(opt => `<button class="reaction-option-btn" data-type="${type}" data-option="${opt}">${opt}</button>`).join(' ');
@@ -2946,7 +3656,28 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         bar.find('.reaction-custom-text').val('');
     });
 
-    // Save reaction detail via AJAX
+    /**
+     * Save reaction detail via AJAX
+     * 
+     * This function sends user reaction feedback to the backend via AJAX,
+     * updating the database and refreshing the UI with new reaction counts.
+     * 
+     * FEATURES:
+     * - AJAX submission to WordPress backend
+     * - Reaction type and option tracking
+     * - Custom feedback support
+     * - Real-time UI updates
+     * 
+     * @param {string} id - Chatlog ID
+     * @param {string} type - Reaction type ('like' or 'dislike')
+     * @param {string} option - Selected feedback option
+     * @param {string} feedback - Custom feedback text (if option is 'Other')
+     * @returns {void}
+     * 
+     * @example
+     * saveReactionDetail('chat-123', 'like', 'Accurate', '');
+     * // Saves like reaction with 'Accurate' option
+     */
     function saveReactionDetail(id, type, option, feedback) {
         $.post(exa_ajax.ajaxurl, {
             action: 'ai_update_chatlog_reaction',
@@ -2963,7 +3694,26 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         });
     }
 
-    // Make related questions clickable for follow-up prompts
+    /**
+     * Make related questions clickable for follow-up prompts
+     * 
+     * This function converts the "Related Questions" section into clickable
+     * links that automatically populate the search input and submit follow-up queries.
+     * 
+     * FEATURES:
+     * - Automatic question detection
+     * - Clickable link creation
+     * - Search input population
+     * - Auto-submission of follow-up questions
+     * - Hover effects and styling
+     * 
+     * @param {Element|jQuery} container - Container element to process
+     * @returns {void}
+     * 
+     * @example
+     * makeRelatedQuestionsClickable(document.querySelector('.answer-container'));
+     * // Makes all related questions clickable in the container
+     */
     function makeRelatedQuestionsClickable(container) {
         // Use jQuery to find the related questions section
         const $relatedQuestionsSection = $(container).find('h3').filter(function() {
@@ -3210,7 +3960,27 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     });
 
 
-    // Load chatlog by ID
+    /**
+     * Load chatlog by ID
+     * 
+     * This function retrieves and displays a specific chatlog entry by its ID,
+     * creating a dynamic answer block with the stored question and answer.
+     * 
+     * FEATURES:
+     * - AJAX retrieval of chatlog data
+     * - Dynamic answer block creation
+     * - Reaction bar setup
+     * - Error handling for missing chatlogs
+     * - Smooth scrolling to loaded content
+     * 
+     * @param {string} chatlogId - Unique identifier for the chatlog entry
+     * @param {string} chatlogTitle - Optional title for the chatlog
+     * @returns {void}
+     * 
+     * @example
+     * loadChatlogById('chat-123', 'What is psilocybin?');
+     * // Loads and displays the specified chatlog entry
+     */
     function loadChatlogById(chatlogId, chatlogTitle) {
         $.post(exa_ajax.ajaxurl, {
             action: 'ai_get_chatlog_by_id',
@@ -3274,7 +4044,25 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         });
     }
 
-    // Utility function to format reaction details in a clean, user-friendly way
+    /**
+     * Utility function to format reaction details in a clean, user-friendly way
+     * 
+     * This function processes raw reaction detail data and converts it into
+     * readable, user-friendly text for display in the UI.
+     * 
+     * FEATURES:
+     * - JSON parsing and validation
+     * - Text cleaning and formatting
+     * - Fallback handling for malformed data
+     * - User-friendly output generation
+     * 
+     * @param {string} reactionDetail - Raw reaction detail data (JSON or string)
+     * @returns {string} Clean, formatted reaction detail text
+     * 
+     * @example
+     * const formatted = formatReactionDetail('{"option":"Other","feedback":"Very helpful"}');
+     * // Returns 'Very helpful'
+     */
     function formatReactionDetail(reactionDetail) {
         if (!reactionDetail) return '';
         
@@ -3317,7 +4105,24 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         return reactionDetail;
     }
 
-    // Function to automatically format all reaction details on the page
+    /**
+     * Function to automatically format all reaction details on the page
+     * 
+     * This function scans the entire page for reaction detail elements and
+     * automatically formats them to display user-friendly text instead of raw data.
+     * 
+     * FEATURES:
+     * - Page-wide scanning for reaction details
+     * - Automatic formatting of all found elements
+     * - Console logging for debugging
+     * - Batch processing for efficiency
+     * 
+     * @returns {void}
+     * 
+     * @example
+     * formatAllReactionDetails();
+     * // Formats all reaction details on the current page
+     */
     function formatAllReactionDetails() {
         // Find all elements that might contain reaction details
         $('[data-reaction-detail], .reaction-detail, [class*="reaction"], [id*="reaction"]').each(function() {
@@ -3335,7 +4140,25 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         });
     }
 
-    // Function to format reaction details in any container
+    /**
+     * Function to format reaction details in any container
+     * 
+     * This function formats reaction details within a specific container element,
+     * useful for processing newly loaded content or specific sections.
+     * 
+     * FEATURES:
+     * - Container-specific processing
+     * - Targeted formatting
+     * - Efficient element selection
+     * - Reusable for different contexts
+     * 
+     * @param {Element|jQuery} container - Container element to process
+     * @returns {void}
+     * 
+     * @example
+     * formatReactionDetailsInContainer(document.querySelector('.answer-block'));
+     * // Formats reaction details in the specified container
+     */
     function formatReactionDetailsInContainer(container) {
         const $container = $(container);
         $container.find('[data-reaction-detail], .reaction-detail, [class*="reaction"], [id*="reaction"]').each(function() {

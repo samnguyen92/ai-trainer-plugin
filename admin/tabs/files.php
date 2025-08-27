@@ -1,18 +1,65 @@
 <?php
+/**
+ * File Management Tab - AI Trainer Plugin
+ * 
+ * This file provides the admin interface for managing file uploads and processing
+ * in the AI Trainer knowledge base. It handles various file formats (PDF, DOCX, TXT)
+ * and automatically extracts text content for AI training and embedding generation.
+ * 
+ * FUNCTIONALITY OVERVIEW:
+ * - Upload and process multiple file formats (PDF, DOCX, TXT)
+ * - Automatic text extraction from various file types
+ * - Embedding generation for AI training
+ * - Inline editing of file content
+ * - File replacement and reprocessing
+ * - Bulk file processing capabilities
+ * 
+ * SUPPORTED FILE FORMATS:
+ * - PDF: Uses Smalot PDF Parser for text extraction
+ * - DOCX: Uses ZipArchive for Office document processing
+ * - TXT: Direct text file reading
+ * 
+ * FEATURES:
+ * - Multi-file upload support
+ * - Automatic file type detection
+ * - Text content extraction
+ * - Embedding generation
+ * - Content editing capabilities
+ * - File replacement functionality
+ * 
+ * SECURITY FEATURES:
+ * - File type validation
+ * - Input sanitization
+ * - WordPress nonce verification
+ * - File upload security
+ * 
+ * @package AI_Trainer
+ * @subpackage Admin_Tabs
+ * @since 1.0
+ */
+
+// ============================================================================
+// BULK FILE PROCESSING HANDLER
+// ============================================================================
+// Process multiple file uploads and extract text content for AI training
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['training_files'])) {
     foreach ($_FILES['training_files']['name'] as $i => $name) {
         $tmp = $_FILES['training_files']['tmp_name'][$i];
         $ext = pathinfo($name, PATHINFO_EXTENSION);
         $text = '';
 
+        // Process different file types based on extension
         if ($ext === 'txt') {
+            // Direct text file reading
             $text = file_get_contents($tmp);
         } elseif ($ext === 'pdf') {
+            // PDF text extraction using Smalot PDF Parser
             require_once AI_TRAINER_PATH . 'vendor/autoload.php';
             $parser = new \Smalot\PdfParser\Parser();
             $pdf = $parser->parseFile($tmp);
             $text = $pdf->getText();
         } elseif ($ext === 'docx') {
+            // DOCX text extraction using ZipArchive
             $zip = new ZipArchive;
             if ($zip->open($tmp)) {
                 $xml = $zip->getFromName('word/document.xml');
@@ -21,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['training_files'])) {
             }
         }
 
+        // Generate embedding and save to database if text was extracted
         if ($text) {
             $embedding = ai_trainer_generate_embedding($text);
             ai_trainer_save_to_db($name, 'file', $text, $embedding, ['filetype' => $ext]);
@@ -29,14 +77,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['training_files'])) {
     echo '<div class="notice notice-success"><p>Files processed and embedded.</p></div>';
 }
 
-// Handle inline edit form submission
+// ============================================================================
+// INLINE EDIT HANDLER
+// ============================================================================
+// Process inline edit form submissions for file content
 if (isset($_POST['update_file_inline'])) {
     $id = intval($_POST['file_id']);
     $title = sanitize_text_field($_POST['file_title']);
     $content = wp_kses_post($_POST['file_content']);
     
+    // Generate new embedding for updated content
     $embedding = ai_trainer_generate_embedding($content);
     
+    // Update database with new content and embedding
     global $wpdb;
     $wpdb->update(
         $wpdb->prefix . 'ai_knowledge',
@@ -51,7 +104,10 @@ if (isset($_POST['update_file_inline'])) {
     echo '<div class="notice notice-success"><p>File content updated successfully.</p></div>';
 }
 
-// Handle new file upload inline
+// ============================================================================
+// FILE REPLACEMENT HANDLER
+// ============================================================================
+// Process new file uploads to replace existing file content
 if (isset($_POST['upload_new_file_inline']) && isset($_FILES['new_file']) && $_FILES['new_file']['error'] === UPLOAD_ERR_OK) {
     $id = intval($_POST['file_id']);
     $title = sanitize_text_field($_POST['file_title']);
@@ -61,15 +117,18 @@ if (isset($_POST['upload_new_file_inline']) && isset($_FILES['new_file']) && $_F
     $ext = pathinfo($name, PATHINFO_EXTENSION);
     $text = '';
 
-    // Process the new file
+    // Process the new file based on its type
     if ($ext === 'txt') {
+        // Direct text file reading
         $text = file_get_contents($tmp);
     } elseif ($ext === 'pdf') {
+        // PDF text extraction using Smalot PDF Parser
         require_once AI_TRAINER_PATH . 'vendor/autoload.php';
         $parser = new \Smalot\PdfParser\Parser();
         $pdf = $parser->parseFile($tmp);
         $text = $pdf->getText();
     } elseif ($ext === 'docx') {
+        // DOCX text extraction using ZipArchive
         $zip = new ZipArchive;
         if ($zip->open($tmp)) {
             $xml = $zip->getFromName('word/document.xml');
@@ -78,6 +137,7 @@ if (isset($_POST['upload_new_file_inline']) && isset($_FILES['new_file']) && $_F
         }
     }
 
+    // Update database with new file content if processing was successful
     if ($text) {
         $embedding = ai_trainer_generate_embedding($text);
         
@@ -100,8 +160,13 @@ if (isset($_POST['upload_new_file_inline']) && isset($_FILES['new_file']) && $_F
 }
 ?>
 
-<h2>Files</h2>
-<p>The Files tab allows you to upload and manage various document types to train your AI agent.</p>
+<!-- ============================================================================
+     FILE MANAGEMENT INTERFACE
+     ============================================================================ -->
+<h2>File Management</h2>
+<p>The Files tab allows you to upload and manage various document types to train your AI agent.
+   Supported formats include PDF, DOCX, and TXT files. Each file is automatically processed to
+   extract text content and generate AI embeddings for training.</p>
 
 <div id="files-notices"></div>
 
@@ -110,12 +175,19 @@ if (isset($_POST['upload_new_file_inline']) && isset($_FILES['new_file']) && $_F
     <button type="submit" class="button button-primary">Upload & Embed</button>
 </form>
 
+<!-- ============================================================================
+     FILE SOURCES TABLE
+     ============================================================================ -->
+<!-- Display uploaded files with pagination and management options -->
 <hr><h3>File Sources</h3>
 <div id="files-notices"></div>
 <div id="files-sources-table">
 <?php
 global $wpdb;
-// Pagination settings
+// ============================================================================
+// PAGINATION SETUP
+// ============================================================================
+// Configure pagination for large file collections
 $items_per_page = 10;
 $current_page = isset($_GET['files_page']) ? max(1, intval($_GET['files_page'])) : 1;
 $offset = ($current_page - 1) * $items_per_page;
@@ -129,6 +201,10 @@ $rows = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}ai_knowledge WHERE sour
 <thead><tr><th>File Name</th><th>Type</th><th>Size</th><th>Actions</th></tr></thead>
 <tbody>
 <?php
+// ============================================================================
+// FILE DATA DISPLAY LOOP
+// ============================================================================
+// Iterate through file entries and display them in the table
 foreach ($rows as $row):
     $meta = json_decode($row['metadata'], true);
     echo "<tr data-id='{$row['id']}'>
@@ -144,7 +220,12 @@ endforeach;
 ?>
 </tbody>
 </table>
-<?php if ($total_pages > 1): ?>
+<?php 
+// ============================================================================
+// PAGINATION NAVIGATION
+// ============================================================================
+// Display pagination controls when there are multiple pages
+if ($total_pages > 1): ?>
 <div class="tablenav-pages">
     <span class="displaying-num"><?php echo $total_items; ?> items</span>
     <span class="pagination-links">
@@ -201,7 +282,10 @@ endforeach;
 <?php endif; ?>
 </div>
 
-<!-- Inline Edit Modal -->
+<!-- ============================================================================
+     INLINE EDIT MODAL
+     ============================================================================ -->
+<!-- Modal for editing file content and uploading new files -->
 <div id="file-edit-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 5px; min-width: 600px; max-width: 90%; max-height: 90%; overflow-y: auto;">
         <h3>Edit File</h3>
@@ -214,7 +298,10 @@ endforeach;
             </div>
         </div>
 
-        <!-- Option 1: Edit Extracted Content -->
+        <!-- ============================================================================
+             OPTION 1: EDIT EXTRACTED CONTENT
+             ============================================================================ -->
+        <!-- Edit the text content extracted from the original file -->
         <div id="edit-content-section" style="display: block;">
             <h4>Edit Extracted Content</h4>
             <form method="post" id="edit-file-form">
@@ -244,7 +331,10 @@ endforeach;
             </form>
         </div>
 
-        <!-- Option 2: Upload New File -->
+        <!-- ============================================================================
+             OPTION 2: UPLOAD NEW FILE
+             ============================================================================ -->
+        <!-- Replace the current file with a new upload -->
         <div id="upload-new-section" style="display: none;">
             <h4>Upload New File</h4>
             <form method="post" enctype="multipart/form-data" id="upload-new-file-form">
@@ -272,8 +362,32 @@ endforeach;
 </div>
 
 <script>
+/**
+ * File Management JavaScript - AI Trainer Plugin
+ * 
+ * This script provides comprehensive file management functionality including:
+ * - File upload and processing
+ * - Content editing with TinyMCE integration
+ * - File replacement capabilities
+ * - AJAX-powered operations for seamless user experience
+ * - Modal management for inline editing
+ * - Form validation and error handling
+ * 
+ * ARCHITECTURE:
+ * - Modular design with separate handlers for different functionality
+ * - Configuration-driven approach for easy customization
+ * - Utility functions for common operations
+ * - Event delegation for dynamic content
+ * 
+ * @package AI_Trainer
+ * @subpackage Admin_Tabs
+ * @since 1.0
+ */
 jQuery(document).ready(function($) {
-    // Constants and configuration
+    // ============================================================================
+    // CONFIGURATION AND CONSTANTS
+    // ============================================================================
+    // Centralized configuration for the file management system
     const CONFIG = {
         NOTICE_TIMEOUT: 3000,
         TINYMCE_HEIGHT: 400,
@@ -282,13 +396,19 @@ jQuery(document).ready(function($) {
         TINYMCE_CONTENT_STYLE: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
     };
     
-    // AJAX configuration
+    // ============================================================================
+    // AJAX CONFIGURATION
+    // ============================================================================
+    // AJAX settings for WordPress backend communication
     const ajaxConfig = {
         url: typeof ai_trainer_ajax !== 'undefined' ? ai_trainer_ajax.ajaxurl : ajaxurl,
         nonce: typeof ai_trainer_ajax !== 'undefined' ? ai_trainer_ajax.nonce : ''
     };
     
-    // Utility functions
+    // ============================================================================
+    // UTILITY FUNCTIONS
+    // ============================================================================
+    // Common utility functions used throughout the file management system
     const utils = {
         showNotice: function(message, type = 'success') {
             const noticeClass = type === 'success' ? 'notice-success' : 'notice-error';
@@ -330,7 +450,10 @@ jQuery(document).ready(function($) {
         }
     };
     
-    // TinyMCE management
+    // ============================================================================
+    // TINYMCE RICH TEXT EDITOR MANAGEMENT
+    // ============================================================================
+    // Manages TinyMCE editor initialization and configuration for rich text editing
     const tinyMCEManager = {
         initEditModal: function() {
             if (typeof tinymce === 'undefined') return;
@@ -366,7 +489,10 @@ jQuery(document).ready(function($) {
         }
     };
     
-    // Form handlers
+    // ============================================================================
+    // FORM HANDLERS
+    // ============================================================================
+    // Handles form submission and processing for file operations
     const formHandlers = {
         uploadFiles: function(e) {
             e.preventDefault();
@@ -466,7 +592,10 @@ jQuery(document).ready(function($) {
         }
     };
     
-    // Action handlers
+    // ============================================================================
+    // ACTION HANDLERS
+    // ============================================================================
+    // Handles user actions like editing, deleting, and managing file entries
     const actionHandlers = {
         editFileInline: function() {
             console.log('Edit file clicked');
@@ -530,14 +659,20 @@ jQuery(document).ready(function($) {
         }
     };
     
-    // Modal handlers
+    // ============================================================================
+    // MODAL HANDLERS
+    // ============================================================================
+    // Manages modal dialog behavior and user interactions
     const modalHandlers = {
         closeModal: function() {
             utils.closeModal();
         }
     };
     
-    // UI handlers
+    // ============================================================================
+    // UI HANDLERS
+    // ============================================================================
+    // Manages user interface state and mode switching
     const uiHandlers = {
         editContentMode: function() {
             $('#edit-content-section').show();
@@ -554,7 +689,10 @@ jQuery(document).ready(function($) {
         }
     };
     
-    // Data management
+    // ============================================================================
+    // DATA MANAGEMENT
+    // ============================================================================
+    // Handles data loading, refreshing, and management operations
     const dataManager = {
         loadFilesSources: function(page) {
             page = page || 1;
@@ -577,10 +715,13 @@ jQuery(document).ready(function($) {
         }
     };
     
-    // Initialize TinyMCE for edit modal
+    // ============================================================================
+    // INITIALIZATION AND EVENT BINDING
+    // ============================================================================
+    // Initialize TinyMCE editor for the edit modal
     tinyMCEManager.initEditModal();
     
-    // Event bindings
+    // Bind event handlers to form submissions and user interactions
     $('#upload-files-form').on('submit', formHandlers.uploadFiles);
     $('#edit-file-form').on('submit', formHandlers.editFile);
     $('#upload-new-file-form').on('submit', formHandlers.uploadNewFile);
@@ -593,7 +734,10 @@ jQuery(document).ready(function($) {
     $('#edit-content-btn').click(uiHandlers.editContentMode);
     $('#upload-new-btn').click(uiHandlers.uploadNewMode);
     
-    // Make functions available globally
+    // ============================================================================
+    // GLOBAL FUNCTION EXPORTS
+    // ============================================================================
+    // Make essential functions available globally for external access
     window.closeFileEditModal = utils.closeModal;
 });
 </script>

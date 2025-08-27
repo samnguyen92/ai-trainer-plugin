@@ -1,4 +1,36 @@
 <?php
+/**
+ * Block Website Management Tab - AI Trainer Plugin
+ * 
+ * This file provides the admin interface for managing blocked websites (domains)
+ * that are excluded from Exa search results. It allows administrators to add
+ * and edit blocked domain entries to prevent unreliable or inappropriate
+ * content from appearing in search results.
+ * 
+ * FUNCTIONALITY OVERVIEW:
+ * - Add new blocked websites with title and URL
+ * - Edit existing blocked website entries inline
+ * - AJAX-powered table management
+ * - Form validation and security
+ * - Domain-based blocking system
+ * 
+ * USE CASES:
+ * - Block unreliable information sources
+ * - Exclude inappropriate content domains
+ * - Prevent spam or low-quality sources
+ * - Maintain content quality standards
+ * 
+ * SECURITY FEATURES:
+ * - WordPress nonce verification
+ * - Input sanitization
+ * - ABSPATH validation
+ * - Required function checks
+ * 
+ * @package AI_Trainer
+ * @subpackage Admin_Tabs
+ * @since 1.0
+ */
+
 // Ensure ABSPATH is defined for includes
 if (!defined('ABSPATH')) define('ABSPATH', dirname(__FILE__, 5) . '/');
 if (!function_exists('sanitize_text_field')) require_once(ABSPATH . 'wp-includes/formatting.php');
@@ -6,14 +38,21 @@ if (!function_exists('esc_url')) require_once(ABSPATH . 'wp-includes/formatting.
 if (!function_exists('wp_nonce_field')) require_once(ABSPATH . 'wp-includes/functions.php');
 
 ?>
-<h2>Block Website</h2>
-<p>Add websites (domains) to exclude from Exa search. When you add a URL, its domain is added to the blocked list.</p>
+<h2>Block Website Management</h2>
+<p>Add websites (domains) to exclude from Exa search. When you add a URL, its domain is added to the blocked list.
+   Blocked domains will not appear in search results, helping maintain content quality and reliability.</p>
+
+<!-- Notification area for user feedback -->
 <div id="block-website-notices"></div>
+
+<!-- Add Blocked Website Form -->
 <form id="add-block-website-form" method="post" style="margin-bottom: 16px;">
     <input type="text" name="block_website_title" placeholder="Website Title" style="width: 30%; margin-right: 8px;" required>
     <input type="url" name="block_website_url" placeholder="https://example.com" style="width: 40%; margin-right: 8px;" required>
     <button type="submit" class="button button-primary">Add Blocked Website</button>
 </form>
+
+<!-- Dynamic table container for blocked website sources -->
 <div id="block-website-sources-table"></div>
 
 <!-- Inline Edit Modal for Blocked Website -->
@@ -35,11 +74,21 @@ if (!function_exists('wp_nonce_field')) require_once(ABSPATH . 'wp-includes/func
         </form>
     </div>
 </div>
+
 <script>
+/**
+ * Block Website Management JavaScript
+ * 
+ * This script handles the dynamic loading and management of the blocked website sources table
+ * through AJAX calls to the WordPress backend.
+ */
 jQuery(function($){
     // On page load, load the blocked website table via AJAX
     if ($('#block-website-sources-table').length) {
-        $.post(ai_trainer_ajax.ajaxurl, { action: 'ai_get_block_website_table', nonce: ai_trainer_ajax.nonce }, function (response) {
+        $.post(ai_trainer_ajax.ajaxurl, { 
+            action: 'ai_get_block_website_table', 
+            nonce: ai_trainer_ajax.nonce 
+        }, function (response) {
             if (response.html) $('#block-website-sources-table').html(response.html);
             if (response.notice) {
                 $('#block-website-notices').html(response.notice).show();

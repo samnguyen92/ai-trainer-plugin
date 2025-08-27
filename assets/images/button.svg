@@ -1,3 +1,34 @@
+<!--
+ * AI Trainer Plugin - Upload/Download Button Icon
+ * 
+ * This SVG icon represents an upload/download action button with a
+ * document and arrow design. It's used throughout the interface to
+ * indicate file upload, download, or import/export actions.
+ * 
+ * DESIGN SPECIFICATIONS:
+ * - Dimensions: 33x33 pixels (scalable)
+ * - Viewport: 33x33 for crisp rendering
+ * - Colors: #FFE7CE (cream/beige) with opacity variations
+ * - Style: Outlined icon with rounded stroke caps
+ * - Theme: Light, warm color scheme
+ * 
+ * VISUAL ELEMENTS:
+ * - Document/paper representation
+ * - Upward arrow indicating upload action
+ * - Rounded corners for modern appearance
+ * - Subtle opacity for depth
+ * 
+ * USAGE:
+ * - File upload buttons
+ * - Import/export controls
+ * - Document management actions
+ * - Data transfer indicators
+ * - Content submission buttons
+ * 
+ * @package AI_Trainer
+ * @subpackage Assets_Images
+ * @since 1.0
+ -->
 <svg width="33" height="33" viewBox="0 0 33 33" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g clip-path="url(#clip0_436_102)">
 <path opacity="0.2" d="M26.5 13.5H6.50003V27.5H26.5V13.5Z" fill="#FFE7CE"/>

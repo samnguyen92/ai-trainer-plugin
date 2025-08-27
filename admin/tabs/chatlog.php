@@ -1,18 +1,77 @@
 <?php
+/**
+ * Chat Log Management Tab - AI Trainer Plugin
+ * 
+ * This file provides the admin interface for viewing and managing chat logs
+ * from user interactions with the AI system. It displays conversation history,
+ * user feedback, training status, and provides tools for data analysis and cleanup.
+ * 
+ * FUNCTIONALITY OVERVIEW:
+ * - View all AI chat conversations and user interactions
+ * - Monitor user feedback and reaction data
+ * - Track training status of questions
+ * - Manage chat log entries (view, delete)
+ * - Analyze user satisfaction and engagement
+ * - Export chat data for analysis
+ * 
+ * FEATURES:
+ * - Paginated chat log display
+ * - Training status indicators
+ * - User feedback tracking
+ * - Bulk deletion capabilities
+ * - Performance optimization with caching
+ * - Detailed reaction analysis
+ * 
+ * DATA DISPLAYED:
+ * - User questions and AI responses
+ * - Timestamps and user information
+ * - Like/dislike reactions
+ * - Training status indicators
+ * - Beta feedback submissions
+ * - Reaction detail breakdowns
+ * 
+ * PERFORMANCE FEATURES:
+ * - Database query optimization
+ * - Training status caching
+ * - Prepared statements for security
+ * - Efficient pagination
+ * 
+ * @package AI_Trainer
+ * @subpackage Admin_Tabs
+ * @since 1.0
+ */
+
 if (!defined('ABSPATH')) exit;
 
-// Pagination
+// ============================================================================
+// PAGINATION SETUP
+// ============================================================================
+// Configure pagination for large chat log collections
 $items_per_page = 20;
 $current_page = isset($_GET['chatlog_page']) ? max(1, intval($_GET['chatlog_page'])) : 1;
 $offset = ($current_page - 1) * $items_per_page;
 
+// Retrieve paginated chat logs
 $logs = ai_trainer_get_chat_logs($items_per_page, $offset);
 
+// Calculate total pages for pagination
 global $wpdb;
 $total_items = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}ai_chat_log");
 $total_pages = ceil($total_items / $items_per_page);
 
-// Helper: optimized check if question exists in ai_knowledge
+// ============================================================================
+// TRAINING STATUS HELPER FUNCTIONS
+// ============================================================================
+/**
+ * Check if a question exists in the training data
+ * 
+ * This function determines whether a user's question has been added to
+ * the AI training knowledge base, helping administrators identify
+ * which questions need training data.
+ * 
+ * @param string $question The user's question to check
+ * @return bool True if question exists in training data, false otherwise
+ */
 function chatlog_question_in_training($question) {
     global $wpdb;
     
@@ -26,12 +85,16 @@ function chatlog_question_in_training($question) {
     return (int) $wpdb->get_var($query) > 0;
 }
 
-// Cache training status for better performance
+// ============================================================================
+// TRAINING STATUS CACHING
+// ============================================================================
+// Cache training status for better performance when displaying multiple logs
 $training_status_cache = [];
 if (!empty($logs)) {
     $questions = array_column($logs, 'question');
     $placeholders = implode(',', array_fill(0, count($questions), '%s'));
     
+    // Batch query for training status to improve performance
     $training_query = $wpdb->prepare(
         "SELECT metadata FROM {$wpdb->prefix}ai_knowledge 
          WHERE source_type = 'qa' AND metadata IN ($placeholders)",
@@ -47,6 +110,10 @@ if (!empty($logs)) {
     }
 }
 ?>
+
+<!-- ============================================================================
+     CHAT LOG STYLING
+     ============================================================================ -->
 <style>
 .chatlog-reaction {
     text-align: center;
@@ -71,10 +138,17 @@ if (!empty($logs)) {
 }
 </style>
 
+<!-- ============================================================================
+     CHAT LOG MANAGEMENT INTERFACE
+     ============================================================================ -->
 <div class="wrap">
-    <h1>AI Chat Log</h1>
+    <h1>AI Chat Log Management</h1>
     <div id="chatlog-notices"></div>
+    
+    <!-- Bulk Actions -->
     <button id="delete-selected-chatlogs" class="button" style="margin-bottom:10px;">Delete Selected</button>
+    
+    <!-- Chat Log Table -->
     <table class="widefat striped">
         <thead>
             <tr>
@@ -119,6 +193,10 @@ if (!empty($logs)) {
                         </td>
                         <td class="chatlog-reaction-detail">
                             <?php 
+                                // ============================================================================
+                                // REACTION DETAIL PROCESSING
+                                // ============================================================================
+                                // Process and display detailed user feedback information
                                 if (!empty($log['reaction_detail'])) {
                                     // Handle escaped JSON strings (with backslashes before quotes) - same as CSAT analytics
                                     $detail = $log['reaction_detail'];
@@ -183,7 +261,12 @@ if (!empty($logs)) {
             <?php endif; ?>
         </tbody>
     </table>
-    <?php if ($total_pages > 1): ?>
+    <?php 
+    // ============================================================================
+    // PAGINATION NAVIGATION
+    // ============================================================================
+    // Display pagination controls when there are multiple pages
+    if ($total_pages > 1): ?>
         <div class="tablenav"><span class="pagination-links">
             <?php
             $base_url = remove_query_arg('chatlog_page');
@@ -200,7 +283,10 @@ if (!empty($logs)) {
     <?php endif; ?>
 </div>
 
-<!-- Edit Modal -->
+<!-- ============================================================================
+     EDIT MODAL
+     ============================================================================ -->
+<!-- Modal for editing chat log entries with full content view -->
 <div id="chatlog-edit-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
     <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border-radius:5px; min-width:600px; max-width:800px; max-height:90%; overflow-y:auto;">
         <h3>Edit Chat Log Entry</h3>
@@ -215,8 +301,31 @@ if (!empty($logs)) {
 </div>
 
 <script>
+/**
+ * Chat Log Management JavaScript - AI Trainer Plugin
+ * 
+ * This script provides comprehensive chat log management functionality including:
+ * - Chat log editing and management
+ * - Training data integration
+ * - Bulk operations and deletion
+ * - TinyMCE editor integration
+ * - AJAX-powered operations for seamless user experience
+ * 
+ * ARCHITECTURE:
+ * - Modular design with separate handlers for different functionality
+ * - Configuration-driven approach for easy customization
+ * - Utility functions for common operations
+ * - Event delegation for dynamic content
+ * 
+ * @package AI_Trainer
+ * @subpackage Admin_Tabs
+ * @since 1.0
+ */
 jQuery(document).ready(function($){
-    // Constants and configuration
+    // ============================================================================
+    // CONFIGURATION AND CONSTANTS
+    // ============================================================================
+    // Centralized configuration for the chat log management system
     const CONFIG = {
         NOTICE_TIMEOUT: 3000,
         TINYMCE_DELAY: 100,
@@ -224,7 +333,10 @@ jQuery(document).ready(function($){
         CONTENT_SELECTOR: '#chatlog-edit-content'
     };
     
-    // Utility functions
+    // ============================================================================
+    // UTILITY FUNCTIONS
+    // ============================================================================
+    // Common utility functions used throughout the chat log management system
     const utils = {
         showNotice: function(message, type = 'success') {
             const noticeClass = type === 'success' ? 'notice-success' : 'notice-error';
@@ -265,7 +377,10 @@ jQuery(document).ready(function($){
         }
     };
     
-    // Event handlers
+    // ============================================================================
+    // EVENT HANDLERS
+    // ============================================================================
+    // Handles user interactions and AJAX operations for chat log management
     const handlers = {
         editChatlog: function() {
             const id = $(this).data('id');
@@ -417,7 +532,10 @@ jQuery(document).ready(function($){
         }
     };
     
-    // Event bindings
+    // ============================================================================
+    // EVENT BINDING
+    // ============================================================================
+    // Bind event handlers to user interactions and form submissions
     $('.edit-chatlog').on('click', handlers.editChatlog);
     $('.close-chatlog-modal').on('click', utils.closeModal);
     $('#save-chatlog-edit').on('click', handlers.saveEdit);
@@ -428,7 +546,10 @@ jQuery(document).ready(function($){
     $('#delete-selected-chatlogs').on('click', handlers.deleteSelected);
 
     
-    // Global function for streaming answer updates
+    // ============================================================================
+    // GLOBAL FUNCTION EXPORTS
+    // ============================================================================
+    // Make essential functions available globally for external access
     window.saveStreamingAnswerToChatlog = function(question, answer) {
         $.post(ajaxurl, {
             action: 'ai_update_chatlog_answer_by_question',

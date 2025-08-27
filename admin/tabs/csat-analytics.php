@@ -1,7 +1,44 @@
 <?php
 /**
- * CSAT Analytics Tab
- * Displays customer satisfaction metrics based on thumbs up/down reactions
+ * CSAT Analytics Tab - AI Trainer Plugin
+ * 
+ * This file provides comprehensive customer satisfaction analytics based on
+ * user reactions (thumbs up/down) to AI responses. It tracks user feedback,
+ * satisfaction metrics, and provides detailed breakdowns for quality improvement.
+ * 
+ * FUNCTIONALITY OVERVIEW:
+ * - Track customer satisfaction scores (CSAT) over time
+ * - Analyze user feedback patterns and trends
+ * - Monitor AI response quality metrics
+ * - Generate detailed feedback breakdowns
+ * - Provide time-based filtering and analysis
+ * - Export analytics data for reporting
+ * 
+ * METRICS TRACKED:
+ * - Overall satisfaction scores
+ * - Thumbs up/down ratios
+ * - Feedback category breakdowns
+ * - Time-based trend analysis
+ * - Response quality indicators
+ * - User engagement patterns
+ * 
+ * FEATURES:
+ * - Multiple time filter options (today, week, month, year, all-time)
+ * - Detailed feedback categorization
+ * - Performance optimization with efficient queries
+ * - Debug logging for troubleshooting
+ * - Export capabilities for data analysis
+ * 
+ * USE CASES:
+ * - Monitor AI system performance
+ * - Identify areas for improvement
+ * - Track user satisfaction trends
+ * - Generate quality reports
+ * - Optimize AI training data
+ * 
+ * @package AI_Trainer
+ * @subpackage Admin_Tabs
+ * @since 1.0
  */
 
 // Prevent direct access
@@ -9,7 +46,19 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Get reaction data from database with time filtering
+// ============================================================================
+// CSAT DATA RETRIEVAL FUNCTION
+// ============================================================================
+/**
+ * Get customer satisfaction data from database with time filtering
+ * 
+ * This function retrieves and processes reaction data to calculate
+ * various CSAT metrics including satisfaction scores, feedback breakdowns,
+ * and time-based analysis.
+ * 
+ * @param string $time_filter Time period filter ('today', '7_days', 'this_week', 'this_month', 'this_year', 'all_time')
+ * @return array Processed CSAT data with metrics and breakdowns
+ */
 function get_csat_data($time_filter = 'all_time') {
     global $wpdb;
     
@@ -18,6 +67,7 @@ function get_csat_data($time_filter = 'all_time') {
     // Build WHERE clause based on time filter
     $where_clause = "WHERE reaction IS NOT NULL AND reaction != ''";
     
+    // Apply time-based filtering
     switch ($time_filter) {
         case 'today':
             // Use WordPress timezone for today's date
@@ -56,6 +106,7 @@ function get_csat_data($time_filter = 'all_time') {
     // Debug: Log the number of reactions found
     error_log("CSAT Found " . count($reactions) . " reactions for filter: " . $time_filter);
     
+    // Initialize counters for metrics calculation
     $thumbs_up_total = 0;
     $thumbs_down_total = 0;
     $thumbs_up_breakdown = [
@@ -71,15 +122,16 @@ function get_csat_data($time_filter = 'all_time') {
         'Other' => 0
     ];
     
+    // Process each reaction to calculate metrics
     foreach ($reactions as $reaction) {
         $reaction_data = json_decode($reaction->reaction, true);
         
         if (is_array($reaction_data)) {
-            // Count thumbs up
+            // Count thumbs up reactions
             if (isset($reaction_data['like']) && $reaction_data['like'] > 0) {
                 $thumbs_up_total += $reaction_data['like'];
                 
-                // Get breakdown from reaction detail
+                // Get detailed breakdown from reaction detail
                 if (!empty($reaction->reaction_detail)) {
                     // Handle escaped JSON strings (with backslashes before quotes)
                     $detail = $reaction->reaction_detail;
@@ -117,11 +169,11 @@ function get_csat_data($time_filter = 'all_time') {
                 }
             }
             
-            // Count thumbs down
+            // Count thumbs down reactions
             if (isset($reaction_data['dislike']) && $reaction_data['dislike'] > 0) {
                 $thumbs_down_total += $reaction_data['dislike'];
                 
-                // Get breakdown from reaction detail
+                // Get detailed breakdown from reaction detail
                 if (!empty($reaction->reaction_detail)) {
                     // Handle escaped JSON strings (with backslashes before quotes)
                     $detail = $reaction->reaction_detail;
@@ -163,6 +215,10 @@ function get_csat_data($time_filter = 'all_time') {
     
 
     
+    // ============================================================================
+    // METRICS CALCULATION
+    // ============================================================================
+    // Calculate overall CSAT score and prepare return data
     $total_reactions = $thumbs_up_total + $thumbs_down_total;
     $csat_score = $total_reactions > 0 ? round(($thumbs_up_total / $total_reactions) * 100) : 0;
     
@@ -181,7 +237,20 @@ function get_csat_data($time_filter = 'all_time') {
     ];
 }
 
-// Map feedback options to standard categories
+// ============================================================================
+// FEEDBACK OPTION MAPPING
+// ============================================================================
+/**
+ * Map user feedback options to standardized categories for consistent analytics
+ * 
+ * This function normalizes various user input variations into standardized
+ * categories for both positive and negative feedback, ensuring consistent
+ * data analysis and reporting.
+ * 
+ * @param string $option The user's feedback option text
+ * @param string $type The feedback type ('positive' or 'negative')
+ * @return string The standardized category name
+ */
 function map_feedback_option($option, $type) {
     $option = strtolower(trim($option));
     
@@ -212,7 +281,10 @@ function map_feedback_option($option, $type) {
     }
 }
 
-// Get current time filter from URL parameter
+// ============================================================================
+// DATA INITIALIZATION
+// ============================================================================
+// Get current time filter from URL parameter and retrieve CSAT data
 $current_filter = isset($_GET['time_filter']) ? sanitize_text_field($_GET['time_filter']) : 'all_time';
 $csat_data = get_csat_data($current_filter);
 
@@ -235,7 +307,10 @@ $filter_options = [
     
 
     
-    <!-- Action Buttons -->
+    <!-- ============================================================================
+         ACTION BUTTONS
+         ============================================================================ -->
+    <!-- Data management controls for CSAT analytics -->
     <div style="margin-bottom: 30px;">
         <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px;">
             <h4 style="margin: 0 0 15px 0; color: #000; font-size: 16px;">Data Management</h4>
@@ -256,7 +331,10 @@ $filter_options = [
         </div>
     </div>
 
-    <!-- 3-Phase Approval Modal for Clearing CSAT Data -->
+    <!-- ============================================================================
+         DATA CLEARANCE MODAL
+         ============================================================================ -->
+    <!-- 3-Phase approval modal for safely clearing CSAT data -->
     <div id="clear-csat-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000;">
         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; min-width: 500px; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
             <div id="phase-1" class="approval-phase">
@@ -337,7 +415,10 @@ $filter_options = [
         </div>
     </div>
 
-    <!-- Time Filter Controls -->
+    <!-- ============================================================================
+         TIME FILTER CONTROLS
+         ============================================================================ -->
+    <!-- Time period selection for CSAT data analysis -->
     <div class="csat-filters" style="margin-bottom: 30px;">
         <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px;">
             <h4 style="margin: 0 0 15px 0; color: #000; font-size: 16px;">Time Period Filter</h4>
@@ -375,6 +456,10 @@ $filter_options = [
         </div>
     </div>
     
+    <!-- ============================================================================
+         CSAT DASHBOARD
+         ============================================================================ -->
+    <!-- Main analytics display with overview, breakdown, and summary -->
     <div id="csat-dashboard">
         <!-- CSAT Overview -->
         <div class="csat-overview" style="margin-bottom: 30px;">
@@ -392,7 +477,10 @@ $filter_options = [
             </div>
         </div>
 
-        <!-- CSAT Breakdown -->
+        <!-- ============================================================================
+             CSAT BREAKDOWN
+             ============================================================================ -->
+        <!-- Detailed breakdown of positive and negative feedback categories -->
         <div class="csat-breakdown" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
             <!-- Thumbs Up Breakdown -->
             <div class="thumbs-up-breakdown" style="background: rgba(59, 178, 115, 0.1); border: 1px solid rgba(59, 178, 115, 0.3); border-radius: 12px; padding: 20px;">
@@ -437,7 +525,10 @@ $filter_options = [
             </div>
         </div>
 
-        <!-- CSAT Summary -->
+        <!-- ============================================================================
+             CSAT SUMMARY
+             ============================================================================ -->
+        <!-- Summary statistics and key metrics overview -->
         <div class="csat-summary" style="padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
             <h4 style="margin: 0 0 15px 0; color: #000;">Summary</h4>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
@@ -466,6 +557,10 @@ $filter_options = [
 
 </div>
 
+<!-- ============================================================================
+     CSAT DASHBOARD STYLES
+     ============================================================================ -->
+<!-- CSS styles for the CSAT analytics dashboard -->
 <style>
 /* CSAT Dashboard Styles */
 .csat-score-card {
@@ -543,12 +638,19 @@ $filter_options = [
 }
 </style>
 
+<!-- ============================================================================
+     CSAT ANALYTICS JAVASCRIPT
+     ============================================================================ -->
+<!-- JavaScript functionality for CSAT data management and analytics -->
 <script>
 // Define ajaxurl for WordPress admin
 var ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
 
 jQuery(document).ready(function($) {
-    // CSAT Data Management Functions
+    // ============================================================================
+    // CSAT DATA MANAGEMENT FUNCTIONS
+    // ============================================================================
+    // Core functionality for managing CSAT analytics data
     
     // Refresh CSAT Data
     $('#refresh-csat').on('click', function() {
@@ -589,7 +691,10 @@ jQuery(document).ready(function($) {
         validatePhase3();
     });
     
-    // Helper functions for CSV export
+    // ============================================================================
+    // CSV EXPORT HELPER FUNCTIONS
+    // ============================================================================
+    // Functions for exporting CSAT data to CSV format
     function createCSATData() {
         const data = <?php echo json_encode($csat_data); ?>;
         let csv = 'CSAT Analytics Report - <?php echo $filter_options[$current_filter]; ?>\n\n';
@@ -627,9 +732,15 @@ jQuery(document).ready(function($) {
 
 });
 
-// 3-Phase Approval System Functions
+// ============================================================================
+// 3-PHASE APPROVAL SYSTEM FUNCTIONS
+// ============================================================================
+// Multi-stage confirmation system for dangerous data operations
 
-// Attach functions to jQuery object for inline onclick handlers
+// ============================================================================
+// MODAL MANAGEMENT FUNCTIONS
+// ============================================================================
+// Functions for managing the 3-phase approval modal system
 jQuery.closeClearModal = function() {
     jQuery('#clear-csat-modal').hide();
     resetModal();
