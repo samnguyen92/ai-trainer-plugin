@@ -4,31 +4,125 @@
  * 
  * This file handles the automatic creation and management of the Psybrarian
  * assistant page within WordPress. It creates a custom page template and
- * ensures the page exists with proper configuration.
+ * ensures the page exists with proper configuration. This system provides
+ * a seamless user experience by automatically setting up the AI assistant
+ * interface without manual intervention.
  * 
- * ARCHITECTURE OVERVIEW:
+ * ============================================================================
+ * ARCHITECTURE OVERVIEW
+ * ============================================================================
+ * 
+ * CORE FUNCTIONALITY:
  * - Automatic page creation on plugin activation
- * - Custom block template registration
- * - Template assignment and management
- * - WordPress hooks integration
- * - Block theme compatibility
+ * - Custom block template registration and management
+ * - Template assignment and page configuration
+ * - WordPress hooks integration and lifecycle management
+ * - Block theme compatibility and fallback support
  * 
- * KEY FEATURES:
- * - Self-contained page creation system
- * - Block template support for modern themes
- * - Automatic template assignment
- * - Plugin activation integration
- * - Template refresh capabilities
+ * PAGE MANAGEMENT:
+ * - Dynamic page creation and updates
+ * - Template assignment and validation
+ * - Page restoration from trash/deleted status
+ * - Content management and updates
+ * - URL slug management and consistency
  * 
  * TEMPLATE SYSTEM:
- * - Creates 'psybrarian' template
- * - Supports both classic and block themes
- * - Automatic template assignment to page
- * - Template refresh via AJAX
+ * - Block template creation for modern themes
+ * - Classic theme template support
+ * - Template refresh and update capabilities
+ * - Cross-theme compatibility handling
+ * - Template inheritance and fallback logic
+ * 
+ * ============================================================================
+ * KEY FEATURES AND CAPABILITIES
+ * ============================================================================
+ * 
+ * AUTOMATION FEATURES:
+ * - Self-contained page creation system
+ * - Automatic template generation and assignment
+ * - Plugin activation integration
+ * - Page existence validation and creation
+ * - Template refresh capabilities via AJAX
+ * 
+ * THEME COMPATIBILITY:
+ * - Block theme support (WordPress 5.8+)
+ * - Classic theme compatibility
+ * - Child/parent theme handling
+ * - Template inheritance management
+ * - Fallback template systems
+ * 
+ * USER EXPERIENCE:
+ * - Seamless page setup
+ * - Professional page appearance
+ * - Consistent branding and styling
+ * - Mobile-responsive design
+ * - Accessibility compliance
+ * 
+ * ============================================================================
+ * TECHNICAL IMPLEMENTATION
+ * ============================================================================
+ * 
+ * WORDPRESS INTEGRATION:
+ * - Activation hooks and lifecycle management
+ * - Admin interface integration
+ * - AJAX endpoint handling
+ * - Template filtering and overrides
+ * - Page template management
+ * 
+ * TEMPLATE ENGINEERING:
+ * - Block template creation and registration
+ * - Template content generation
+ * - Theme-specific template handling
+ * - Template assignment and validation
+ * - Template refresh mechanisms
+ * 
+ * CONTENT MANAGEMENT:
+ * - Dynamic content generation
+ * - Asset URL management
+ * - Shortcode integration
+ * - HTML structure optimization
+ * - Branding and styling consistency
+ * 
+ * ============================================================================
+ * SECURITY AND VALIDATION
+ * ============================================================================
+ * 
+ * ACCESS CONTROL:
+ * - User capability validation
+ * - Admin-only operations
+ * - AJAX security measures
+ * - Nonce verification (where applicable)
+ * - Input sanitization and validation
+ * 
+ * DATA INTEGRITY:
+ * - Page existence validation
+ * - Template assignment verification
+ * - Content update validation
+ * - Error handling and logging
+ * - Graceful degradation on failures
+ * 
+ * ============================================================================
+ * PERFORMANCE AND OPTIMIZATION
+ * ============================================================================
+ * 
+ * EFFICIENCY FEATURES:
+ * - Conditional template creation
+ * - Optimized database queries
+ * - Caching and cache invalidation
+ * - Minimal resource usage
+ * - Fast page loading
+ * 
+ * MAINTENANCE FEATURES:
+ * - Template refresh capabilities
+ * - Page content updates
+ * - Asset management
+ * - Error recovery
+ * - Monitoring and logging
  * 
  * @package AI_Trainer
  * @subpackage Includes
  * @since 1.0
+ * @author Psychedelic
  */
 
 if (!defined('ABSPATH')) exit;
@@ -40,7 +134,30 @@ if (!class_exists('AI_Trainer_Auto_Page')) {
  * 
  * This class handles all aspects of creating and managing the Psybrarian
  * assistant page, including page creation, template management, and
- * WordPress integration.
+ * WordPress integration. It provides a comprehensive solution for
+ * automatically setting up the AI assistant interface within WordPress.
+ * 
+ * CLASS RESPONSIBILITIES:
+ * - Page lifecycle management (creation, updates, restoration)
+ * - Template system integration and management
+ * - WordPress hooks and filters registration
+ * - Admin interface integration and user experience
+ * - Theme compatibility and fallback handling
+ * - Security and access control management
+ * 
+ * DESIGN PATTERNS:
+ * - Static class implementation for global functionality
+ * - WordPress integration via hooks and filters
+ * - Template engine abstraction and management
+ * - Error handling and graceful degradation
+ * - Performance optimization and caching
+ * 
+ * INTEGRATION POINTS:
+ * - Plugin activation and deactivation
+ * - WordPress init and admin hooks
+ * - Template system filters and overrides
+ * - AJAX endpoint handling
+ * - Admin notices and user feedback
  */
 class AI_Trainer_Auto_Page {
     // Page configuration constants
@@ -58,10 +175,29 @@ class AI_Trainer_Auto_Page {
      * Initialize the auto-page system
      * 
      * This method sets up all necessary WordPress hooks and actions
-     * for the auto-page creation system.
+     * for the auto-page creation system. It registers activation hooks,
+     * admin actions, template filters, and AJAX endpoints to ensure
+     * the Psybrarian page is properly created and managed.
+     * 
+     * HOOK REGISTRATION:
+     * - Activation hook for initial page creation
+     * - Init hook for page existence validation
+     * - Admin action links for easy page access
+     * - Admin notices for system status
+     * - Template filters for theme compatibility
+     * - Block template registration for modern themes
+     * - AJAX endpoint for template refresh
+     * 
+     * INTEGRATION FEATURES:
+     * - Plugin lifecycle management
+     * - WordPress core integration
+     * - Theme system compatibility
+     * - Admin interface enhancement
+     * - User experience optimization
      * 
      * @param string $main_plugin_file Path to the main plugin file
      * @return void
+     * @since 1.0
      */
     public static function boot($main_plugin_file) {
         self::$main_file = $main_plugin_file;
@@ -98,9 +234,24 @@ class AI_Trainer_Auto_Page {
      * Handle plugin activation
      * 
      * This method is called when the plugin is activated and ensures
-     * the Psybrarian page and template are properly created.
+     * the Psybrarian page and template are properly created. It performs
+     * the initial setup required for the AI assistant interface to function
+     * correctly within WordPress.
+     * 
+     * ACTIVATION WORKFLOW:
+     * 1. Ensure block template exists for theme compatibility
+     * 2. Create or update the Psybrarian page with proper content
+     * 3. Assign the block template to the page for consistent styling
+     * 4. Set up proper page configuration and metadata
+     * 
+     * ERROR HANDLING:
+     * - Graceful failure handling for template creation
+     * - Page creation fallback mechanisms
+     * - Template assignment validation
+     * - Activation completion verification
      * 
      * @return void
+     * @since 1.0
      */
     public static function on_activate() {
         self::ensure_block_template();
@@ -112,9 +263,30 @@ class AI_Trainer_Auto_Page {
      * Ensure the Psybrarian page exists
      * 
      * This method checks if the required page exists and creates it
-     * if necessary. It also handles page restoration from trash.
+     * if necessary. It also handles page restoration from trash and
+     * ensures proper template assignment for consistent appearance.
+     * 
+     * PAGE VALIDATION STRATEGY:
+     * - Check for page existence by path/slug
+     * - Search across all post statuses (including trash)
+     * - Restore pages from trash if found
+     * - Update existing pages with current configuration
+     * - Create new pages if none exist
+     * 
+     * TEMPLATE MANAGEMENT:
+     * - Ensure block template exists for theme
+     * - Assign template to page for consistent styling
+     * - Handle theme-specific template requirements
+     * - Maintain template assignment across updates
+     * 
+     * ERROR RECOVERY:
+     * - Page restoration from various states
+     * - Template reassignment on failures
+     * - Content update and validation
+     * - Configuration consistency maintenance
      * 
      * @return void
+     * @since 1.0
      */
     public static function ensure_page_exists() {
         self::ensure_block_template();
@@ -165,9 +337,32 @@ class AI_Trainer_Auto_Page {
      * Ensure block template exists for modern themes
      * 
      * This method creates the necessary block template for themes
-     * that support the block template system.
+     * that support the block template system. It handles both child
+     * and parent themes, ensuring compatibility across different
+     * WordPress theme configurations.
+     * 
+     * THEME COMPATIBILITY:
+     * - Block theme detection and validation
+     * - Child theme template creation
+     * - Parent theme template fallback
+     * - Cross-theme template inheritance
+     * - Template system compatibility checks
+     * 
+     * TEMPLATE CREATION:
+     * - Minimal template content for performance
+     * - Post content inheritance configuration
+     * - Template slug and title management
+     * - Theme taxonomy assignment
+     * - Template status management
+     * 
+     * PERFORMANCE FEATURES:
+     * - Conditional template creation
+     * - Efficient theme detection
+     * - Minimal database operations
+     * - Template caching optimization
      * 
      * @return void
+     * @since 1.0
      */
     private static function ensure_block_template() {
         if (!function_exists('wp_is_block_theme') || !wp_is_block_theme()) return;
@@ -190,11 +385,34 @@ class AI_Trainer_Auto_Page {
          * Ensure block template exists for a specific theme
          * 
          * This method creates or updates the block template for a given theme,
-         * ensuring compatibility with modern WordPress block themes.
+         * ensuring compatibility with modern WordPress block themes. It handles
+         * both template creation and updates, maintaining consistency across
+         * theme changes and updates.
+         * 
+         * TEMPLATE MANAGEMENT:
+         * - Template existence validation
+         * - Template creation for new themes
+         * - Template updates for existing themes
+         * - Content synchronization and validation
+         * - Template status management
+         * 
+         * THEME INTEGRATION:
+         * - Theme taxonomy assignment
+         * - Template slug consistency
+         * - Theme-specific template handling
+         * - Cross-theme template compatibility
+         * - Template inheritance management
+         * 
+         * ERROR HANDLING:
+         * - Template creation validation
+         * - Theme taxonomy verification
+         * - Content update confirmation
+         * - Template status verification
          * 
          * @param string $theme Theme slug
          * @param string $content Template content
          * @return void
+         * @since 1.0
          */
         private static function ensure_block_template_for_theme($theme, $content) {
         $existing = get_posts([
@@ -264,6 +482,39 @@ class AI_Trainer_Auto_Page {
         return !empty($posts);
     }
 
+    /**
+     * Generate the Psybrarian page content
+     * 
+     * This method creates the complete HTML content for the Psybrarian
+     * assistant page, including the header, main content area, and
+     * ticket submission interface. The content is structured using
+     * WordPress block markup for optimal theme compatibility.
+     * 
+     * CONTENT STRUCTURE:
+     * - Header with logo and branding
+     * - Main content area with AI search interface
+     * - Background images and styling
+     * - Safety disclaimer and information
+     * - Ticket submission system
+     * - Responsive design elements
+     * 
+     * BLOCK INTEGRATION:
+     * - Greenshift blocks for enhanced functionality
+     * - Shortcode integration for AI search
+     * - ACF blocks for custom components
+     * - Responsive design blocks
+     * - Interactive elements and modals
+     * 
+     * ASSET MANAGEMENT:
+     * - Dynamic logo URL generation
+     * - Background image management
+     * - Plugin asset integration
+     * - Theme compatibility handling
+     * - Responsive image loading
+     * 
+     * @return string Complete HTML content for the page
+     * @since 1.0
+     */
     private static function page_content() {
         $logo = esc_url( plugins_url('assets/images/logo.png', self::$main_file) );
         $bg2  = esc_url( plugins_url('assets/images/psybrarian_bg_img_2.png', self::$main_file) );
@@ -342,6 +593,38 @@ class AI_Trainer_Auto_Page {
 HTML;
     }
 
+    /**
+     * Create or update the Psybrarian page
+     * 
+     * This method handles the creation and updating of the Psybrarian
+     * page, ensuring it exists with proper content and template
+     * assignment. It handles various page states and provides
+     * fallback mechanisms for different scenarios.
+     * 
+     * PAGE MANAGEMENT STRATEGY:
+     * - Check for existing page by path/slug
+     * - Update existing pages with current content
+     * - Restore pages from various post statuses
+     * - Create new pages when none exist
+     * - Handle template assignment and validation
+     * 
+     * TEMPLATE HANDLING:
+     * - Theme-specific template selection
+     * - Child/parent theme fallback logic
+     * - Template existence validation
+     * - Template assignment and verification
+     * - Template inheritance management
+     * 
+     * ERROR RECOVERY:
+     * - Page restoration from trash
+     * - Template fallback mechanisms
+     * - Content update validation
+     * - Page status management
+     * - Template assignment recovery
+     * 
+     * @return int|WP_Error Page ID on success, WP_Error on failure
+     * @since 1.0
+     */
     private static function create_or_update_page() {
         $content = self::page_content();
     
@@ -403,6 +686,29 @@ HTML;
         return $page_id;
     }
 
+    /**
+     * Add action links to the plugin page
+     * 
+     * This method adds convenient action links to the WordPress
+     * plugin management page, providing quick access to view
+     * and edit the Psybrarian page directly from the admin.
+     * 
+     * ACTION LINKS PROVIDED:
+     * - View Page: Direct link to the live Psybrarian page
+     * - Edit Page: Quick access to edit the page content
+     * - Enhanced plugin management experience
+     * - Streamlined page access workflow
+     * 
+     * USER EXPERIENCE:
+     * - One-click page access from admin
+     * - Seamless integration with WordPress admin
+     * - Improved plugin usability
+     * - Professional admin interface
+     * 
+     * @param array $links Existing plugin action links
+     * @return array Modified action links array
+     * @since 1.0
+     */
     public static function action_links($links) {
         $page = get_page_by_path(self::PAGE_SLUG);
         if ($page) {
@@ -412,12 +718,63 @@ HTML;
         return $links;
     }
 
+    /**
+     * Display admin notices for system status
+     * 
+     * This method displays informative admin notices to alert
+     * administrators about the system status, missing components,
+     * or configuration issues that may affect functionality.
+     * 
+     * NOTICE TYPES:
+     * - Warning notices for missing shortcodes
+     * - System status information
+     * - Configuration requirement alerts
+     * - User guidance and instructions
+     * 
+     * USER EXPERIENCE:
+     * - Clear status communication
+     * - Actionable information
+     * - Professional notice styling
+     * - Dismissible notifications
+     * 
+     * @return void
+     * @since 1.0
+     */
     public static function soft_notices() {
         if (!shortcode_exists('exa_search')) {
             echo '<div class="notice notice-warning is-dismissible"><p><strong>AI Trainer:</strong> <code>[exa_search]</code> shortcode missing. Activate the component that provides it.</p></div>';
         }
     }
     
+    /**
+     * Handle AJAX template refresh requests
+     * 
+     * This method processes AJAX requests to refresh the Psybrarian
+     * template, allowing administrators to update the page template
+     * without manual intervention. It includes security validation
+     * and proper response handling.
+     * 
+     * SECURITY FEATURES:
+     * - User capability validation (manage_options)
+     * - AJAX request processing
+     * - Unauthorized access prevention
+     * - Secure response handling
+     * 
+     * FUNCTIONALITY:
+     * - Template refresh and reassignment
+     * - Page template validation
+     * - Success/error response handling
+     * - JSON response formatting
+     * 
+     * ERROR HANDLING:
+     * - Page existence validation
+     * - Template assignment verification
+     * - Graceful error responses
+     * - User feedback and guidance
+     * 
+     * @return void Sends JSON response and terminates execution
+     * @since 1.0
+     */
     public static function ajax_refresh_template() {
         if (!current_user_can('manage_options')) {
             wp_die('Unauthorized');
@@ -432,10 +789,67 @@ HTML;
         }
     }
     
+    /**
+     * Force template usage for specific pages
+     * 
+     * This method is a filter hook that can be used to force
+     * specific templates for certain pages. Currently returns
+     * the template unchanged, but provides a framework for
+     * future template forcing functionality.
+     * 
+     * TEMPLATE FILTERING:
+     * - Template override capabilities
+     * - Conditional template selection
+     * - Theme compatibility handling
+     * - Template inheritance management
+     * 
+     * EXTENSIBILITY:
+     * - Framework for template forcing
+     * - Conditional logic implementation
+     * - Theme-specific template handling
+     * - Custom template selection logic
+     * 
+     * @param string $template Current template path
+     * @return string Modified or unchanged template path
+     * @since 1.0
+     */
     public static function force_template($template) {
         return $template;
     }
     
+    /**
+     * Override page template selection for Psybrarian page
+     * 
+     * This method intercepts page template selection and forces
+     * the use of the Psybrarian template for the specific page.
+     * It ensures consistent template usage and proper theme
+     * compatibility across different WordPress configurations.
+     * 
+     * TEMPLATE OVERRIDE LOGIC:
+     * - Page-specific template forcing
+     * - Template assignment validation
+     * - Theme compatibility checking
+     * - Template existence verification
+     * - Canvas template fallback
+     * 
+     * THEME INTEGRATION:
+     * - Block theme template handling
+     * - Template taxonomy validation
+     * - Theme-specific template selection
+     * - Template inheritance management
+     * - Fallback template systems
+     * 
+     * PERFORMANCE FEATURES:
+     * - Conditional template processing
+     * - Efficient template lookup
+     * - Minimal database queries
+     * - Template caching optimization
+     * 
+     * @param string $template Current template path
+     * @param WP_Post $post Post object for template selection
+     * @return string Modified template path or original template
+     * @since 1.0
+     */
     public static function get_page_template_override($template, $post) {
         if ($post && $post->post_name === self::PAGE_SLUG) {
             $assigned_template = get_post_meta($post->ID, '_wp_page_template', true);
@@ -461,6 +875,41 @@ HTML;
         return $template;
     }
     
+    /**
+     * Register block template with WordPress
+     * 
+     * This method registers the Psybrarian block template with
+     * WordPress, ensuring it's available for selection and use
+     * in the block editor. It handles template registration
+     * and validation for modern block themes.
+     * 
+     * TEMPLATE REGISTRATION:
+     * - Block template availability
+     * - Template taxonomy integration
+     * - Theme-specific template handling
+     * - Template validation and verification
+     * - Template inheritance management
+     * 
+     * BLOCK EDITOR INTEGRATION:
+     * - Template selection in editor
+     * - Template preview and editing
+     * - Template assignment capabilities
+     * - Editor template management
+     * - Template customization options
+     * 
+     * THEME COMPATIBILITY:
+     * - Child theme template handling
+     * - Parent theme fallback logic
+     * - Cross-theme template support
+     * - Template system compatibility
+     * - Theme inheritance management
+     * 
+     * @param array $block_templates Current block templates array
+     * @param array $query Template query parameters
+     * @param string $template_type Type of template being queried
+     * @return array Modified block templates array
+     * @since 1.0
+     */
     public static function register_block_template($block_templates, $query, $template_type) {
         if ('wp_template' !== $template_type) {
             return $block_templates;
@@ -497,6 +946,41 @@ HTML;
         return $block_templates;
     }
     
+    /**
+     * Override block template selection and loading
+     * 
+     * This method intercepts block template loading and provides
+     * custom template content for the Psybrarian template. It
+     * ensures proper template rendering and theme compatibility
+     * for modern block themes.
+     * 
+     * TEMPLATE OVERRIDE MECHANISM:
+     * - Template ID validation and matching
+     * - Custom template content provision
+     * - Template rendering customization
+     * - Theme-specific template handling
+     * - Template inheritance management
+     * 
+     * BLOCK THEME INTEGRATION:
+     * - Modern theme template support
+     * - Template system compatibility
+     * - Theme inheritance handling
+     * - Template taxonomy validation
+     * - Template loading optimization
+     * 
+     * PERFORMANCE FEATURES:
+     * - Conditional template processing
+     * - Efficient template lookup
+     * - Template caching optimization
+     * - Minimal resource usage
+     * - Fast template loading
+     * 
+     * @param WP_Block_Template|null $template Current block template
+     * @param string $id Template ID being requested
+     * @param string $template_type Type of template being loaded
+     * @return WP_Block_Template|null Modified or original template
+     * @since 1.0
+     */
     public static function override_block_template($template, $id, $template_type) {
         if ('wp_template' !== $template_type) {
             return $template;

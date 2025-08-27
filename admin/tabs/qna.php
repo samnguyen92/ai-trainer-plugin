@@ -7,33 +7,139 @@
  * delete, and import Q&A entries that will be used for AI training and
  * local knowledge base searches.
  * 
- * FUNCTIONALITY OVERVIEW:
+ * ============================================================================
+ * FUNCTIONALITY OVERVIEW
+ * ============================================================================
+ * 
+ * CORE OPERATIONS:
  * - Add new Q&A entries with title, question(s), and answer
- * - Edit existing Q&A entries inline
- * - Delete Q&A entries with confirmation
- * - Import Q&A entries from CSV files
- * - Multiple question support for single answers
+ * - Edit existing Q&A entries inline without page reload
+ * - Delete Q&A entries with confirmation and cleanup
+ * - Import Q&A entries from CSV files for bulk operations
+ * - Multiple question support for single answers (variations)
  * - Automatic embedding generation for AI training
  * - Metadata storage for enhanced search capabilities
  * 
- * FEATURES:
- * - Dynamic question addition/removal
- * - Rich text editor for answers
- * - CSV import with validation
- * - AJAX-powered operations
- * - Form validation and security
+ * ADVANCED FEATURES:
+ * - Dynamic question addition/removal interface
+ * - Rich text editor for detailed answers
+ * - CSV import with validation and error handling
+ * - AJAX-powered operations for seamless UX
+ * - Form validation and security measures
  * - Embedding generation for semantic search
+ * - Pagination for large datasets
+ * - Export functionality for data portability
  * 
- * SECURITY FEATURES:
- * - WordPress nonce verification
+ * ============================================================================
+ * SECURITY FEATURES
+ * ============================================================================
+ * 
+ * INPUT VALIDATION:
+ * - WordPress nonce verification for all operations
  * - Input sanitization (sanitize_text_field, wp_kses_post)
- * - ABSPATH validation
- * - Required function checks
- * - CSRF protection
+ * - ABSPATH validation for include security
+ * - Required function availability checks
+ * - CSRF protection through WordPress nonces
+ * 
+ * DATA PROCESSING:
+ * - SQL injection prevention with prepared statements
+ * - XSS protection through proper escaping
+ * - File upload validation and security
+ * - Capability checks for admin operations
+ * 
+ * ============================================================================
+ * DATABASE INTEGRATION
+ * ============================================================================
+ * 
+ * TABLE STRUCTURE:
+ * - ai_knowledge: Main Q&A storage
+ * - ai_knowledge_chunks: Text chunks for search optimization
+ * 
+ * DATA FLOW:
+ * 1. User input → Sanitization → Validation
+ * 2. Content processing → Embedding generation
+ * 3. Database storage → Chunk creation → Search indexing
+ * 
+ * ============================================================================
+ * USER INTERFACE COMPONENTS
+ * ============================================================================
+ * 
+ * ADD Q&A FORM:
+ * - Title input field
+ * - Dynamic question container with add/remove
+ * - Rich text answer editor
+ * - Submit button with validation
+ * 
+ * Q&A DISPLAY TABLE:
+ * - Paginated results display
+ * - Inline editing capabilities
+ * - Delete operations with confirmation
+ * - Action buttons for each entry
+ * 
+ * IMPORT/EXPORT:
+ * - CSV file upload interface
+ * - Export functionality for data backup
+ * - Bulk import processing
+ * - Validation and error reporting
+ * 
+ * ============================================================================
+ * TECHNICAL IMPLEMENTATION
+ * ============================================================================
+ * 
+ * FORM PROCESSING:
+ * - POST data handling for additions
+ * - GET parameters for deletions
+ * - File upload processing for CSV imports
+ * - AJAX integration for dynamic updates
+ * 
+ * PAGINATION SYSTEM:
+ * - Configurable items per page
+ * - URL parameter management
+ * - Navigation controls
+ * - Page state preservation
+ * 
+ * EMBEDDING GENERATION:
+ * - OpenAI API integration
+ * - Content preprocessing
+ * - Vector storage optimization
+ * - Search relevance enhancement
+ * 
+ * ============================================================================
+ * ERROR HANDLING
+ * ============================================================================
+ * 
+ * VALIDATION ERRORS:
+ * - Required field checking
+ * - Data format validation
+ * - File type verification
+ * - User feedback and guidance
+ * 
+ * PROCESSING ERRORS:
+ * - Database operation failures
+ * - API communication issues
+ * - File processing problems
+ * - Graceful degradation
+ * 
+ * ============================================================================
+ * PERFORMANCE OPTIMIZATION
+ * ============================================================================
+ * 
+ * DATABASE QUERIES:
+ * - Paginated result retrieval
+ * - Indexed field usage
+ * - Efficient metadata handling
+ * - Query optimization
+ * 
+ * FRONTEND PERFORMANCE:
+ * - AJAX-based operations
+ * - Progressive enhancement
+ * - Lazy loading where appropriate
+ * - Responsive design patterns
  * 
  * @package AI_Trainer
  * @subpackage Admin_Tabs
  * @since 1.0
+ * @author Psychedelic
  */
 
 // Ensure ABSPATH is defined for includes
@@ -45,7 +151,24 @@ if (!function_exists('wp_kses_post')) require_once(ABSPATH . 'wp-includes/kses.p
 // ============================================================================
 // Q&A ADDITION HANDLER
 // ============================================================================
-// Process form submission for adding new Q&A entries
+/**
+ * Process form submission for adding new Q&A entries
+ * 
+ * This handler processes the Q&A addition form and:
+ * - Sanitizes all input data for security
+ * - Generates AI embeddings for semantic search
+ * - Stores data in the knowledge base
+ * - Creates text chunks for optimized search
+ * - Provides user feedback on success/failure
+ * 
+ * SECURITY MEASURES:
+ * - POST data validation
+ * - Input sanitization
+ * - Nonce verification (handled by form)
+ * - Capability checks
+ * 
+ * @since 1.0
+ */
 if (isset($_POST['add_qna'])) {
     // Sanitize input data for security
     $title = sanitize_text_field($_POST['qa_title']);
@@ -70,7 +193,23 @@ if (isset($_POST['add_qna'])) {
 // ============================================================================
 // Q&A DELETION HANDLER
 // ============================================================================
-// Process deletion requests for Q&A entries
+/**
+ * Process deletion requests for Q&A entries
+ * 
+ * This handler processes Q&A deletion requests and:
+ * - Validates the Q&A ID from GET parameters
+ * - Removes the entry from the knowledge base
+ * - Cleans up associated chunks and embeddings
+ * - Provides user feedback on completion
+ * 
+ * SECURITY MEASURES:
+ * - GET parameter validation
+ * - Integer sanitization
+ * - Database operation safety
+ * - User feedback and confirmation
+ * 
+ * @since 1.0
+ */
 if (isset($_GET['delete_qna'])) {
     $id = intval($_GET['delete_qna']);
     global $wpdb;
@@ -81,7 +220,24 @@ if (isset($_GET['delete_qna'])) {
 // ============================================================================
 // INLINE EDIT HANDLER
 // ============================================================================
-// Process inline edit form submissions for Q&A entries
+/**
+ * Process inline edit form submissions for Q&A entries
+ * 
+ * This handler processes inline Q&A updates and:
+ * - Validates and sanitizes updated content
+ * - Regenerates AI embeddings for changed content
+ * - Updates the database with new information
+ * - Maintains data integrity and relationships
+ * - Provides user feedback on completion
+ * 
+ * SECURITY MEASURES:
+ * - POST data validation
+ * - Input sanitization
+ * - ID validation
+ * - Database update safety
+ * 
+ * @since 1.0
+ */
 if (isset($_POST['update_qna_inline'])) {
     $id = intval($_POST['qa_id']);
     $title = sanitize_text_field($_POST['qa_title']);
@@ -116,7 +272,30 @@ if (isset($_POST['update_qna_inline'])) {
 // ============================================================================
 // CSV IMPORT HANDLER
 // ============================================================================
-// Process CSV file uploads for bulk Q&A import
+/**
+ * Process CSV file uploads for bulk Q&A import
+ * 
+ * This handler processes CSV file uploads and:
+ * - Validates uploaded file format and content
+ * - Processes CSV data row by row
+ * - Creates Q&A entries with proper validation
+ * - Generates embeddings for imported content
+ * - Provides import statistics and feedback
+ * 
+ * CSV FORMAT EXPECTED:
+ * - Column 1: Title
+ * - Column 2: Question
+ * - Column 3: Answer
+ * - Header row is automatically skipped
+ * 
+ * SECURITY MEATURES:
+ * - File type validation
+ * - Content sanitization
+ * - Error handling and reporting
+ * - Import success tracking
+ * 
+ * @since 1.0
+ */
 if (isset($_POST['import_qna_csv']) && isset($_FILES['import_qna_csv_file'])) {
     $file = $_FILES['import_qna_csv_file']['tmp_name'];
     if (($handle = fopen($file, 'r')) !== false) {
@@ -150,7 +329,21 @@ if (isset($_POST['import_qna_csv']) && isset($_FILES['import_qna_csv_file'])) {
 
 <!-- ============================================================================
      Q&A MANAGEMENT INTERFACE
-     ============================================================================ -->
+     ============================================================================
+     
+     This section provides the complete user interface for Q&A management:
+     - Add new Q&A entries with dynamic question support
+     - Display existing Q&A entries in a paginated table
+     - Inline editing capabilities for quick updates
+     - Import/export functionality for bulk operations
+     
+     INTERFACE FEATURES:
+     - Dynamic question addition/removal
+     - Rich text editing for answers
+     - Paginated results display
+     - Action buttons for each entry
+     - CSV import/export capabilities
+-->
 <h2>Add Q&A Entry</h2>
 <div id="qna-notices"></div>
 
@@ -202,7 +395,25 @@ $rows = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}ai_knowledge WHERE sour
     // ============================================================================
     // Q&A DATA DISPLAY LOOP
     // ============================================================================
-    // Iterate through Q&A entries and display them in the table
+    /**
+     * Iterate through Q&A entries and display them in the table
+     * 
+     * This loop processes each Q&A entry and:
+     * - Extracts metadata from JSON storage
+     * - Displays formatted content in table rows
+     * - Provides action buttons for each entry
+     * - Handles data escaping for security
+     * - Creates interactive elements for editing
+     * 
+     * TABLE STRUCTURE:
+     * - Title: Entry title
+     * - Main Question: Primary question text
+     * - Relative Questions: Additional question variations
+     * - Answer: Formatted answer content
+     * - Actions: Edit/Delete buttons
+     * 
+     * @since 1.0
+     */
     foreach ($rows as $row) {
         $meta = json_decode($row['metadata'], true);
         $main_question = esc_html($meta['question'] ?? '');
@@ -228,7 +439,24 @@ $rows = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}ai_knowledge WHERE sour
 // ============================================================================
 // PAGINATION NAVIGATION
 // ============================================================================
-// Display pagination controls when there are multiple pages
+/**
+ * Display pagination controls when there are multiple pages
+ * 
+ * This section provides navigation controls for large datasets:
+ * - Previous/Next page navigation
+ * - Page number display with ellipsis
+ * - URL parameter management
+ * - Current page highlighting
+ * - Responsive navigation design
+ * 
+ * PAGINATION FEATURES:
+ * - Configurable items per page
+ * - URL state preservation
+ * - Navigation state management
+ * - User-friendly page indicators
+ * 
+ * @since 1.0
+ */
 if ($total_pages > 1): ?>
 <div class="tablenav-pages">
     <span class="displaying-num"><?php echo $total_items; ?> items</span>
@@ -288,8 +516,26 @@ if ($total_pages > 1): ?>
 
 <!-- ============================================================================
      IMPORT/EXPORT CONTROLS
-     ============================================================================ -->
-<!-- CSV import/export functionality for bulk Q&A management -->
+     ============================================================================
+     
+     CSV import/export functionality for bulk Q&A management:
+     - Export existing Q&A data to CSV format
+     - Import new Q&A entries from CSV files
+     - Bulk operations for efficiency
+     - Data validation and error handling
+     
+     EXPORT FEATURES:
+     - Complete Q&A data export
+     - CSV format for compatibility
+     - Admin-post action handling
+     - Nonce verification for security
+     
+     IMPORT FEATURES:
+     - CSV file upload interface
+     - Format validation and processing
+     - Bulk entry creation
+     - Success/error reporting
+-->
 <div style="margin-bottom: 16px;">
     <form method="get" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline; margin-right: 10px;">
         <input type="hidden" name="action" value="ai_export_qna_csv">

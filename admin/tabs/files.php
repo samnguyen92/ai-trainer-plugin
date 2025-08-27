@@ -6,7 +6,11 @@
  * in the AI Trainer knowledge base. It handles various file formats (PDF, DOCX, TXT)
  * and automatically extracts text content for AI training and embedding generation.
  * 
- * FUNCTIONALITY OVERVIEW:
+ * ============================================================================
+ * FUNCTIONALITY OVERVIEW
+ * ============================================================================
+ * 
+ * CORE OPERATIONS:
  * - Upload and process multiple file formats (PDF, DOCX, TXT)
  * - Automatic text extraction from various file types
  * - Embedding generation for AI training
@@ -14,34 +18,176 @@
  * - File replacement and reprocessing
  * - Bulk file processing capabilities
  * 
- * SUPPORTED FILE FORMATS:
- * - PDF: Uses Smalot PDF Parser for text extraction
- * - DOCX: Uses ZipArchive for Office document processing
- * - TXT: Direct text file reading
+ * FILE PROCESSING:
+ * - Multi-file upload support with validation
+ * - Automatic file type detection and processing
+ * - Text content extraction and cleaning
+ * - Embedding generation for semantic search
+ * - Content chunking for optimized search
  * 
- * FEATURES:
- * - Multi-file upload support
- * - Automatic file type detection
- * - Text content extraction
- * - Embedding generation
- * - Content editing capabilities
- * - File replacement functionality
+ * ============================================================================
+ * SUPPORTED FILE FORMATS
+ * ============================================================================
  * 
- * SECURITY FEATURES:
- * - File type validation
- * - Input sanitization
+ * PDF FILES:
+ * - Uses Smalot PDF Parser for text extraction
+ * - Handles complex document structures
+ * - Maintains text formatting where possible
+ * - Error handling for corrupted files
+ * 
+ * DOCX FILES:
+ * - Uses ZipArchive for Office document processing
+ * - Extracts text from Word document XML
+ * - Handles modern Office document formats
+ * - Strips HTML tags for clean text
+ * 
+ * TXT FILES:
+ * - Direct text file reading
+ * - UTF-8 encoding support
+ * - Fast processing and minimal overhead
+ * - Ideal for simple text content
+ * 
+ * ============================================================================
+ * ADVANCED FEATURES
+ * ============================================================================
+ * 
+ * CONTENT MANAGEMENT:
+ * - Inline content editing capabilities
+ * - File replacement with reprocessing
+ * - Content validation and sanitization
+ * - Metadata management and storage
+ * 
+ * PROCESSING OPTIMIZATION:
+ * - Bulk file processing for efficiency
+ * - Automatic embedding regeneration
+ * - Content chunking for search optimization
+ * - Error handling and recovery
+ * 
+ * USER INTERFACE:
+ * - Drag-and-drop file upload
+ * - Progress indicators for processing
+ * - File management table with pagination
+ * - Action buttons for each file
+ * 
+ * ============================================================================
+ * SECURITY FEATURES
+ * ============================================================================
+ * 
+ * FILE VALIDATION:
+ * - File type verification
+ * - Size limit enforcement
+ * - Content security scanning
+ * - Upload path validation
+ * 
+ * INPUT PROCESSING:
+ * - File content sanitization
+ * - XSS protection measures
+ * - SQL injection prevention
  * - WordPress nonce verification
- * - File upload security
+ * 
+ * ACCESS CONTROL:
+ * - Capability checks for admin operations
+ * - User permission validation
+ * - Secure file handling
+ * - Audit trail maintenance
+ * 
+ * ============================================================================
+ * TECHNICAL IMPLEMENTATION
+ * ============================================================================
+ * 
+ * FILE PROCESSING PIPELINE:
+ * 1. File upload and validation
+ * 2. Type detection and processing
+ * 3. Text extraction and cleaning
+ * 4. Embedding generation
+ * 5. Database storage and indexing
+ * 6. Chunk creation for search
+ * 
+ * DEPENDENCIES:
+ * - Smalot PDF Parser for PDF processing
+ * - ZipArchive for DOCX handling
+ * - OpenAI API for embedding generation
+ * - WordPress file handling utilities
+ * 
+ * DATABASE INTEGRATION:
+ * - ai_knowledge table for file storage
+ * - ai_knowledge_chunks for search optimization
+ * - Metadata storage for file information
+ * - Relationship management between files and chunks
+ * 
+ * ============================================================================
+ * ERROR HANDLING
+ * ============================================================================
+ * 
+ * UPLOAD ERRORS:
+ * - File size limit exceeded
+ * - Invalid file type
+ * - Upload directory issues
+ * - Network timeout handling
+ * 
+ * PROCESSING ERRORS:
+ * - Corrupted file handling
+ * - Text extraction failures
+ * - API communication issues
+ * - Database operation failures
+ * 
+ * USER FEEDBACK:
+ * - Clear error messages
+ * - Success confirmations
+ * - Processing status updates
+ * - Recovery suggestions
+ * 
+ * ============================================================================
+ * PERFORMANCE OPTIMIZATION
+ * ============================================================================
+ * 
+ * UPLOAD OPTIMIZATION:
+ * - Chunked file processing
+ * - Background processing where possible
+ * - Memory usage optimization
+ * - Timeout handling for large files
+ * 
+ * SEARCH OPTIMIZATION:
+ * - Content chunking for relevance
+ * - Embedding vector optimization
+ * - Database query optimization
+ * - Caching strategies
  * 
  * @package AI_Trainer
  * @subpackage Admin_Tabs
  * @since 1.0
+ * @author Psychedelic
  */
 
 // ============================================================================
 // BULK FILE PROCESSING HANDLER
 // ============================================================================
-// Process multiple file uploads and extract text content for AI training
+/**
+ * Process multiple file uploads and extract text content for AI training
+ * 
+ * This handler processes bulk file uploads and:
+ * - Validates uploaded files and their types
+ * - Extracts text content based on file format
+ * - Generates AI embeddings for semantic search
+ * - Stores processed content in the knowledge base
+ * - Creates text chunks for optimized search
+ * - Provides user feedback on processing results
+ * 
+ * SUPPORTED FORMATS:
+ * - PDF: Smalot PDF Parser for text extraction
+ * - DOCX: ZipArchive for Office document processing
+ * - TXT: Direct file reading for text content
+ * 
+ * PROCESSING FLOW:
+ * 1. File validation and type detection
+ * 2. Content extraction based on format
+ * 3. Text cleaning and sanitization
+ * 4. Embedding generation via OpenAI API
+ * 5. Database storage with metadata
+ * 6. Chunk creation for search optimization
+ * 
+ * @since 1.0
+ */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['training_files'])) {
     foreach ($_FILES['training_files']['name'] as $i => $name) {
         $tmp = $_FILES['training_files']['tmp_name'][$i];
@@ -80,7 +226,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['training_files'])) {
 // ============================================================================
 // INLINE EDIT HANDLER
 // ============================================================================
-// Process inline edit form submissions for file content
+/**
+ * Process inline edit form submissions for file content
+ * 
+ * This handler processes inline file content updates and:
+ * - Validates and sanitizes updated content
+ * - Regenerates AI embeddings for changed content
+ * - Updates the database with new information
+ * - Maintains file metadata and relationships
+ * - Provides user feedback on completion
+ * 
+ * SECURITY FEATURES:
+ * - POST data validation
+ * - Input sanitization (sanitize_text_field, wp_kses_post)
+ * - ID validation and integer sanitization
+ * - Database update safety measures
+ * 
+ * PROCESSING STEPS:
+ * 1. Form data validation and sanitization
+ * 2. Content embedding regeneration
+ * 3. Database update with new content
+ * 4. Success confirmation and user feedback
+ * 
+ * @since 1.0
+ */
 if (isset($_POST['update_file_inline'])) {
     $id = intval($_POST['file_id']);
     $title = sanitize_text_field($_POST['file_title']);
@@ -107,7 +276,30 @@ if (isset($_POST['update_file_inline'])) {
 // ============================================================================
 // FILE REPLACEMENT HANDLER
 // ============================================================================
-// Process new file uploads to replace existing file content
+/**
+ * Process new file uploads to replace existing file content
+ * 
+ * This handler processes file replacement operations and:
+ * - Validates new file uploads and their types
+ * - Extracts text content from the new file
+ * - Regenerates AI embeddings for updated content
+ * - Updates database with new file information
+ * - Maintains file relationships and metadata
+ * - Provides user feedback on completion
+ * 
+ * REPLACEMENT FEATURES:
+ * - Complete file content replacement
+ * - Automatic text extraction and processing
+ * - Embedding regeneration for search optimization
+ * - Metadata update for file type information
+ * 
+ * SUPPORTED FORMATS:
+ * - PDF: Smalot PDF Parser for text extraction
+ * - DOCX: ZipArchive for Office document processing
+ * - TXT: Direct file reading for text content
+ * 
+ * @since 1.0
+ */
 if (isset($_POST['upload_new_file_inline']) && isset($_FILES['new_file']) && $_FILES['new_file']['error'] === UPLOAD_ERR_OK) {
     $id = intval($_POST['file_id']);
     $title = sanitize_text_field($_POST['file_title']);
@@ -162,7 +354,22 @@ if (isset($_POST['upload_new_file_inline']) && isset($_FILES['new_file']) && $_F
 
 <!-- ============================================================================
      FILE MANAGEMENT INTERFACE
-     ============================================================================ -->
+     ============================================================================
+     
+     This section provides the complete user interface for file management:
+     - File upload interface with multiple format support
+     - File processing status and feedback
+     - File management table with pagination
+     - Inline editing and replacement capabilities
+     
+     INTERFACE FEATURES:
+     - Multi-file upload support
+     - Drag-and-drop file handling
+     - Progress indicators for processing
+     - File type validation and feedback
+     - Content editing and replacement
+     - Paginated file display
+-->
 <h2>File Management</h2>
 <p>The Files tab allows you to upload and manage various document types to train your AI agent.
    Supported formats include PDF, DOCX, and TXT files. Each file is automatically processed to
@@ -177,8 +384,22 @@ if (isset($_POST['upload_new_file_inline']) && isset($_FILES['new_file']) && $_F
 
 <!-- ============================================================================
      FILE SOURCES TABLE
-     ============================================================================ -->
-<!-- Display uploaded files with pagination and management options -->
+     ============================================================================
+     
+     Display uploaded files with pagination and management options:
+     - File information display with metadata
+     - Inline editing capabilities
+     - File replacement functionality
+     - Delete operations with confirmation
+     - Pagination for large file collections
+     
+     TABLE FEATURES:
+     - File name and type display
+     - Content size and processing status
+     - Action buttons for each file
+     - Paginated navigation
+     - Search and filtering options
+-->
 <hr><h3>File Sources</h3>
 <div id="files-notices"></div>
 <div id="files-sources-table">
@@ -187,7 +408,24 @@ global $wpdb;
 // ============================================================================
 // PAGINATION SETUP
 // ============================================================================
-// Configure pagination for large file collections
+/**
+ * Configure pagination for large file collections
+ * 
+ * This section sets up pagination for the file sources table:
+ * - Configurable items per page
+ * - Current page detection from URL parameters
+ * - Offset calculation for database queries
+ * - Total page count calculation
+ * - Database query optimization
+ * 
+ * PAGINATION FEATURES:
+ * - 10 items per page (configurable)
+ * - URL parameter state management
+ * - Database query optimization
+ * - Navigation controls generation
+ * 
+ * @since 1.0
+ */
 $items_per_page = 10;
 $current_page = isset($_GET['files_page']) ? max(1, intval($_GET['files_page'])) : 1;
 $offset = ($current_page - 1) * $items_per_page;

@@ -6,31 +6,170 @@
  * This plugin provides an AI-powered training dashboard that integrates with Exa.ai and OpenAI
  * to create a RAG (Retrieval-Augmented Generation) system for psychedelic information.
  * 
- * ARCHITECTURE OVERVIEW:
+ * ============================================================================
+ * ARCHITECTURE OVERVIEW
+ * ============================================================================
+ * 
+ * PLUGIN STRUCTURE:
  * - Main plugin file (this file) handles WordPress integration, admin menus, and AJAX endpoints
  * - Includes/ directory contains core functionality (OpenAI, utilities, auto-page creation)
  * - Admin/ directory contains the WordPress admin interface with tabbed navigation
  * - Assets/ directory contains frontend CSS, JS, and images
  * - Build/ directory contains compiled assets from the build system
+ * - Vendor/ directory contains Composer dependencies (PDF parser, TinyMCE, etc.)
  * 
- * KEY FEATURES:
- * - Knowledge management (Q&A, files, text, websites)
- * - AI-powered search with domain prioritization
- * - CSAT analytics for user satisfaction tracking
- * - Psychedelics.com content guarantee system
- * - Modern UI with reaction system
+ * CORE COMPONENTS:
+ * 1. Exa_AI_Integration Class - Main search and AI integration logic
+ * 2. Database Management - Knowledge base, chat logs, domain management
+ * 3. Admin Interface - Tabbed interface for managing all aspects
+ * 4. AJAX Handlers - Real-time operations for all CRUD operations
+ * 5. Content Processing - File uploads, text processing, embedding generation
  * 
- * DATABASE TABLES:
+ * ============================================================================
+ * KEY FEATURES
+ * ============================================================================
+ * 
+ * KNOWLEDGE MANAGEMENT:
+ * - Q&A Management: Create, edit, and manage question-answer pairs
+ * - File Processing: Upload and process PDF, TXT, and DOCX files
+ * - Text Management: Add and manage custom text content
+ * - Website Management: Configure trusted content sources with priority tiers
+ * 
+ * AI-POWERED SEARCH:
+ * - Exa.ai Integration: Neural search across configured domains
+ * - OpenAI Embeddings: Semantic similarity matching for local content
+ * - Domain Prioritization: Tier-based content source management
+ * - Content Guarantee: Ensures psychedelics.com content in every search
+ * 
+ * ANALYTICS & MONITORING:
+ * - CSAT Analytics: Customer satisfaction tracking with reaction system
+ * - Chat Log Management: Complete conversation history and analytics
+ * - Content Performance: Monitor search result quality and relevance
+ * - Domain Performance: Track content source effectiveness
+ * 
+ * USER EXPERIENCE:
+ * - Modern UI: Clean, responsive admin interface
+ * - Real-time Updates: AJAX-powered operations without page reloads
+ * - Rich Text Editing: TinyMCE integration for content management
+ * - Export Capabilities: CSV export for Q&A and text content
+ * 
+ * ============================================================================
+ * DATABASE SCHEMA
+ * ============================================================================
+ * 
+ * CORE TABLES:
  * - ai_knowledge: Main knowledge base for training data
+ *   - id: Primary key
+ *   - title: Human-readable title
+ *   - source_type: Content type ('qna', 'file', 'text', 'website')
+ *   - content: Main content or text
+ *   - embedding: AI-generated embedding vector (JSON)
+ *   - metadata: Additional data in JSON format
+ *   - created_at: Timestamp
+ * 
  * - ai_chat_log: User conversation history with reactions
- * - ai_knowledge_chunks: Text chunks for better search
+ *   - id: Primary key
+ *   - user_id: WordPress user ID (0 for anonymous)
+ *   - question: User's question or query
+ *   - answer: AI-generated response
+ *   - reaction: JSON object with like/dislike counts
+ *   - reaction_detail: Additional feedback text
+ *   - psychedelics_com_included: Boolean flag
+ *   - psychedelics_com_count: Number of results
+ *   - psychedelics_com_guarantee_status: Guarantee compliance status
+ *   - created_at: Timestamp
+ * 
+ * - ai_knowledge_chunks: Text chunks for better search granularity
+ *   - id: Primary key
+ *   - parent_id: Reference to main knowledge entry
+ *   - source_type: Type of source
+ *   - chunk_index: Order of chunk in original text
+ *   - content: Chunk content
+ *   - embedding: Chunk-specific embedding
+ *   - metadata: Chunk metadata
+ *   - created_at: Timestamp
+ * 
  * - ai_allowed_domains: Domain priorities and sources
+ *   - id: Primary key
+ *   - title: Human-readable domain name
+ *   - url: Full URL
+ *   - domain: Domain only (e.g., 'psychedelics.com')
+ *   - tier: Priority tier (1=highest, 4=lowest)
+ *   - created_at: Timestamp
+ * 
  * - ai_blocked_domains: Blocked content sources
+ *   - id: Primary key
+ *   - title: Human-readable domain name
+ *   - url: Full URL
+ *   - domain: Domain only
+ *   - created_at: Timestamp
+ * 
+ * ============================================================================
+ * CONFIGURATION CONSTANTS
+ * ============================================================================
+ * 
+ * PSYCHEDELICS.COM CONTENT GUARANTEE:
+ * - PSYCHEDELICS_COM_GUARANTEE: Master switch for the guarantee system
+ * - PSYCHEDELICS_COM_FALLBACK_ENABLED: Enable fallback search if needed
+ * - PSYCHEDELICS_COM_MIN_RESULTS: Minimum results required from psychedelics.com
+ * - PSYCHEDELICS_COM_MAX_RESULTS: Maximum results to include
+ * - PSYCHEDELICS_COM_MIN_RELEVANCE: Minimum relevance score (0.0-1.0)
+ * 
+ * SEARCH CONFIGURATION:
+ * - MAIN_SEARCH_MAX_RESULTS: Maximum results to request from Exa API
+ * - MAIN_SEARCH_TARGET_RESULTS: Target results after filtering
+ * 
+ * ============================================================================
+ * USAGE EXAMPLES
+ * ============================================================================
+ * 
+ * SHORTCODE USAGE:
+ * [exa_search] - Renders the AI search interface
+ * 
+ * ADMIN ACCESS:
+ * WordPress Admin > AI Trainer - Access to all management tabs
+ * 
+ * API ENDPOINTS:
+ * - /wp-admin/admin-ajax.php?action=exa_query - Search endpoint
+ * - /wp-admin/admin-ajax.php?action=openai_stream - OpenAI streaming
+ * 
+ * ============================================================================
+ * SECURITY FEATURES
+ * ============================================================================
+ * 
+ * - WordPress nonce verification for all AJAX operations
+ * - Capability checks for admin functions
+ * - Input sanitization and validation
+ * - SQL injection prevention with prepared statements
+ * - XSS protection with proper escaping
+ * 
+ * ============================================================================
+ * DEPENDENCIES
+ * ============================================================================
+ * 
+ * EXTERNAL SERVICES:
+ * - Exa.ai API: Neural search and content retrieval
+ * - OpenAI API: Embedding generation and text processing
+ * 
+ * COMPOSER PACKAGES:
+ * - smalot/pdfparser: PDF text extraction
+ * - vlucas/phpdotenv: Environment variable management
+ * - graham-campbell/result-type: Result handling utilities
+ * 
+ * WORDPRESS REQUIREMENTS:
+ * - WordPress 5.0+
+ * - PHP 7.4+
+ * - MySQL 5.6+
  * 
  * @package AI_Trainer
  * @version 1.0
  * @author Psychedelic
  * @since 2025
+ * @license GPL v2 or later
+ * 
+ * @see https://exa.ai/ - Neural search API
+ * @see https://openai.com/ - AI embeddings and processing
+ * @see https://psychedelics.com/ - Primary content source
  */
 
 if (!defined('ABSPATH')) exit;
@@ -975,7 +1114,19 @@ function ai_trainer_export_text_csv() {
     exit;
 }
 
-// Helper to extract main domain
+/**
+ * Extract main domain from URL
+ * 
+ * Helper function to extract and normalize domain names from URLs:
+ * - Handles URLs with or without protocol schemes
+ * - Removes 'www.' prefix for consistency
+ * - Normalizes to lowercase for comparison
+ * - Essential for domain-based filtering and categorization
+ * 
+ * @param string $url URL to extract domain from
+ * @return string Normalized domain name
+ * @since 1.0
+ */
 function ai_trainer_extract_domain($url) {
     $host = parse_url(trim($url), PHP_URL_HOST);
     if (!$host) {
@@ -1156,7 +1307,18 @@ add_action('wp_ajax_ai_get_block_website_table', function() {
     wp_send_json(['html' => $html, 'notice' => $notice]);
 });
 
-// Helper to get blocked domains for Exa search
+/**
+ * Get blocked domains for Exa search
+ * 
+ * Retrieves list of domains that should be excluded from search results:
+ * - Filters out invalid or empty domain entries
+ * - Normalizes domain names for consistency
+ * - Essential for maintaining content quality standards
+ * - Used by Exa.ai API to exclude unwanted sources
+ * 
+ * @return array Array of blocked domain names
+ * @since 1.0
+ */
 function ai_trainer_get_blocked_domains() {
     global $wpdb;
     $domains = $wpdb->get_col("SELECT DISTINCT domain FROM {$wpdb->prefix}ai_blocked_domains WHERE domain IS NOT NULL AND domain != ''");
@@ -1168,7 +1330,18 @@ function ai_trainer_get_blocked_domains() {
     return array_values(array_unique($main_domains));
 }
 
-// Helper to get allowed domains for Exa search
+/**
+ * Get allowed domains for Exa search
+ * 
+ * Retrieves list of domains that are permitted in search results:
+ * - Returns only domains from database (no hardcoded fallbacks)
+ * - Orders by tier priority (highest first)
+ * - Essential for content source management
+ * - Used by Exa.ai API to include trusted sources
+ * 
+ * @return array Array of allowed domain names
+ * @since 1.0
+ */
 function ai_trainer_get_allowed_domains() {
     global $wpdb;
     $domains = $wpdb->get_results("SELECT domain, tier FROM {$wpdb->prefix}ai_allowed_domains WHERE domain IS NOT NULL AND domain != '' ORDER BY tier ASC, domain ASC");
@@ -1183,7 +1356,18 @@ function ai_trainer_get_allowed_domains() {
     return array_values(array_unique($main_domains));
 }
 
-// Helper to get domains with tier information for EXA search
+/**
+ * Get domains with tier information for EXA search
+ * 
+ * Retrieves domains along with their priority tier information:
+ * - Returns tiered domain structure for priority-based search
+ * - Orders by tier priority (1=highest, 4=lowest)
+ * - Essential for implementing tier-based search strategy
+ * - Used by Exa.ai API for domain prioritization
+ * 
+ * @return array Associative array of domain => tier mappings
+ * @since 1.0
+ */
 function ai_trainer_get_domains_with_tiers() {
     global $wpdb;
     $domains = $wpdb->get_results("SELECT domain, tier FROM {$wpdb->prefix}ai_allowed_domains WHERE domain IS NOT NULL AND domain != '' ORDER BY tier ASC, domain ASC");
@@ -1201,7 +1385,17 @@ function ai_trainer_get_domains_with_tiers() {
     return $tiered_domains;
 }
 
-//  AJAX handler to update chatlog answer
+/**
+ * AJAX handler to update chatlog answer
+ * 
+ * Allows administrators to update AI-generated answers in chat logs:
+ * - Updates answer content in the database
+ * - Maintains conversation history integrity
+ * - Essential for content quality improvement
+ * - Used by admin interface for answer editing
+ * 
+ * @since 1.0
+ */
 add_action('wp_ajax_ai_update_chatlog_answer', function() {
     check_ajax_referer('ai_update_chatlog_answer');
     global $wpdb;
@@ -1219,6 +1413,17 @@ add_action('wp_ajax_ai_update_chatlog_answer', function() {
     }
 });
 
+/**
+ * AJAX handler to add chatlog to training data
+ * 
+ * Converts chatlog Q&A pairs into training data for the knowledge base:
+ * - Checks if question already exists in training data
+ * - Updates existing entries or creates new ones
+ * - Regenerates embeddings with latest answer content
+ * - Essential for continuous learning and improvement
+ * 
+ * @since 1.0
+ */
 add_action('wp_ajax_ai_add_chatlog_to_training', function() {
     check_ajax_referer('ai_add_chatlog_to_training');
     global $wpdb;
@@ -1507,7 +1712,17 @@ add_action('wp_ajax_nopriv_ai_get_chatlog_by_id', function() {
     }
 });
 
-// AJAX handler to clear all CSAT data
+/**
+ * AJAX handler to clear all CSAT data
+ * 
+ * Allows administrators to reset all customer satisfaction data:
+ * - Clears reaction counts and feedback details
+ * - Requires confirmation code for security
+ * - Essential for data privacy and compliance
+ * - Used by admin interface for data management
+ * 
+ * @since 1.0
+ */
 add_action('wp_ajax_ai_clear_csat_data', 'ai_trainer_handle_clear_csat_data');
 function ai_trainer_handle_clear_csat_data() {
     // Check nonce for security
@@ -1557,10 +1772,40 @@ function ai_trainer_handle_clear_csat_data() {
 
 
 
+/**
+ * Exa_AI_Integration Class
+ * 
+ * Main class responsible for integrating Exa.ai neural search with OpenAI embeddings
+ * to provide intelligent content retrieval and AI-powered responses.
+ * 
+ * This class implements a sophisticated search strategy that ensures:
+ * - Guaranteed inclusion of psychedelics.com content in every search
+ * - Tier-based domain prioritization for content quality
+ * - Semantic similarity matching using OpenAI embeddings
+ * - Intelligent result filtering and relevance scoring
+ * - Fallback search mechanisms for content guarantee compliance
+ * 
+ * @package AI_Trainer
+ * @since 1.0
+ */
 class Exa_AI_Integration {
+    /** @var string Exa.ai API key for neural search */
     private $exa_api_key = EXA_API_KEY;
+    
+    /** @var string OpenAI API key for embedding generation */
     private $openai_api_key = OPENAI_API_KEY;
 
+    /**
+     * Constructor - Initializes the Exa AI integration
+     * 
+     * Sets up WordPress hooks for:
+     * - Shortcode rendering for the search interface
+     * - Script and style enqueuing
+     * - AJAX handlers for search queries (authenticated and public)
+     * - OpenAI streaming for real-time responses
+     * 
+     * @since 1.0
+     */
     public function __construct() {
         add_shortcode('exa_search', [$this, 'render_shortcode']);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_scripts']);
@@ -1570,6 +1815,17 @@ class Exa_AI_Integration {
         add_action('wp_ajax_nopriv_openai_stream', [$this, 'handle_openai_stream']);
     }
 
+    /**
+     * Enqueue scripts and styles for the Exa AI integration
+     * 
+     * Loads all necessary frontend assets including:
+     * - Main JavaScript file for search functionality
+     * - CSS styles for the search interface
+     * - Localized script data for AJAX endpoints
+     * - Configuration settings for the search interface
+     * 
+     * @since 1.0
+     */
     public function enqueue_scripts() {
         wp_enqueue_script('exa-script', plugin_dir_url(__FILE__) . '/assets/js/exa.js', ['jquery'], null, true);
         wp_localize_script('exa-script', 'exa_ajax', [
@@ -1586,6 +1842,20 @@ class Exa_AI_Integration {
         wp_enqueue_style('core-style', plugin_dir_url(__FILE__) . '/build/index.css');    
     }
 
+    /**
+     * Render the Exa AI search interface shortcode
+     * 
+     * Creates the HTML structure for the AI search interface including:
+     * - Search input field with submit button
+     * - Question and answer display areas
+     * - Loading indicator
+     * - Support ticket form integration
+     * - Disclaimer and usage notices
+     * 
+     * @param array $atts Shortcode attributes (currently unused)
+     * @return string HTML markup for the search interface
+     * @since 1.0
+     */
     public function render_shortcode($atts) {
         ob_start();
         ?>
@@ -1621,6 +1891,18 @@ class Exa_AI_Integration {
         return ob_get_clean();
     }
 
+    /**
+     * Handle OpenAI streaming for real-time AI responses
+     * 
+     * Sets up Server-Sent Events (SSE) streaming to provide real-time
+     * AI-generated responses to user queries. This method:
+     * - Configures proper headers for streaming
+     * - Disables buffering for optimal performance
+     * - Streams OpenAI API responses in real-time
+     * - Handles Nginx compatibility
+     * 
+     * @since 1.0
+     */
     public function handle_openai_stream() {
         error_log('openai_stream called');
         header('Content-Type: text/event-stream');
@@ -1703,6 +1985,24 @@ class Exa_AI_Integration {
         exit;
     }
 
+    /**
+     * Handle Exa AI search AJAX requests
+     * 
+     * Main search method that orchestrates the entire search process:
+     * - Processes user queries and conversation history
+     * - Generates OpenAI embeddings for semantic search
+     * - Executes tier-based domain searches
+     * - Ensures psychedelics.com content guarantee
+     * - Returns structured search results with metadata
+     * 
+     * This method implements a sophisticated search strategy that:
+     * 1. Always includes psychedelics.com content first
+     * 2. Searches tier-specific domains for comprehensive coverage
+     * 3. Merges and ranks results by relevance and priority
+     * 4. Tracks guarantee compliance for monitoring
+     * 
+     * @since 1.0
+     */
     public function handle_exa_ajax() {
         $data = [];
         $sources = [];
@@ -1925,7 +2225,20 @@ class Exa_AI_Integration {
         wp_send_json_success($result);
     }
     
-    // NEW: Execute primary EXA search with domain priorities
+    /**
+     * Execute primary EXA search with domain priorities
+     * 
+     * Performs the main neural search using Exa.ai API with:
+     * - Domain prioritization based on tier system
+     * - Inclusion/exclusion of configured domains
+     * - Neural search type for optimal results
+     * - Result filtering to ensure domain compliance
+     * 
+     * @param string $conversational_prompt Full conversation context for search
+     * @param string $query Current user query
+     * @return array Filtered search results from Exa.ai
+     * @since 1.0
+     */
     private function execute_exa_search($conversational_prompt, $query) {
         $headers = [
             'Content-Type' => 'application/json',
@@ -2005,7 +2318,22 @@ class Exa_AI_Integration {
         return array_values($filtered_results);
     }
     
-    // NEW: Execute tier-specific search for guaranteed coverage
+    /**
+     * Execute tier-specific search for guaranteed coverage
+     * 
+     * Performs targeted searches for specific domain tiers to ensure:
+     * - Comprehensive coverage across all priority levels
+     * - Domain-specific query enhancement for better results
+     * - Tier-based result limiting to prevent overwhelming
+     * - Consistent search quality across all tiers
+     * 
+     * @param string $conversational_prompt Full conversation context
+     * @param string $query Current user query
+     * @param array $domains Array of domains to search within this tier
+     * @param int $tier Priority tier (1=highest, 4=lowest)
+     * @return array Filtered results from this tier
+     * @since 1.0
+     */
     private function execute_tier_specific_search($conversational_prompt, $query, $domains, $tier) {
         $headers = [
             'Content-Type' => 'application/json',
@@ -2059,7 +2387,20 @@ class Exa_AI_Integration {
         return array_values($filtered_results);
     }
     
-    // NEW: Sort results by relevance within each tier
+    /**
+     * Sort results by relevance within each tier
+     * 
+     * Applies intelligent relevance scoring to rank results within each tier:
+     * - Calculates relevance scores based on multiple factors
+     * - Sorts results by relevance (highest first)
+     * - Maintains tier ordering while optimizing within-tier relevance
+     * - Ensures quality results are prioritized within each priority level
+     * 
+     * @param array $results Array of search results to sort
+     * @param string $query Original user query for relevance calculation
+     * @return array Sorted results by relevance score
+     * @since 1.0
+     */
     private function sort_results_by_relevance($results, $query) {
         if (empty($results)) return $results;
         
@@ -2082,7 +2423,23 @@ class Exa_AI_Integration {
         return array_column($scored_results, 'result');
     }
     
-    // NEW: Execute fallback search specifically for psychedelics.com
+    /**
+     * Execute fallback search specifically for psychedelics.com
+     * 
+     * Ensures psychedelics.com content is always included by:
+     * - Performing dedicated searches on psychedelics.com domain
+     * - Using enhanced queries with site-specific hints
+     * - Applying relevance filtering for quality results
+     * - Meeting minimum content guarantee requirements
+     * 
+     * This method is critical for maintaining the content guarantee system
+     * and ensuring high-quality psychedelic information is always available.
+     * 
+     * @param string $conversational_prompt Full conversation context
+     * @param string $query Current user query
+     * @return array Filtered psychedelics.com results
+     * @since 1.0
+     */
     private function execute_psychedelics_com_fallback($conversational_prompt, $query) {
         // Check if fallback is enabled
         if (!defined('PSYCHEDELICS_COM_FALLBACK_ENABLED') || !PSYCHEDELICS_COM_FALLBACK_ENABLED) {
@@ -2145,7 +2502,23 @@ class Exa_AI_Integration {
         return array_values($relevant_results);
     }
     
-    // NEW: Filter psychedelics.com results by relevance to the query
+    /**
+     * Filter psychedelics.com results by relevance to the query
+     * 
+     * Applies intelligent relevance scoring to filter psychedelics.com results:
+     * - Calculates relevance scores using multiple factors
+     * - Applies minimum relevance threshold filtering
+     * - Limits results to configured maximum count
+     * - Ensures only the most relevant content is returned
+     * 
+     * This filtering is essential for maintaining content quality while
+     * meeting the psychedelics.com guarantee requirements.
+     * 
+     * @param array $results Raw psychedelics.com search results
+     * @param string $original_query Original user query for relevance scoring
+     * @return array Filtered results meeting relevance and count criteria
+     * @since 1.0
+     */
     private function filter_psychedelics_com_by_relevance($results, $original_query) {
         if (empty($results)) return [];
         
@@ -2197,7 +2570,23 @@ class Exa_AI_Integration {
         return $filtered_results;
     }
     
-    // NEW: Calculate relevance score for a psychedelics.com result
+    /**
+     * Calculate relevance score for a psychedelics.com result
+     * 
+     * Implements a sophisticated relevance scoring algorithm that considers:
+     * - Title relevance (40% weight) - Most important factor
+     * - Text content relevance (35% weight) - Content matching
+     * - URL path relevance (15% weight) - URL structure analysis
+     * - EXA neural score (10% weight) - AI-generated relevance
+     * 
+     * The scoring system ensures that results are ranked by their
+     * actual relevance to the user's query, not just by EXA's scores.
+     * 
+     * @param array $result Individual search result from Exa.ai
+     * @param string $original_query Original user query
+     * @return float Relevance score between 0.0 and 1.0
+     * @since 1.0
+     */
     private function calculate_relevance_score($result, $original_query) {
         $score = 0.0;
         
@@ -2377,7 +2766,20 @@ class Exa_AI_Integration {
         return $results;
     }
 
-    //Getting Embedding of query
+    /**
+     * Generate OpenAI embedding for text content
+     * 
+     * Converts text content into high-dimensional vector representations
+     * that enable semantic similarity matching. This method:
+     * - Uses OpenAI's text-embedding-ada-002 model
+     * - Handles API communication with proper error handling
+     * - Returns normalized embedding vectors for similarity calculations
+     * - Essential for local content matching and relevance scoring
+     * 
+     * @param string $text Text content to generate embedding for
+     * @return array|null Embedding vector array or null on failure
+     * @since 1.0
+     */
     private function get_openai_embedding($text) {
         $api_key = $this->openai_api_key;
         $response = wp_remote_post('https://api.openai.com/v1/embeddings', [
@@ -2398,7 +2800,20 @@ class Exa_AI_Integration {
         return $body['data'][0]['embedding'] ?? null;
     }
 
-    //Checking similarity
+    /**
+     * Calculate cosine similarity between two embedding vectors
+     * 
+     * Measures the semantic similarity between two text embeddings:
+     * - Returns values between -1 and 1 (1 = identical, 0 = unrelated)
+     * - Uses cosine distance for high-dimensional vector comparison
+     * - Includes small epsilon to prevent division by zero
+     * - Essential for finding semantically similar content
+     * 
+     * @param array $a First embedding vector
+     * @param array $b Second embedding vector
+     * @return float Similarity score between -1 and 1
+     * @since 1.0
+     */
     private function cosine_similarity(array $a, array $b) {
         $dot = 0; $magA = 0; $magB = 0;
         foreach ($a as $i => $v) {
@@ -2409,7 +2824,23 @@ class Exa_AI_Integration {
         return $dot / (sqrt($magA) * sqrt($magB) + 1e-8);
     }
     
-    // Check psychedelics.com guarantee compliance
+    /**
+     * Check psychedelics.com guarantee compliance
+     * 
+     * Validates that search results meet the content guarantee requirements:
+     * - Ensures minimum number of psychedelics.com results
+     * - Checks result positioning in top results
+     * - Provides detailed compliance status and messages
+     * - Essential for monitoring guarantee system effectiveness
+     * 
+     * This method is critical for maintaining the quality assurance
+     * system and providing transparency about search result quality.
+     * 
+     * @param array $results Complete search results array
+     * @param int $final_psychedelics_count Count of psychedelics.com results
+     * @return array Compliance status with detailed information
+     * @since 1.0
+     */
     private function check_psychedelics_com_guarantee($results, $final_psychedelics_count) {
         if (!defined('PSYCHEDELICS_COM_GUARANTEE') || !PSYCHEDELICS_COM_GUARANTEE) {
             return ['status' => 'Disabled', 'message' => 'Psychedelics.com guarantee is disabled'];
@@ -2524,7 +2955,17 @@ class Exa_AI_Integration {
 
 new Exa_AI_Integration();
 
-// AJAX handler to update domain tier
+/**
+ * AJAX handler to update domain tier
+ * 
+ * Allows administrators to modify domain priority tiers:
+ * - Updates tier values (1=highest, 4=lowest)
+ * - Validates tier range for data integrity
+ * - Essential for content source prioritization
+ * - Used by admin interface for domain management
+ * 
+ * @since 1.0
+ */
 add_action('wp_ajax_ai_update_domain_tier', function() {
     check_ajax_referer('ai_trainer_nonce', 'nonce');
     global $wpdb;
@@ -2551,7 +2992,17 @@ add_action('wp_ajax_ai_update_domain_tier', function() {
     }
 });
 
-// AJAX handler to add domain with tier
+/**
+ * AJAX handler to add domain with tier
+ * 
+ * Allows administrators to add new content source domains:
+ * - Creates new domain entries with specified priority tiers
+ * - Validates URL format and tier range
+ * - Essential for expanding content source options
+ * - Used by admin interface for domain management
+ * 
+ * @since 1.0
+ */
 add_action('wp_ajax_ai_add_domain_with_tier', function() {
     check_ajax_referer('ai_trainer_nonce', 'nonce');
     global $wpdb;
@@ -2592,7 +3043,20 @@ add_action('wp_ajax_ai_add_domain_with_tier', function() {
     }
 });
 
-// NEW: Test endpoint for psychedelics.com relevance scoring
+/**
+ * Test endpoint for psychedelics.com relevance scoring
+ * 
+ * Development and testing function for relevance scoring algorithm:
+ * - Tests query term extraction and processing
+ * - Validates relevance score calculations
+ * - Demonstrates filtering and ranking functionality
+ * - Essential for algorithm development and debugging
+ * 
+ * This function is primarily for development purposes and should
+ * not be used in production environments.
+ * 
+ * @since 1.0
+ */
 add_action('wp_ajax_ai_test_relevance_scoring', 'ai_trainer_test_relevance_scoring');
 add_action('wp_ajax_nopriv_ai_test_relevance_scoring', 'ai_trainer_test_relevance_scoring');
 

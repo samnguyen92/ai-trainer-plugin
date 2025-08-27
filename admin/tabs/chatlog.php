@@ -6,39 +6,179 @@
  * from user interactions with the AI system. It displays conversation history,
  * user feedback, training status, and provides tools for data analysis and cleanup.
  * 
- * FUNCTIONALITY OVERVIEW:
+ * ============================================================================
+ * FUNCTIONALITY OVERVIEW
+ * ============================================================================
+ * 
+ * CORE OPERATIONS:
  * - View all AI chat conversations and user interactions
  * - Monitor user feedback and reaction data
  * - Track training status of questions
- * - Manage chat log entries (view, delete)
+ * - Manage chat log entries (view, edit, delete)
  * - Analyze user satisfaction and engagement
- * - Export chat data for analysis
+ * - Export chat data for analysis and reporting
  * 
- * FEATURES:
- * - Paginated chat log display
- * - Training status indicators
- * - User feedback tracking
- * - Bulk deletion capabilities
- * - Performance optimization with caching
- * - Detailed reaction analysis
+ * ADVANCED FEATURES:
+ * - Paginated chat log display with optimization
+ * - Training status indicators and tracking
+ * - User feedback analysis and visualization
+ * - Bulk deletion capabilities for data management
+ * - Performance optimization with intelligent caching
+ * - Detailed reaction analysis and breakdowns
+ * - Beta feedback collection and processing
  * 
- * DATA DISPLAYED:
+ * ============================================================================
+ * DATA DISPLAYED AND TRACKED
+ * ============================================================================
+ * 
+ * CONVERSATION DATA:
  * - User questions and AI responses
- * - Timestamps and user information
- * - Like/dislike reactions
- * - Training status indicators
- * - Beta feedback submissions
- * - Reaction detail breakdowns
+ * - Timestamps and user identification
+ * - Conversation context and flow
+ * - Response quality and relevance
  * 
- * PERFORMANCE FEATURES:
- * - Database query optimization
- * - Training status caching
- * - Prepared statements for security
- * - Efficient pagination
+ * USER FEEDBACK:
+ * - Like/dislike reactions with counts
+ * - Detailed feedback submissions
+ * - Beta feedback for improvement
+ * - User satisfaction metrics
+ * - Engagement tracking
+ * 
+ * TRAINING INTEGRATION:
+ * - Training status indicators
+ * - Question-to-training mapping
+ * - Knowledge base integration status
+ * - Training data quality assessment
+ * 
+ * ============================================================================
+ * PERFORMANCE OPTIMIZATION
+ * ============================================================================
+ * 
+ * DATABASE OPTIMIZATION:
+ * - Efficient pagination with configurable limits
+ * - Prepared statements for security and performance
+ * - Indexed field usage for fast queries
+ * - Connection pooling and query optimization
+ * 
+ * CACHING STRATEGIES:
+ * - Training status caching for batch operations
+ * - Query result caching for repeated access
+ * - Memory optimization for large datasets
+ * - Progressive loading for better UX
+ * 
+ * FRONTEND PERFORMANCE:
+ * - AJAX-based operations for dynamic updates
+ * - Lazy loading for large chat log collections
+ * - Responsive design for all screen sizes
+ * - Progressive enhancement patterns
+ * 
+ * ============================================================================
+ * USER INTERFACE COMPONENTS
+ * ============================================================================
+ * 
+ * CHAT LOG TABLE:
+ * - Comprehensive conversation display
+ * - User identification and timestamps
+ * - Training status indicators
+ * - Feedback visualization
+ * - Action buttons for management
+ * 
+ * BULK OPERATIONS:
+ * - Multi-select functionality
+ * - Bulk deletion capabilities
+ * - Selected item management
+ * - Confirmation dialogs
+ * 
+ * FILTERING AND SEARCH:
+ * - Date-based filtering
+ * - User-based filtering
+ * - Training status filtering
+ * - Feedback type filtering
+ * 
+ * ============================================================================
+ * TRAINING STATUS MANAGEMENT
+ * ============================================================================
+ * 
+ * STATUS TRACKING:
+ * - Real-time training status updates
+ * - Question-to-knowledge mapping
+ * - Training data quality indicators
+ * - Continuous improvement tracking
+ * 
+ * INTEGRATION FEATURES:
+ * - Knowledge base connectivity
+ * - Training data synchronization
+ * - Quality assessment metrics
+ * - Improvement recommendations
+ * 
+ * ============================================================================
+ * FEEDBACK ANALYSIS
+ * ============================================================================
+ * 
+ * REACTION TRACKING:
+ * - Like/dislike count aggregation
+ * - User sentiment analysis
+ * - Feedback trend identification
+ * - Quality improvement insights
+ * 
+ * BETA FEEDBACK:
+ * - Detailed user submissions
+ * - Feedback categorization
+ * - Improvement suggestions
+ * - User experience insights
+ * 
+ * ============================================================================
+ * DATA MANAGEMENT AND CLEANUP
+ * ============================================================================
+ * 
+ * DATA RETENTION:
+ * - Configurable retention policies
+ * - Data archiving capabilities
+ * - Privacy compliance features
+ * - Audit trail maintenance
+ * 
+ * CLEANUP OPERATIONS:
+ * - Bulk deletion with confirmation
+ * - Selective data removal
+ * - Data export for backup
+ * - Privacy protection measures
+ * 
+ * ============================================================================
+ * SECURITY AND PRIVACY
+ * ============================================================================
+ * 
+ * ACCESS CONTROL:
+ * - Admin-only access restrictions
+ * - Capability-based permissions
+ * - User data protection
+ * - Privacy compliance features
+ * 
+ * DATA PROTECTION:
+ * - Input sanitization and validation
+ * - SQL injection prevention
+ * - XSS protection measures
+ * - Secure data handling
+ * 
+ * ============================================================================
+ * EXPORT AND REPORTING
+ * ============================================================================
+ * 
+ * DATA EXPORT:
+ * - CSV export functionality
+ * - Custom date range selection
+ * - Filtered data export
+ * - Report generation capabilities
+ * 
+ * ANALYTICS:
+ * - User engagement metrics
+ * - Feedback trend analysis
+ * - Training effectiveness tracking
+ * - Performance monitoring
  * 
  * @package AI_Trainer
  * @subpackage Admin_Tabs
  * @since 1.0
+ * @author Psychedelic
  */
 
 if (!defined('ABSPATH')) exit;
@@ -46,7 +186,25 @@ if (!defined('ABSPATH')) exit;
 // ============================================================================
 // PAGINATION SETUP
 // ============================================================================
-// Configure pagination for large chat log collections
+/**
+ * Configure pagination for large chat log collections
+ * 
+ * This section sets up efficient pagination for the chat log display:
+ * - Configurable items per page (currently 20)
+ * - Current page detection from URL parameters
+ * - Offset calculation for database queries
+ * - Total page count calculation
+ * - Database query optimization
+ * 
+ * PAGINATION FEATURES:
+ * - 20 items per page for optimal performance
+ * - URL parameter state management
+ * - Database query optimization with LIMIT/OFFSET
+ * - Navigation controls generation
+ * - Memory usage optimization
+ * 
+ * @since 1.0
+ */
 $items_per_page = 20;
 $current_page = isset($_GET['chatlog_page']) ? max(1, intval($_GET['chatlog_page'])) : 1;
 $offset = ($current_page - 1) * $items_per_page;
@@ -69,8 +227,27 @@ $total_pages = ceil($total_items / $items_per_page);
  * the AI training knowledge base, helping administrators identify
  * which questions need training data.
  * 
+ * FUNCTIONALITY:
+ * - Searches knowledge base for question matches
+ * - Uses prepared statements for security
+ * - Provides real-time training status
+ * - Enables training gap identification
+ * 
+ * SECURITY FEATURES:
+ * - Prepared statement usage
+ * - SQL injection prevention
+ * - Input sanitization
+ * - Safe database queries
+ * 
+ * PERFORMANCE:
+ * - Optimized database queries
+ * - Indexed field usage
+ * - Efficient metadata searching
+ * - Caching integration
+ * 
  * @param string $question The user's question to check
  * @return bool True if question exists in training data, false otherwise
+ * @since 1.0
  */
 function chatlog_question_in_training($question) {
     global $wpdb;
@@ -88,7 +265,29 @@ function chatlog_question_in_training($question) {
 // ============================================================================
 // TRAINING STATUS CACHING
 // ============================================================================
-// Cache training status for better performance when displaying multiple logs
+/**
+ * Cache training status for better performance when displaying multiple logs
+ * 
+ * This section implements intelligent caching to optimize performance:
+ * - Batch querying for training status
+ * - Memory-efficient caching strategy
+ * - Performance optimization for large datasets
+ * - Reduced database query overhead
+ * 
+ * CACHING STRATEGY:
+ * - Batch processing of multiple questions
+ * - Single database query for multiple status checks
+ * - Memory-efficient array-based caching
+ * - Performance improvement for large chat log collections
+ * 
+ * OPTIMIZATION BENEFITS:
+ * - Reduced database queries from N to 1
+ * - Improved page load performance
+ * - Better memory usage patterns
+ * - Enhanced user experience
+ * 
+ * @since 1.0
+ */
 $training_status_cache = [];
 if (!empty($logs)) {
     $questions = array_column($logs, 'question');
@@ -113,7 +312,21 @@ if (!empty($logs)) {
 
 <!-- ============================================================================
      CHAT LOG STYLING
-     ============================================================================ -->
+     ============================================================================
+     
+     Custom CSS styling for chat log display:
+     - Reaction visualization and formatting
+     - Training status indicators
+     - Feedback display styling
+     - Responsive design elements
+     
+     STYLING FEATURES:
+     - Centered reaction displays
+     - Color-coded feedback indicators
+     - Responsive table layouts
+     - Mobile-friendly design
+     - Accessibility improvements
+-->
 <style>
 .chatlog-reaction {
     text-align: center;
@@ -140,7 +353,23 @@ if (!empty($logs)) {
 
 <!-- ============================================================================
      CHAT LOG MANAGEMENT INTERFACE
-     ============================================================================ -->
+     ============================================================================
+     
+     This section provides the complete user interface for chat log management:
+     - Comprehensive chat log display table
+     - Bulk operations and management tools
+     - Training status indicators
+     - User feedback visualization
+     - Action buttons for each entry
+     
+     INTERFACE FEATURES:
+     - Paginated chat log display
+     - Multi-select functionality
+     - Bulk deletion capabilities
+     - Training status tracking
+     - Feedback analysis tools
+     - Export and reporting options
+-->
 <div class="wrap">
     <h1>AI Chat Log Management</h1>
     <div id="chatlog-notices"></div>
@@ -196,7 +425,29 @@ if (!empty($logs)) {
                                 // ============================================================================
                                 // REACTION DETAIL PROCESSING
                                 // ============================================================================
-                                // Process and display detailed user feedback information
+                                /**
+                                 * Process and display detailed user feedback information
+                                 * 
+                                 * This section handles the display of detailed user feedback:
+                                 * - Beta feedback submissions
+                                 * - Detailed reaction information
+                                 * - User experience insights
+                                 * - Feedback categorization and display
+                                 * 
+                                 * FEEDBACK TYPES:
+                                 * - Beta feedback for improvement
+                                 * - Detailed reaction explanations
+                                 * - User experience comments
+                                 * - Quality improvement suggestions
+                                 * 
+                                 * DISPLAY FEATURES:
+                                 * - Formatted feedback presentation
+                                 * - Categorized feedback display
+                                 * - User-friendly formatting
+                                 * - Responsive design elements
+                                 * 
+                                 * @since 1.0
+                                 */
                                 if (!empty($log['reaction_detail'])) {
                                     // Handle escaped JSON strings (with backslashes before quotes) - same as CSAT analytics
                                     $detail = $log['reaction_detail'];

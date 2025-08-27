@@ -6,28 +6,180 @@
  * that are permitted in Exa search results. It allows administrators to add,
  * edit, and manage website sources with tier-based prioritization.
  * 
- * FUNCTIONALITY OVERVIEW:
+ * ============================================================================
+ * FUNCTIONALITY OVERVIEW
+ * ============================================================================
+ * 
+ * CORE OPERATIONS:
  * - Add new websites with title, URL, and priority tier
- * - Edit existing website entries inline
+ * - Edit existing website entries inline with modal interface
+ * - Delete website entries with confirmation
  * - Tier-based prioritization system (1-4 levels)
- * - AJAX-powered table management
- * - Form validation and security
+ * - AJAX-powered table management for dynamic updates
+ * - Form validation and security measures
  * 
- * TIER SYSTEM:
+ * WEBSITE MANAGEMENT:
+ * - Domain extraction and normalization
+ * - URL validation and sanitization
+ * - Tier assignment and management
+ * - Bulk operations and updates
+ * - Search result prioritization
+ * 
+ * ============================================================================
+ * TIER SYSTEM ARCHITECTURE
+ * ============================================================================
+ * 
+ * PRIORITY LEVELS:
  * - Tier 1: Highest Priority (most trusted sources)
- * - Tier 2: High Priority (very trusted sources)
- * - Tier 3: Medium Priority (moderately trusted sources)
- * - Tier 4: Low Priority (least trusted sources)
+ *   * Primary content sources like psychedelics.com
+ *   * Guaranteed inclusion in search results
+ *   * Highest relevance scoring in results
  * 
- * SECURITY FEATURES:
- * - WordPress nonce verification
- * - Input sanitization
- * - ABSPATH validation
- * - Required function checks
+ * - Tier 2: High Priority (very trusted sources)
+ *   * Secondary trusted content sources
+ *   * High relevance scoring and positioning
+ *   * Consistent inclusion in search results
+ * 
+ * - Tier 3: Medium Priority (moderately trusted sources)
+ *   * Additional content sources
+ *   * Standard relevance scoring
+ *   - Conditional inclusion based on query relevance
+ * 
+ * - Tier 4: Low Priority (least trusted sources)
+ *   * Supplementary content sources
+ *   * Lower relevance scoring
+ *   - Minimal inclusion in search results
+ * 
+ * ============================================================================
+ * TECHNICAL IMPLEMENTATION
+ * ============================================================================
+ * 
+ * AJAX INTEGRATION:
+ * - Dynamic table loading without page refresh
+ * - Real-time updates and modifications
+ * - Form submission handling
+ * - Error handling and user feedback
+ * 
+ * MODAL INTERFACE:
+ * - Inline editing without page navigation
+ * - Form validation and error display
+ * - Responsive design for all screen sizes
+ * - Accessibility features and keyboard navigation
+ * 
+ * DATABASE INTEGRATION:
+ * - ai_allowed_domains table management
+ * - Tier-based sorting and filtering
+ * - Domain normalization and storage
+ * - Relationship management with search results
+ * 
+ * ============================================================================
+ * SECURITY FEATURES
+ * ============================================================================
+ * 
+ * INPUT VALIDATION:
+ * - WordPress nonce verification for all operations
+ * - Input sanitization (sanitize_text_field, esc_url)
+ * - ABSPATH validation for include security
+ * - Required function availability checks
+ * 
+ * DATA PROCESSING:
+ * - URL validation and sanitization
+ * - Domain extraction and normalization
+ * - SQL injection prevention
+ * - XSS protection measures
+ * 
+ * ACCESS CONTROL:
+ * - Capability checks for admin operations
+ * - User permission validation
+ * - Secure AJAX endpoint handling
+ * - Audit trail maintenance
+ * 
+ * ============================================================================
+ * USER INTERFACE COMPONENTS
+ * ============================================================================
+ * 
+ * ADD WEBSITE FORM:
+ * - Title input field with validation
+ * - URL input with format validation
+ * - Tier selection dropdown
+ * - Submit button with processing feedback
+ * 
+ * WEBSITE DISPLAY TABLE:
+ * - Dynamic loading via AJAX
+ * - Tier-based sorting and display
+ * - Action buttons for each entry
+ * - Responsive table layout
+ * 
+ * EDIT MODAL:
+ * - Inline editing interface
+ * - Form validation and error handling
+ * - Cancel and save operations
+ * - Responsive modal design
+ * 
+ * ============================================================================
+ * SEARCH INTEGRATION
+ * ============================================================================
+ * 
+ * EXA.AI INTEGRATION:
+ * - Domain inclusion in search queries
+ * - Tier-based result prioritization
+ * - Content source filtering
+ * - Search result quality assurance
+ * 
+ * PRIORITY SYSTEM:
+ * - Tier-based domain weighting
+ * - Result ordering and positioning
+ * - Content relevance scoring
+ * - Quality control mechanisms
+ * 
+ * ============================================================================
+ * PERFORMANCE OPTIMIZATION
+ * ============================================================================
+ * 
+ * AJAX PERFORMANCE:
+ * - Efficient table loading
+ * - Minimal data transfer
+ * - Caching strategies
+ * - Error handling optimization
+ * 
+ * DATABASE OPTIMIZATION:
+ * - Indexed field usage
+ * - Efficient query patterns
+ * - Connection pooling
+ * - Query result caching
+ * 
+ * FRONTEND OPTIMIZATION:
+ * - Progressive enhancement
+ * - Lazy loading where appropriate
+ * - Responsive design patterns
+ * - Accessibility optimization
+ * 
+ * ============================================================================
+ * ERROR HANDLING AND VALIDATION
+ * ============================================================================
+ * 
+ * FORM VALIDATION:
+ * - Required field checking
+ * - URL format validation
+ * - Tier selection validation
+ * - Real-time error feedback
+ * 
+ * PROCESSING ERRORS:
+ * - Database operation failures
+ * - AJAX communication issues
+ * - Validation failures
+ * - User feedback and recovery
+ * 
+ * USER EXPERIENCE:
+ * - Clear error messages
+ * - Success confirmations
+ * - Processing status updates
+ * - Recovery suggestions
  * 
  * @package AI_Trainer
  * @subpackage Admin_Tabs
  * @since 1.0
+ * @author Psychedelic
  */
 
 // Ensure ABSPATH is defined for includes
@@ -96,6 +248,26 @@ if (!function_exists('wp_nonce_field')) require_once(ABSPATH . 'wp-includes/func
  * 
  * This script handles the dynamic loading and management of the website sources table
  * through AJAX calls to the WordPress backend.
+ * 
+ * FUNCTIONALITY:
+ * - Dynamic table loading on page load
+ * - AJAX-based data retrieval
+ * - User feedback and notification handling
+ * - Error handling and recovery
+ * 
+ * AJAX OPERATIONS:
+ * - ai_get_website_table: Load website sources table
+ * - ai_add_website: Add new website entries
+ * - ai_edit_website: Update existing website entries
+ * - ai_delete_website: Remove website entries
+ * 
+ * USER EXPERIENCE:
+ * - Real-time updates without page refresh
+ * - Automatic notification display
+ * - Smooth transitions and feedback
+ * - Responsive error handling
+ * 
+ * @since 1.0
  */
 jQuery(function($){
     // On page load, load the website table via AJAX

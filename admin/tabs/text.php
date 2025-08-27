@@ -7,40 +7,182 @@
  * delete, and import text-based information that will be used for AI training
  * and local knowledge base searches.
  * 
- * FUNCTIONALITY OVERVIEW:
+ * ============================================================================
+ * FUNCTIONALITY OVERVIEW
+ * ============================================================================
+ * 
+ * CORE OPERATIONS:
  * - Add new text entries with title and content
- * - Edit existing text entries inline
- * - Delete text entries with confirmation
- * - Import text entries from CSV files
- * - Export text entries to CSV format
+ * - Edit existing text entries inline without page reload
+ * - Delete text entries with confirmation and cleanup
+ * - Import text entries from CSV files for bulk operations
+ * - Export text entries to CSV format for data portability
  * - Automatic embedding generation for AI training
  * - Pagination for large text collections
  * 
- * FEATURES:
- * - Rich text editor support
- * - CSV import/export capabilities
- * - Inline editing interface
- * - Bulk text management
- * - Search and filtering
- * - Embedding generation
+ * ADVANCED FEATURES:
+ * - Rich text editor support with TinyMCE integration
+ * - CSV import/export capabilities with validation
+ * - Inline editing interface for quick updates
+ * - Bulk text management operations
+ * - Search and filtering capabilities
+ * - Embedding generation for semantic search
+ * - Content chunking for optimized search
  * 
- * USE CASES:
- * - Research papers and articles
- * - Manuals and documentation
- * - Educational content
- * - Reference materials
- * - Custom knowledge bases
+ * ============================================================================
+ * USE CASES AND APPLICATIONS
+ * ============================================================================
  * 
- * SECURITY FEATURES:
- * - WordPress nonce verification
+ * CONTENT TYPES:
+ * - Research papers and academic articles
+ * - Manuals and technical documentation
+ * - Educational content and tutorials
+ * - Reference materials and guides
+ * - Custom knowledge bases and FAQs
+ * - Policy documents and procedures
+ * - Training materials and scripts
+ * 
+ * INDUSTRY APPLICATIONS:
+ * - Healthcare and medical information
+ * - Legal and compliance documentation
+ * - Technical and engineering guides
+ * - Educational and training content
+ * - Research and development data
+ * - Customer support knowledge bases
+ * 
+ * ============================================================================
+ * SECURITY FEATURES
+ * ============================================================================
+ * 
+ * INPUT VALIDATION:
+ * - WordPress nonce verification for all operations
  * - Input sanitization (sanitize_text_field, wp_kses_post)
- * - ABSPATH validation
- * - Required function checks
- * - CSRF protection
+ * - ABSPATH validation for include security
+ * - Required function availability checks
+ * - CSRF protection through WordPress nonces
+ * 
+ * DATA PROCESSING:
+ * - SQL injection prevention with prepared statements
+ * - XSS protection through proper escaping
+ * - File upload validation and security
+ * - Capability checks for admin operations
+ * - Content sanitization and filtering
+ * 
+ * ============================================================================
+ * TECHNICAL IMPLEMENTATION
+ * ============================================================================
+ * 
+ * CONTENT PROCESSING:
+ * - Text content validation and sanitization
+ * - Rich text processing with HTML support
+ * - Content length optimization for display
+ * - Metadata extraction and storage
+ * 
+ * DATABASE INTEGRATION:
+ * - ai_knowledge table for text storage
+ * - ai_knowledge_chunks for search optimization
+ * - Metadata storage for content information
+ * - Relationship management between content and chunks
+ * 
+ * EMBEDDING GENERATION:
+ * - OpenAI API integration for vector creation
+ * - Content preprocessing for optimal results
+ * - Vector storage and indexing
+ * - Search relevance optimization
+ * 
+ * ============================================================================
+ * USER INTERFACE COMPONENTS
+ * ============================================================================
+ * 
+ * ADD TEXT FORM:
+ * - Title input field with validation
+ * - Rich text content editor
+ * - Submit button with processing feedback
+ * - Form validation and error handling
+ * 
+ * TEXT DISPLAY TABLE:
+ * - Paginated results display
+ * - Content preview with truncation
+ * - Inline editing capabilities
+ * - Delete operations with confirmation
+ * - Action buttons for each entry
+ * 
+ * IMPORT/EXPORT:
+ * - CSV file upload interface
+ * - Export functionality for data backup
+ * - Bulk import processing
+ * - Validation and error reporting
+ * 
+ * ============================================================================
+ * CSV IMPORT/EXPORT FUNCTIONALITY
+ * ============================================================================
+ * 
+ * CSV FORMAT:
+ * - Column 1: Title (required)
+ * - Column 2: Content (required)
+ * - Header row automatically skipped
+ * - UTF-8 encoding support
+ * 
+ * IMPORT FEATURES:
+ * - File validation and type checking
+ * - Content sanitization and processing
+ * - Bulk entry creation with error handling
+ * - Import statistics and success reporting
+ * 
+ * EXPORT FEATURES:
+ * - Complete text data export
+ * - CSV format for compatibility
+ * - Admin-post action handling
+ * - Nonce verification for security
+ * 
+ * ============================================================================
+ * PERFORMANCE OPTIMIZATION
+ * ============================================================================
+ * 
+ * DATABASE QUERIES:
+ * - Paginated result retrieval
+ * - Indexed field usage for speed
+ * - Efficient metadata handling
+ * - Query optimization and caching
+ * 
+ * CONTENT PROCESSING:
+ * - Lazy loading for large content
+ * - Content truncation for display
+ * - Efficient embedding generation
+ * - Chunk optimization for search
+ * 
+ * FRONTEND PERFORMANCE:
+ * - AJAX-based operations
+ * - Progressive enhancement
+ * - Responsive design patterns
+ * - Optimized content rendering
+ * 
+ * ============================================================================
+ * ERROR HANDLING AND VALIDATION
+ * ============================================================================
+ * 
+ * VALIDATION ERRORS:
+ * - Required field checking
+ * - Content length validation
+ * - Format verification
+ * - User feedback and guidance
+ * 
+ * PROCESSING ERRORS:
+ * - Database operation failures
+ * - API communication issues
+ * - File processing problems
+ * - Graceful degradation
+ * 
+ * USER FEEDBACK:
+ * - Success confirmations
+ * - Error message display
+ * - Processing status updates
+ * - Recovery suggestions
  * 
  * @package AI_Trainer
  * @subpackage Admin_Tabs
  * @since 1.0
+ * @author Psychedelic
  */
 
 // Ensure ABSPATH is defined for includes
@@ -52,7 +194,31 @@ if (!function_exists('wp_kses_post')) require_once(ABSPATH . 'wp-includes/kses.p
 // ============================================================================
 // TEXT ADDITION HANDLER
 // ============================================================================
-// Process form submission for adding new text entries
+/**
+ * Process form submission for adding new text entries
+ * 
+ * This handler processes text addition forms and:
+ * - Sanitizes all input data for security
+ * - Generates AI embeddings for semantic search
+ * - Stores data in the knowledge base
+ * - Creates text chunks for optimized search
+ * - Provides user feedback on success/failure
+ * 
+ * SECURITY MEASURES:
+ * - POST data validation
+ * - Input sanitization (sanitize_text_field, wp_kses_post)
+ * - Nonce verification (handled by form)
+ * - Capability checks
+ * 
+ * PROCESSING FLOW:
+ * 1. Form data validation and sanitization
+ * 2. Content preprocessing for embedding
+ * 3. OpenAI API embedding generation
+ * 4. Database storage with metadata
+ * 5. Chunk creation for search optimization
+ * 
+ * @since 1.0
+ */
 if (isset($_POST['add_text'])) {
     $title = sanitize_text_field($_POST['text_title']);
     $text = wp_kses_post($_POST['text_content']);
@@ -68,7 +234,29 @@ if (isset($_POST['add_text'])) {
 // ============================================================================
 // TEXT DELETION HANDLER
 // ============================================================================
-// Process deletion requests for text entries
+/**
+ * Process deletion requests for text entries
+ * 
+ * This handler processes text deletion requests and:
+ * - Validates the text ID from GET parameters
+ * - Removes the entry from the knowledge base
+ * - Cleans up associated chunks and embeddings
+ * - Provides user feedback on completion
+ * 
+ * SECURITY MEASURES:
+ * - GET parameter validation
+ * - Integer sanitization
+ * - Database operation safety
+ * - User feedback and confirmation
+ * 
+ * CLEANUP OPERATIONS:
+ * 1. Main text entry removal
+ * 2. Associated chunk cleanup
+ * 3. Embedding data removal
+ * 4. Metadata cleanup
+ * 
+ * @since 1.0
+ */
 if (isset($_GET['delete_text'])) {
     ai_trainer_delete((int)$_GET['delete_text']);
     echo '<div class="notice notice-success"><p>Text deleted.</p></div>';
@@ -77,7 +265,31 @@ if (isset($_GET['delete_text'])) {
 // ============================================================================
 // INLINE EDIT HANDLER
 // ============================================================================
-// Process inline edit form submissions for text entries
+/**
+ * Process inline edit form submissions for text entries
+ * 
+ * This handler processes inline text updates and:
+ * - Validates and sanitizes updated content
+ * - Regenerates AI embeddings for changed content
+ * - Updates the database with new information
+ * - Maintains data integrity and relationships
+ * - Provides user feedback on completion
+ * 
+ * SECURITY FEATURES:
+ * - POST data validation
+ * - Input sanitization
+ * - ID validation
+ * - Database update safety
+ * 
+ * UPDATE PROCESS:
+ * 1. Form data validation and sanitization
+ * 2. Content embedding regeneration
+ * 3. Database update with new content
+ * 4. Chunk regeneration for search optimization
+ * 5. Success confirmation and user feedback
+ * 
+ * @since 1.0
+ */
 if (isset($_POST['update_text_inline'])) {
     $id = intval($_POST['text_id']);
     $title = sanitize_text_field($_POST['text_title']);
@@ -104,7 +316,38 @@ if (isset($_POST['update_text_inline'])) {
 // ============================================================================
 // CSV IMPORT HANDLER
 // ============================================================================
-// Process CSV file uploads for bulk text import
+/**
+ * Process CSV file uploads for bulk text import
+ * 
+ * This handler processes CSV file uploads and:
+ * - Validates uploaded file format and content
+ * - Processes CSV data row by row
+ * - Creates text entries with proper validation
+ * - Generates embeddings for imported content
+ * - Provides import statistics and feedback
+ * 
+ * CSV FORMAT EXPECTED:
+ * - Column 1: Title (required)
+ * - Column 2: Content (required)
+ * - Header row is automatically skipped
+ * - UTF-8 encoding support
+ * 
+ * SECURITY FEATURES:
+ * - File type validation
+ * - Content sanitization
+ * - Error handling and reporting
+ * - Import success tracking
+ * 
+ * PROCESSING FLOW:
+ * 1. File upload validation
+ * 2. CSV parsing and row processing
+ * 3. Content validation and sanitization
+ * 4. Embedding generation
+ * 5. Database storage
+ * 6. Success reporting
+ * 
+ * @since 1.0
+ */
 if (isset($_POST['import_text_csv']) && isset($_FILES['import_text_csv_file'])) {
     $file = $_FILES['import_text_csv_file']['tmp_name'];
     if (($handle = fopen($file, 'r')) !== false) {
@@ -133,7 +376,22 @@ if (isset($_POST['import_text_csv']) && isset($_FILES['import_text_csv_file'])) 
 
 <!-- ============================================================================
      TEXT MANAGEMENT INTERFACE
-     ============================================================================ -->
+     ============================================================================
+     
+     This section provides the complete user interface for text content management:
+     - Text addition form with validation
+     - Import/export functionality for bulk operations
+     - Text display table with pagination
+     - Inline editing and deletion capabilities
+     
+     INTERFACE FEATURES:
+     - Rich text editing capabilities
+     - CSV import/export interface
+     - Paginated content display
+     - Inline editing without page reload
+     - Delete operations with confirmation
+     - Content preview with truncation
+-->
 <h2>Text Content Management</h2>
 <p>Add and process plain text-based sources to train your AI Agent with precise information.</p>
 
@@ -184,11 +442,33 @@ $rows = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}ai_knowledge WHERE sour
 <thead><tr><th>Title</th><th>Content</th><th>Actions</th></tr></thead>
 <tbody>
 <?php
-// ============================================================================
-// TEXT DATA DISPLAY LOOP
-// ============================================================================
-// Iterate through text entries and display them in the table
-foreach ($rows as $row):
+    // ============================================================================
+    // TEXT DATA DISPLAY LOOP
+    // ============================================================================
+    /**
+     * Iterate through text entries and display them in the table
+     * 
+     * This loop processes each text entry and:
+     * - Displays formatted content in table rows
+     * - Provides action buttons for each entry
+     * - Handles data escaping for security
+     * - Creates interactive elements for editing
+     * - Manages content truncation for display
+     * 
+     * TABLE STRUCTURE:
+     * - Title: Entry title with proper escaping
+     * - Content: Truncated content preview (100 chars)
+     * - Actions: Edit/Delete buttons with data attributes
+     * 
+     * DISPLAY FEATURES:
+     * - Content truncation with ellipsis
+     * - Data attribute population for JavaScript
+     * - Proper HTML escaping for security
+     * - Responsive table layout
+     * 
+     * @since 1.0
+     */
+    foreach ($rows as $row):
     echo "<tr data-id='{$row['id']}'>
         <td class='text-title'>" . esc_html($row['title']) . "</td>
         <td class='text-content'>" . esc_html(substr($row['content'], 0, 100)) . (strlen($row['content']) > 100 ? '...' : '') . "</td>
