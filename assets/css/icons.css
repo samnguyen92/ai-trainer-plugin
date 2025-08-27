@@ -1,0 +1,141 @@
+/* Icon System - Replaces inline SVGs for better performance */
+
+/* Like Icon */
+.icon-like {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M13 3a3 3 0 0 1 2.995 2.824l.005 .176v4h2a3 3 0 0 1 2.98 2.65l.015 .174l.005 .176l-.02 .196l-1.006 5.032c-.381 1.626-1.502 2.796-2.81 2.78l-.164-.008h-8a1 1 0 0 1-.993-.883l-.007-.117l.001-9.536a1 1 0 0 1 .5-.865a2.998 2.998 0 0 0 1.492-2.397l.007-.202v-1a3 3 0 0 1 3-3z'/%3E%3Cpath d='M5 10a1 1 0 0 1 .993.883l.007.117v9a1 1 0 0 1-.883.993l-.117.007h-1a2 2 0 0 1-1.995-1.85l-.005-.15v-7a2 2 0 0 1 1.85-1.995l.15-.005h1z'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    vertical-align: middle;
+    color: #3bb273;
+}
+
+/* Dislike Icon */
+.icon-dislike {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M13 3a3 3 0 0 1 2.995 2.824l.005 .176v4h2a3 3 0 0 1 2.98 2.65l.015 .174l.005 .176l-.02 .196l-1.006 5.032c-.381 1.626-1.502 2.796-2.81 2.78l-.164-.008h-8a1 1 0 0 1-.993-.883l-.007-.117l.001-9.536a1 1 0 0 1 .5-.865a2.998 2.998 0 0 0 1.492-2.397l.007-.202v-1a3 3 0 0 1 3-3z'/%3E%3Cpath d='M5 10a1 1 0 0 1 .993.883l.007.117v9a1 1 0 0 1-.883.993l-.117.007h-1a2 2 0 0 1-1.995-1.85l-.005-.15v-7a2 2 0 0 1 1.85-1.995l.15-.005h1z'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    vertical-align: middle;
+    transform: scaleY(-1);
+    color: #e74c3c;
+}
+
+/* Share Icon */
+.icon-share {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13 4v4c-6.575 1.028-9.02 6.788-10 12c-.037.206 5.384-5.962 10-6v4l8-7-8-7z'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    vertical-align: middle;
+    color: #3498db;
+}
+
+/* More Options Icon */
+.icon-more {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='1'/%3E%3Ccircle cx='19' cy='12' r='1'/%3E%3Ccircle cx='5' cy='12' r='1'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    vertical-align: middle;
+    color: #95a5a6;
+}
+
+/* Tab Icons */
+.icon-tab-answer {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 1v6m0 6v6'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    vertical-align: middle;
+    color: #fff;
+}
+
+.icon-tab-sources {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpolygon points='12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    vertical-align: middle;
+    color: #fff;
+}
+
+/* Source Action Icons */
+.icon-source-open {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3Cpolyline points='15,3 21,3 21,9'/%3E%3Cline x1='10' y1='14' x2='21' y2='3'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    vertical-align: middle;
+    color: #3498db;
+}
+
+.icon-source-copy {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Crect x='9' y='9' width='13' height='13' rx='2' ry='2'/%3E%3Cpath d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    vertical-align: middle;
+    color: #95a5a6;
+}
+
+/* Hover effects */
+.icon-like:hover,
+.icon-dislike:hover,
+.icon-share:hover,
+.icon-more:hover {
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+/* Active states */
+.reaction-like .icon-like,
+.reaction-dislike .icon-dislike {
+    opacity: 1;
+}
+
+/* Fallback for browsers that don't support data URLs */
+@supports not (background-image: url("data:image/svg+xml")) {
+    .icon-like { background-image: url("../images/icons/like.svg"); }
+    .icon-dislike { background-image: url("../images/icons/dislike.svg"); }
+    .icon-share { background-image: url("../images/icons/share.svg"); }
+    .icon-more { background-image: url("../images/icons/more.svg"); }
+    .icon-tab-answer { background-image: url("../images/icons/tab-answer.svg"); }
+    .icon-tab-sources { background-image: url("../images/icons/tab-sources.svg"); }
+    .icon-source-open { background-image: url("../images/icons/source-open.svg"); }
+    .icon-source-copy { background-image: url("../images/icons/source-copy.svg"); }
+}
+
+/* Additional fallback using emojis if SVG files also fail */
+.icon-like:not([style*="background-image"]):before { content: "👍"; }
+.icon-dislike:not([style*="background-image"]):before { content: "👎"; }
+.icon-share:not([style*="background-image"]):before { content: "📤"; }
+.icon-more:not([style*="background-image"]):before { content: "⋯"; }
+.icon-tab-answer:not([style*="background-image"]):before { content: "💬"; }
+.icon-tab-sources:not([style*="background-image"]):before { content: "📚"; }
+.icon-source-open:not([style*="background-image"]):before { content: "🔗"; }
+.icon-source-copy:not([style*="background-image"]):before { content: "📋"; }
