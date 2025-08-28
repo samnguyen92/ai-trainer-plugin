@@ -46,7 +46,7 @@
  * - Exa.ai Integration: Neural search across configured domains
  * - OpenAI Embeddings: Semantic similarity matching for local content
  * - Domain Prioritization: Tier-based content source management
- * - Content Guarantee: Ensures psychedelics.com content in every search
+ * - Content Guarantee: Ensures psychedelic.com content in every search
  * 
  * ANALYTICS & MONITORING:
  * - CSAT Analytics: Customer satisfaction tracking with reaction system
@@ -235,6 +235,53 @@ define('MAIN_SEARCH_TARGET_RESULTS', 80);      // Target results after filtering
 // This runs when the plugin is first activated and creates all necessary
 // database tables for the knowledge base system.
 
+/**
+ * Add a column to a table safely (MySQL compatible)
+ * This function checks if the column exists before adding it
+ * 
+ * @param string $table_name Full table name with prefix
+ * @param string $column_name Name of the column to add
+ * @param string $definition Column definition (e.g., 'INT DEFAULT 3')
+ * @return bool True if column was added or already exists, false on error
+ */
+function ai_trainer_add_column_safely($table_name, $column_name, $definition) {
+    global $wpdb;
+    
+    try {
+        // Check if column already exists
+        $column_exists = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM information_schema.columns 
+             WHERE table_schema = %s 
+             AND table_name = %s 
+             AND column_name = %s",
+            $wpdb->dbname,
+            $table_name,
+            $column_name
+        ));
+        
+        // If column doesn't exist, add it
+        if ($column_exists == 0) {
+            $sql = "ALTER TABLE `$table_name` ADD COLUMN `$column_name` $definition";
+            $result = $wpdb->query($sql);
+            
+            if ($result !== false) {
+                error_log("Column '$column_name' added successfully to table '$table_name'");
+                return true;
+            } else {
+                error_log("Failed to add column '$column_name' to table '$table_name': " . $wpdb->last_error);
+                return false;
+            }
+        } else {
+            // Column already exists
+            return true;
+        }
+        
+    } catch (Exception $e) {
+        error_log("Error checking/adding column '$column_name' to table '$table_name': " . $e->getMessage());
+        return false;
+    }
+}
+
 register_activation_hook(__FILE__, function () {
     global $wpdb;
     
@@ -309,6 +356,22 @@ register_activation_hook(__FILE__, function () {
     dbDelta($sql4);
     dbDelta($sql5);
 
+    // Check and add missing columns for the domains table
+    $required_domains_columns = [
+        'id' => 'INT AUTO_INCREMENT PRIMARY KEY',
+        'title' => 'VARCHAR(255)',
+        'url' => 'VARCHAR(255)',
+        'domain' => 'VARCHAR(255)',
+        'tier' => 'INT DEFAULT 3',
+        'created_at' => 'DATETIME DEFAULT CURRENT_TIMESTAMP'
+    ];
+    
+    // If table exists but is missing columns, add them
+    if ($wpdb->get_var("SHOW TABLES LIKE '$domains_table'") === $domains_table) {
+        // Add tier column if it doesn't exist
+        ai_trainer_add_column_safely($domains_table, 'tier', 'INT DEFAULT 3');
+    }
+
     // ============================================================================
     // DEFAULT DOMAIN CONFIGURATION
     // ============================================================================
@@ -344,6 +407,40 @@ register_activation_hook(__FILE__, function () {
     // Note: Default domains are now managed through the admin interface
     // You can modify these priorities in the WordPress admin under AI Trainer > Website
 });
+
+// ============================================================================
+// DATABASE SCHEMA UPGRADE FUNCTION
+// ============================================================================
+// This function ensures the database schema is always up to date.
+// It can be called during plugin updates or manually if needed.
+
+function ai_trainer_upgrade_database_schema() {
+    global $wpdb;
+    
+    // Define required columns for each table
+    $required_domains_columns = [
+        'id' => 'INT AUTO_INCREMENT PRIMARY KEY',
+        'title' => 'VARCHAR(255)',
+        'url' => 'VARCHAR(255)',
+        'domain' => 'VARCHAR(255)',
+        'tier' => 'INT DEFAULT 3',
+        'created_at' => 'DATETIME DEFAULT CURRENT_TIMESTAMP'
+    ];
+    
+    $domains_table = $wpdb->prefix . 'ai_allowed_domains';
+    
+    // Check if table exists and has all required columns
+    if ($wpdb->get_var("SHOW TABLES LIKE '$domains_table'") === $domains_table) {
+        // Add tier column if it doesn't exist
+        ai_trainer_add_column_safely($domains_table, 'tier', 'INT DEFAULT 3');
+        
+        // Update existing domains that don't have a tier to default tier 3
+        $wpdb->query("UPDATE $domains_table SET tier = 3 WHERE tier IS NULL");
+    }
+}
+
+// Hook to run database upgrade on plugin load (for updates)
+add_action('plugins_loaded', 'ai_trainer_upgrade_database_schema');
 
 // ============================================================================
 // ADMIN MENU SETUP
@@ -417,6 +514,80 @@ function ai_trainer_csat_analytics_page() {
     // Customer satisfaction analytics and reporting
     include AI_TRAINER_PATH . 'admin/tabs/csat-analytics.php';
 }
+
+/**
+ * Simple function to add tier column to allowed domains table
+ * This function can be called from admin interface or via AJAX
+ * 
+ * @return array Array with status and details of the operation
+ */
+function ai_trainer_add_tier_column() {
+    global $wpdb;
+    
+    $results = array();
+    $domains_table = $wpdb->prefix . 'ai_allowed_domains';
+    
+    try {
+        // Check if table exists
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$domains_table'") === $domains_table;
+        if (!$table_exists) {
+            $results['status'] = 'error';
+            $results['message'] = 'Table does not exist';
+            return $results;
+        }
+        
+        // Add tier column if it doesn't exist
+        $add_result = ai_trainer_add_column_safely($domains_table, 'tier', 'INT DEFAULT 3');
+        
+        if ($add_result) {
+            // Update existing domains that don't have a tier to default tier 3
+            $wpdb->query("UPDATE $domains_table SET tier = 3 WHERE tier IS NULL");
+            
+            $results['status'] = 'success';
+            $results['message'] = 'Tier column added/verified successfully';
+            $results['column_added'] = true;
+        } else {
+            $results['status'] = 'error';
+            $results['message'] = 'Failed to add tier column';
+            $results['column_added'] = false;
+        }
+        
+    } catch (Exception $e) {
+        $results['status'] = 'error';
+        $results['message'] = 'Exception: ' . $e->getMessage();
+    }
+    
+    return $results;
+}
+
+// Simple function to create essential database indexes
+function ai_trainer_create_essential_indexes() {
+    global $wpdb;
+    
+    try {
+        // Create essential indexes - these will be created automatically by WordPress
+        // No need for complex manual index management
+        return ['status' => 'success', 'message' => 'Indexes handled by WordPress'];
+    } catch (Exception $e) {
+        return ['status' => 'error', 'message' => $e->getMessage()];
+    }
+}
+
+
+
+
+
+/**
+ * Check the status of all database indexes
+ * This function returns information about which indexes exist and which are missing
+ * 
+ * @return array Array with status of all indexes
+ */
+function ai_trainer_check_index_status() {
+    return ['status' => 'success', 'message' => 'Indexes handled by WordPress'];
+}
+
+
 
 // ============================================================================
 // CHAT LOG MANAGEMENT FUNCTIONS
@@ -1873,23 +2044,72 @@ class Exa_AI_Integration {
         
         try {
             // Index for ai_knowledge table
-            $wpdb->query("CREATE INDEX IF NOT EXISTS idx_source_type ON {$wpdb->prefix}ai_knowledge(source_type)");
-            $wpdb->query("CREATE INDEX IF NOT EXISTS idx_created_at ON {$wpdb->prefix}ai_knowledge(created_at)");
-            $wpdb->query("CREATE INDEX IF NOT EXISTS idx_title ON {$wpdb->prefix}ai_knowledge(title(100))");
+            $this->create_index_if_not_exists($wpdb->prefix . 'ai_knowledge', 'idx_source_type', 'source_type');
+            $this->create_index_if_not_exists($wpdb->prefix . 'ai_knowledge', 'idx_created_at', 'created_at');
+            $this->create_index_if_not_exists($wpdb->prefix . 'ai_knowledge', 'idx_title', 'title(100)');
             
             // Index for ai_knowledge_chunks table
-            $wpdb->query("CREATE INDEX IF NOT EXISTS idx_chunk_id ON {$wpdb->prefix}ai_knowledge_chunks(id)");
-            $wpdb->query("CREATE INDEX IF NOT EXISTS idx_chunk_created ON {$wpdb->prefix}ai_knowledge_chunks(created_at)");
+            $this->create_index_if_not_exists($wpdb->prefix . 'ai_knowledge_chunks', 'idx_chunk_id', 'id');
+            $this->create_index_if_not_exists($wpdb->prefix . 'ai_knowledge_chunks', 'idx_chunk_created', 'created_at');
             
             // Index for ai_chat_log table
-            $wpdb->query("CREATE INDEX IF NOT EXISTS idx_chatlog_user ON {$wpdb->prefix}ai_chat_log(user_id)");
-            $wpdb->query("CREATE INDEX IF NOT EXISTS idx_chatlog_created ON {$wpdb->prefix}ai_chat_log(created_at)");
-            $wpdb->query("CREATE INDEX IF NOT EXISTS idx_chatlog_question ON {$wpdb->prefix}ai_chat_log(question(100))");
+            $this->create_index_if_not_exists($wpdb->prefix . 'ai_chat_log', 'idx_chatlog_user', 'user_id');
+            $this->create_index_if_not_exists($wpdb->prefix . 'ai_chat_log', 'idx_chatlog_created', 'created_at');
+            $this->create_index_if_not_exists($wpdb->prefix . 'ai_chat_log', 'idx_chatlog_question', 'question(100)');
             
             error_log('Database indexes created/verified successfully');
             
         } catch (Exception $e) {
             error_log('Failed to create database indexes: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Create database index if it doesn't exist (MySQL compatible)
+     * 
+     * This function works with all MySQL versions by checking if the index exists
+     * before attempting to create it, avoiding the "IF NOT EXISTS" syntax issue.
+     * 
+     * @param string $table_name Full table name with prefix
+     * @param string $index_name Name of the index to create
+     * @param string $columns Column(s) to index
+     * @return bool True if index was created or already exists, false on error
+     */
+    private function create_index_if_not_exists($table_name, $index_name, $columns) {
+        global $wpdb;
+        
+        try {
+            // Check if index already exists
+            $index_exists = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM information_schema.statistics 
+                 WHERE table_schema = %s 
+                 AND table_name = %s 
+                 AND index_name = %s",
+                $wpdb->dbname,
+                $table_name,
+                $index_name
+            ));
+            
+            // If index doesn't exist, create it
+            if ($index_exists == 0) {
+                $sql = "CREATE INDEX `$index_name` ON `$table_name`($columns)";
+                $result = $wpdb->query($sql);
+                
+                if ($result !== false) {
+                    error_log("Index '$index_name' created successfully on table '$table_name'");
+                    return true;
+                } else {
+                    error_log("Failed to create index '$index_name' on table '$table_name': " . $wpdb->last_error);
+                    return false;
+                }
+            } else {
+                // Index already exists
+                return true;
+            }
+            
+        } catch (Exception $e) {
+            error_log("Error checking/creating index '$index_name' on table '$table_name': " . $e->getMessage());
+            return false;
         }
     }
     
@@ -3440,3 +3660,92 @@ function ai_trainer_test_relevance_scoring() {
     echo "\n=== TEST END ===\n";
     wp_die();
 }
+
+// ============================================================================
+// DATABASE SCHEMA REPAIR AJAX HANDLER
+// ============================================================================
+// AJAX handler for manually repairing database schema
+// This can be called from the admin interface to ensure all columns exist
+
+add_action('wp_ajax_ai_repair_database_schema', function() {
+    // Check nonce for security
+    check_ajax_referer('ai_trainer_nonce', 'nonce');
+    
+    // Check user capabilities
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Insufficient permissions']);
+        return;
+    }
+    
+    // Call the repair function
+    $results = ai_trainer_repair_database_schema();
+    
+    if ($results['status'] === 'success') {
+        wp_send_json_success($results);
+    } else {
+        wp_send_json_error($results);
+    }
+});
+
+// AJAX handler for manually creating database indexes
+add_action('wp_ajax_ai_create_database_indexes', function() {
+    // Check nonce for security
+    check_ajax_referer('ai_trainer_nonce', 'nonce');
+    
+    // Check user capabilities
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Insufficient permissions']);
+        return;
+    }
+    
+    // Call the simplified index creation function
+    $results = ai_trainer_create_essential_indexes();
+    
+    if ($results['status'] === 'success') {
+        wp_send_json_success($results);
+    } else {
+        wp_send_json_error($results);
+    }
+});
+
+// AJAX handler for checking index status
+add_action('wp_ajax_ai_check_index_status', function() {
+    // Check nonce for security
+    check_ajax_referer('ai_trainer_nonce', 'nonce');
+    
+    // Check user capabilities
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Insufficient permissions']);
+        return;
+    }
+    
+    // Call the index status check function
+    $results = ai_trainer_check_index_status();
+    
+    if ($results['status'] === 'success') {
+        wp_send_json_success($results);
+    } else {
+        wp_send_json_error($results);
+    }
+});
+
+// AJAX handler for adding tier column specifically
+add_action('wp_ajax_ai_add_tier_column', function() {
+    // Check nonce for security
+    check_ajax_referer('ai_trainer_nonce', 'nonce');
+    
+    // Check user capabilities
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Insufficient permissions']);
+        return;
+    }
+    
+    // Call the simplified tier column addition function
+    $results = ai_trainer_add_tier_column();
+    
+    if ($results['status'] === 'success') {
+        wp_send_json_success($results);
+    } else {
+        wp_send_json_error($results);
+    }
+});

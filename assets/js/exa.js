@@ -356,7 +356,7 @@ jQuery(document).ready(function($) {
             setupModernSliderButtons();
 
             if (data.local_answer) {
-                handleLocalAnswer(data.local_answer, block, chatlogId);
+                handleLocalAnswer(data.local_answer, block, chatlogId, query);
             } else {
                 // Update the global conversation history with the response from server
                 if (data.conversation_history && Array.isArray(data.conversation_history)) {
@@ -1776,17 +1776,18 @@ jQuery(document).ready(function($) {
      * @param {Object} localAnswer - Local answer object with content
      * @param {jQuery} block - The answer block container
      * @param {string} chatlogId - Unique identifier for the chat log entry
+     * @param {string} query - The user's original query
      * @returns {void}
      * 
      * @example
-     * handleLocalAnswer({content: 'Local answer content'}, answerBlock, 'chat-123');
+     * handleLocalAnswer({content: 'Local answer content'}, answerBlock, 'chat-123', 'user question');
      * // Processes and displays local knowledge base answer
      */
-    function handleLocalAnswer(localAnswer, block, chatlogId) {
+    function handleLocalAnswer(localAnswer, block, chatlogId, query) {
         const html = `<div>${localAnswer.content}</div>`;
         streamLocalAnswer(html, block.find('.exa-answer-streaming')[0]);
         addModernFeedbackSystem(block, chatlogId);
-        conversationHistory.push({ q: query || 'Question', a: '' }); // Empty answer to keep structure
+        conversationHistory.push({ q: query || 'Question', a: '' }); // Now query is properly defined
         
         // Limit conversation history to last 5 exchanges to prevent context overflow
         if (conversationHistory.length > 5) {
