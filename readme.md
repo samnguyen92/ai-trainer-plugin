@@ -1,5 +1,5 @@
 
-# 🌌 AI Trainer Dashboard
+# RAG-EXA Plugin Setup
 
 A WordPress plugin that integrates **RAG search with Exa.ai and OpenAI**, providing an AI-powered training dashboard with comprehensive analytics and monitoring capabilities.
 
@@ -82,7 +82,8 @@ Access the admin interface at **AI Trainer** in your WordPress admin menu:
 
 ---
 
-## 📂 Project Structure
+### 5. Configure API Keys
+From the plugins folder:
 
 ```
 rag-exa-plugin/
@@ -120,9 +121,10 @@ rag-exa-plugin/
 ├── composer.json             # PHP dependencies
 ├── package.json              # Node.js dependencies
 └── readme.md                 # This file
+
 ```
 
----
+Edit `.env` with your real keys:
 
 ## 🔑 Environment Variables
 
@@ -137,7 +139,7 @@ OPENAI_API_KEY=your_real_openai_key
 
 ---
 
-## 🧑‍💻 Development
+## Usage
 
 ### **Build System**
 The plugin uses a modern build system for CSS compilation:
