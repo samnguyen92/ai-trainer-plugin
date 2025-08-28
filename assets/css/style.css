@@ -5,8 +5,1002 @@
     max-width: 720px;
  }
 
+/* Modern UI Styles */
+.modern-ui {
+    background: #0C0012;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modern-ui .answer-header {
+    margin-bottom: 24px;
+}
 
 
+
+.modern-ui .answer-tabs {
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 16px;
+}
+
+.modern-ui .tab-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 12px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.modern-ui .tab-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.modern-ui .tab-btn.active {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.modern-ui .tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -17px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #fff;
+    border-radius: 1px;
+}
+
+.modern-ui .tab-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+}
+
+.modern-ui .tab-content {
+    display: none;
+    padding: 20px 0;
+}
+
+.modern-ui .tab-content.active {
+    display: block;
+}
+
+.modern-ui .images-placeholder,
+.modern-ui .sources-placeholder {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 16px;
+    padding: 40px 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+/* Sources Tab Styling */
+.modern-ui .sources-tab-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modern-ui .sources-count {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.modern-ui .count-number {
+    font-size: 32px;
+    font-weight: 700;
+    color: #3bb273;
+}
+
+.modern-ui .count-label {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+.modern-ui .sources-filters {
+    display: flex;
+    gap: 8px;
+}
+
+.modern-ui .filter-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.modern-ui .filter-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+.modern-ui .filter-btn.active {
+    background: #3bb273;
+    border-color: #3bb273;
+    color: #fff;
+}
+
+.modern-ui .source-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: all 0.2s ease;
+}
+
+.modern-ui .source-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.modern-ui .source-item-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.modern-ui .source-favicon {
+    flex-shrink: 0;
+}
+
+.modern-ui .source-favicon img {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.modern-ui .source-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.modern-ui .source-domain {
+    color: #3bb273;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.modern-ui .source-title {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 8px;
+}
+
+.modern-ui .source-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.modern-ui .source-action-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.modern-ui .source-action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    transform: scale(1.05);
+}
+
+.modern-ui .source-action-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+}
+
+.modern-ui .source-item-details {
+    padding-left: 64px;
+}
+
+.modern-ui .source-url {
+    margin-bottom: 8px;
+}
+
+.modern-ui .source-url a {
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    font-size: 14px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    word-break: break-all;
+    transition: color 0.2s ease;
+}
+
+.modern-ui .source-url a:hover {
+    color: #3bb273;
+}
+
+.modern-ui .source-snippet {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    line-height: 1.5;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 12px;
+    border-radius: 8px;
+    border-left: 3px solid #3bb273;
+}
+
+.modern-ui .sources-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.modern-ui .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.modern-ui .sources-empty-state h3 {
+    color: #fff;
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+.modern-ui .sources-empty-state p {
+    font-size: 16px;
+    margin: 0;
+}
+
+/* Modern Source Cards */
+.modern-ui .sources-header {
+    margin-bottom: 20px;
+    text-align: center;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.modern-ui .sources-container {
+    position: relative;
+    margin: 0 -12px;
+}
+
+.modern-ui .top-sources-wrapper {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding: 0 12px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.modern-ui .top-sources-wrapper::-webkit-scrollbar {
+    display: none;
+}
+
+.modern-ui .source-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    min-width: 200px;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.modern-ui .source-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.modern-ui .source-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.modern-ui .exa-favicon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+.modern-ui .exa-domain {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.modern-ui .source-title {
+    color: #fff;
+    text-decoration: none;
+    font-size: 14px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    transition: color 0.2s ease;
+}
+
+.modern-ui .source-title:hover {
+    color: #3bb273;
+}
+
+.modern-ui .slider-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.modern-ui .slider-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.modern-ui .slider-btn.prev-btn {
+    left: 8px;
+}
+
+.modern-ui .slider-btn.next-btn {
+    right: 8px;
+}
+
+/* Modern Reaction Bar */
+.modern-ui .answer-reaction-bar.modern {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 28px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    margin-top: 28px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-ui .answer-reaction-bar.modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(230, 230, 255, 0.3), transparent);
+}
+
+.modern-ui .action-buttons {
+    display: flex;
+    gap: 12px;
+}
+
+.modern-ui .action-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.modern-ui .action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.modern-ui .action-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+}
+
+.modern-ui .feedback-question {
+    color: #e6e6ff;
+    font-size: 20px;
+    font-weight: 600;
+    text-align: center;
+    flex: 1;
+    margin: 0 24px;
+    text-shadow: 0 2px 8px rgba(230, 230, 255, 0.15);
+    letter-spacing: 0.3px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    position: relative;
+    padding: 8px 0;
+}
+
+.modern-ui .feedback-question::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 0;
+    height: 0;
+    background: linear-gradient(45deg, rgba(230, 230, 255, 0.1), rgba(255, 255, 255, 0.05));
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    z-index: -1;
+}
+
+.modern-ui .feedback-question:hover::before {
+    width: 120px;
+    height: 40px;
+}
+
+.modern-ui .reaction-buttons {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.modern-ui .reaction-like,
+.modern-ui .reaction-dislike,
+.modern-ui .reaction-more {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: rgba(255, 255, 255, 0.7);
+    transition: all 0.2s ease;
+}
+
+.modern-ui .reaction-like:hover,
+.modern-ui .reaction-dislike:hover,
+.modern-ui .reaction-more:hover {
+    color: #fff;
+}
+
+.modern-ui .reaction-like svg,
+.modern-ui .reaction-dislike svg,
+.modern-ui .reaction-more svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    fill: none;
+}
+
+.modern-ui .like-count,
+.modern-ui .dislike-count {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.modern-ui .like-count {
+    color: #3bb273;
+}
+
+.modern-ui .dislike-count {
+    color: #e74c3c;
+}
+
+/* Modern Reaction Options Popup */
+.modern-ui .reaction-options-container {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 1000;
+    margin-top: 8px;
+}
+
+.modern-ui .reaction-options-popup {
+    background: #1a0024;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    min-width: 200px;
+}
+
+.modern-ui .reaction-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.modern-ui .reaction-option-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.modern-ui .reaction-option-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.modern-ui .reaction-custom {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 16px;
+}
+
+.modern-ui .reaction-custom-text {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 12px;
+    border-radius: 8px;
+    width: 100%;
+    margin-bottom: 12px;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 80px;
+}
+
+.modern-ui .reaction-custom-text::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.modern-ui .reaction-custom-submit {
+    background: #3bb273;
+    border: none;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.modern-ui .reaction-custom-submit:hover {
+    background: #2d8f5a;
+}
+
+/* Ensure reaction buttons are properly positioned for popup */
+.modern-ui .reaction-buttons {
+    position: relative;
+}
+
+/* Modern Follow-up Prompts */
+.modern-ui .follow-up-prompt.modern {
+    margin-top: 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    text-align: center;
+    color: #fff;
+    font-size: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modern-ui .new-chat-btn.modern,
+.modern-ui .beta-feedback-btn.modern,
+.modern-ui .beta-feedback-submit.modern {
+    background: #3bb273;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.modern-ui .new-chat-btn.modern:hover,
+.modern-ui .beta-feedback-btn.modern:hover,
+.modern-ui .beta-feedback-submit.modern:hover {
+    background: #2d8f5a;
+    transform: translateY(-1px);
+}
+
+.modern-ui .beta-feedback-submit.modern {
+    background: #0C0012;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.modern-ui .beta-feedback-submit.modern:hover {
+    background: #1a0024;
+}
+
+.modern-ui .beta-feedback-text {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #fff;
+    padding: 12px;
+    width: 90%;
+    margin-bottom: 10px;
+}
+
+.modern-ui .beta-feedback-text::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Content Styling */
+.modern-ui .exa-answer-streaming {
+    color: #fff;
+    line-height: 1.6;
+}
+
+.modern-ui .exa-answer-streaming h2 {
+    color: #fff;
+    font-size: 24px;
+    font-weight: 700;
+    margin: 24px 0 16px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+}
+
+.modern-ui .exa-answer-streaming h3 {
+    color: #fff;
+    font-size: 20px;
+    font-weight: 600;
+    margin: 20px 0 12px 0;
+}
+
+.modern-ui .exa-answer-streaming p {
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 16px;
+}
+
+.modern-ui .exa-answer-streaming ul,
+.modern-ui .exa-answer-streaming ol {
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 16px;
+    padding-left: 24px;
+}
+
+.modern-ui .exa-answer-streaming li {
+    margin-bottom: 8px;
+}
+
+.modern-ui .exa-answer-streaming strong {
+    color: #fff;
+    font-weight: 600;
+}
+
+.modern-ui .exa-answer-streaming a {
+    color: #3bb273;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s ease;
+}
+
+.modern-ui .exa-answer-streaming a:hover {
+    border-bottom-color: #3bb273;
+}
+
+.modern-ui .exa-answer-streaming sup {
+    color: #3bb273;
+    font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modern-ui {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+    
+
+    
+    .modern-ui .answer-tabs {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    
+    .modern-ui .tab-btn {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+    
+    .modern-ui .action-buttons {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .modern-ui .reaction-buttons {
+        gap: 12px;
+    }
+    
+    .modern-ui .source-card {
+        min-width: 180px;
+        padding: 12px;
+    }
+}
+
+/* Responsive design for Sources tab */
+@media (max-width: 768px) {
+    .modern-ui .sources-tab-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+    }
+    
+    .modern-ui .sources-filters {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .modern-ui .source-item-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .modern-ui .source-actions {
+        align-self: flex-end;
+    }
+    
+    .modern-ui .source-item-details {
+        padding-left: 0;
+    }
+    
+    .modern-ui .source-favicon img {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+/* Additional Modern UI Components */
+.modern-ui .more-options-container {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+}
+
+.modern-ui .more-option {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.modern-ui .more-option:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Notification Styles */
+.notification {
+    font-weight: 500;
+    font-size: 14px;
+    max-width: 300px;
+    word-wrap: break-word;
+}
+
+.notification.success {
+    background: #3bb273;
+}
+
+.notification.error {
+    background: #e74c3c;
+}
+
+.notification.info {
+    background: #3498db;
+}
+
+/* Modal Styles */
+.report-form {
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+}
+
+.report-form h3 {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.report-form textarea {
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.report-form textarea::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.report-form .cancel-btn {
+    transition: all 0.2s ease;
+}
+
+.report-form .cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.report-form .submit-btn {
+    transition: all 0.2s ease;
+}
+
+.report-form .submit-btn:hover {
+    background: #c0392b;
+    transform: translateY(-1px);
+}
+
+/* Enhanced Source Card Interactions */
+.modern-ui .source-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-ui .source-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.modern-ui .source-card:hover::before {
+    left: 100%;
+}
+
+/* Tab Content Transitions */
+.modern-ui .tab-content {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+}
+
+.modern-ui .tab-content.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Loading States */
+.modern-ui .loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 16px;
+    padding: 40px 20px;
+}
+
+.modern-ui .loading-indicator::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-top: 2px solid #3bb273;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Enhanced Button States */
+.modern-ui .action-btn:active {
+    transform: translateY(1px);
+}
+
+.modern-ui .tab-btn:active {
+    transform: scale(0.98);
+}
+
+/* Focus States for Accessibility */
+.modern-ui .tab-btn:focus,
+.modern-ui .action-btn:focus,
+.modern-ui .source-card:focus {
+    outline: 2px solid #3bb273;
+    outline-offset: 2px;
+}
+
+/* Dark Mode Enhancements */
+@media (prefers-color-scheme: dark) {
+    .modern-ui {
+        background: #0C0012;
+    }
+    
+    .modern-ui .source-card {
+        background: rgba(255, 255, 255, 0.03);
+    }
+    
+    .modern-ui .source-card:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+}
+
+/* Print Styles */
+@media print {
+    .modern-ui .answer-tabs,
+    .modern-ui .action-buttons,
+    .modern-ui .reaction-buttons,
+    .modern-ui .slider-btn {
+        display: none !important;
+    }
+    
+    .modern-ui {
+        background: white !important;
+        color: black !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+
+    
+    .modern-ui .exa-answer-streaming {
+        color: black !important;
+    }
+    
+    .modern-ui .source-card {
+        background: #f8f9fa !important;
+        border: 1px solid #dee2e6 !important;
+        color: black !important;
+    }
+}
 
 /* Submit ticket  */
 
@@ -136,3 +1130,306 @@
     border-bottom: none;
   }
   
+/* Filter Feedback Notification */
+.filter-feedback {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #3bb273;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10000;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(59, 178, 115, 0.3);
+}
+
+.filter-feedback.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Enhanced filter button states */
+.modern-ui .filter-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-ui .filter-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.modern-ui .filter-btn:hover::before {
+    left: 100%;
+}
+
+.modern-ui .filter-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.modern-ui .filter-btn.active {
+    background: #3bb273;
+    border-color: #3bb273;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(59, 178, 115, 0.3);
+}
+
+.modern-ui .filter-btn.active::before {
+    display: none;
+}
+
+/* Source item animation for filtering */
+.modern-ui .source-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    transition: all 0.3s ease;
+    animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modern-ui .source-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}  
+
+/* Target only the two specific sections we want green */
+.section-where-to-learn-more ul li,
+.section-related-questions ul li {
+    color: #3bb273 !important;
+}
+
+/* More aggressive targeting to ensure green color */
+.section-where-to-learn-more li,
+.section-related-questions li {
+    color: #3bb273 !important;
+}
+
+/* Target the text content directly */
+.section-where-to-learn-more *,
+.section-related-questions * {
+    color: #3bb273 !important;
+}
+
+/* Ensure links are green and properly styled */
+.section-where-to-learn-more a,
+.section-related-questions a {
+    color: #3bb273 !important;
+    text-decoration: none !important;
+}
+
+.section-where-to-learn-more a:hover,
+.section-related-questions a:hover {
+    color: #4ddb8a !important;
+    text-decoration: underline !important;
+}  
+
+/* Legacy reaction bar styles for compatibility */
+.answer-reaction-bar {
+    position: relative;
+}
+
+.answer-reaction-bar .reaction-options-container {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 1000;
+    margin-top: 8px;
+}
+
+.answer-reaction-bar .reaction-options-popup {
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-top: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    min-width: 200px;
+    border-radius: 8px;
+}
+
+.answer-reaction-bar .reaction-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.answer-reaction-bar .reaction-option-btn {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #495057;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.answer-reaction-bar .reaction-option-btn:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.answer-reaction-bar .reaction-custom {
+    border-top: 1px solid #dee2e6;
+    padding-top: 12px;
+}
+
+.answer-reaction-bar .reaction-custom-text {
+    background: #fff;
+    border: 1px solid #ced4da;
+    color: #495057;
+    padding: 8px;
+    border-radius: 4px;
+    width: 100%;
+    margin-bottom: 8px;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 60px;
+}
+
+.answer-reaction-bar .reaction-custom-submit {
+    background: #007bff;
+    border: none;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.answer-reaction-bar .reaction-custom-submit:hover {
+    background: #0056b3;
+}
+
+/* Filter highlight effect */
+.filtered-highlight {
+    background: rgba(59, 178, 115, 0.1) !important;
+    border: 2px solid #3bb273 !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+}  
+
+/* CRITICAL: Popup positioning and styling */
+.answer-reaction-bar .reaction-options-container,
+.answer-reaction-bar.modern .reaction-options-container {
+    position: absolute !important;
+    top: 100% !important;
+    right: 0 !important;
+    z-index: 99999 !important;
+    margin-top: 8px !important;
+    display: none;
+    min-width: 200px;
+}
+
+/* Force popup container to be visible when shown */
+.answer-reaction-bar .reaction-options-container[style*="display: block"],
+.answer-reaction-bar.modern .reaction-options-container[style*="display: block"] {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* CRITICAL: Popup content styling - FORCE VISIBILITY */
+.reaction-options-popup {
+    background: #1a0024 !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+    min-width: 200px !important;
+    color: #fff !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 10000 !important;
+}
+
+.reaction-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.reaction-option-btn {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+    padding: 10px 16px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    text-align: left !important;
+    transition: all 0.2s ease !important;
+    width: 100% !important;
+}
+
+.reaction-option-btn:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* CRITICAL: Button styling */
+.answer-reaction-bar .reaction-like,
+.answer-reaction-bar .reaction-dislike,
+.answer-reaction-bar .reaction-more,
+.answer-reaction-bar.modern .reaction-like,
+.answer-reaction-bar.modern .reaction-dislike,
+.answer-reaction-bar.modern .reaction-more {
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    transition: all 0.2s ease !important;
+    user-select: none !important;
+    padding: 4px 8px !important;
+    border-radius: 6px !important;
+}
+
+.answer-reaction-bar .reaction-more,
+.answer-reaction-bar.modern .reaction-more {
+    position: relative !important;
+}  

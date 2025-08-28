@@ -1,5 +1,20 @@
 {
     "name": "psychedelic/ai-trainer",
+    "description": "AI-powered knowledge base training system for WordPress with Exa.ai and OpenAI integration",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "keywords": [
+        "wordpress",
+        "ai",
+        "machine-learning",
+        "knowledge-base",
+        "openai",
+        "exa-ai",
+        "rag",
+        "embeddings",
+        "pdf-parser",
+        "dotenv"
+    ],
     "autoload": {
         "psr-4": {
             "Psychedelic\\AiTrainer\\": "src/"
@@ -15,5 +30,12 @@
         "smalot/pdfparser": "^2.12",
         "vlucas/phpdotenv": "^5.6",
         "tinymce/tinymce": "^8.0"
+    },
+    "require-dev": {
+        "php": ">=7.4"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
     }
 }

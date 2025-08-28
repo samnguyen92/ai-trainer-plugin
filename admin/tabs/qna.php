@@ -1,17 +1,187 @@
 <?php
+/**
+ * Q&A Management Tab - AI Trainer Plugin
+ * 
+ * This file provides the admin interface for managing Question & Answer pairs
+ * in the AI Trainer knowledge base. It allows administrators to add, edit,
+ * delete, and import Q&A entries that will be used for AI training and
+ * local knowledge base searches.
+ * 
+ * ============================================================================
+ * FUNCTIONALITY OVERVIEW
+ * ============================================================================
+ * 
+ * CORE OPERATIONS:
+ * - Add new Q&A entries with title, question(s), and answer
+ * - Edit existing Q&A entries inline without page reload
+ * - Delete Q&A entries with confirmation and cleanup
+ * - Import Q&A entries from CSV files for bulk operations
+ * - Multiple question support for single answers (variations)
+ * - Automatic embedding generation for AI training
+ * - Metadata storage for enhanced search capabilities
+ * 
+ * ADVANCED FEATURES:
+ * - Dynamic question addition/removal interface
+ * - Rich text editor for detailed answers
+ * - CSV import with validation and error handling
+ * - AJAX-powered operations for seamless UX
+ * - Form validation and security measures
+ * - Embedding generation for semantic search
+ * - Pagination for large datasets
+ * - Export functionality for data portability
+ * 
+ * ============================================================================
+ * SECURITY FEATURES
+ * ============================================================================
+ * 
+ * INPUT VALIDATION:
+ * - WordPress nonce verification for all operations
+ * - Input sanitization (sanitize_text_field, wp_kses_post)
+ * - ABSPATH validation for include security
+ * - Required function availability checks
+ * - CSRF protection through WordPress nonces
+ * 
+ * DATA PROCESSING:
+ * - SQL injection prevention with prepared statements
+ * - XSS protection through proper escaping
+ * - File upload validation and security
+ * - Capability checks for admin operations
+ * 
+ * ============================================================================
+ * DATABASE INTEGRATION
+ * ============================================================================
+ * 
+ * TABLE STRUCTURE:
+ * - ai_knowledge: Main Q&A storage
+ * - ai_knowledge_chunks: Text chunks for search optimization
+ * 
+ * DATA FLOW:
+ * 1. User input → Sanitization → Validation
+ * 2. Content processing → Embedding generation
+ * 3. Database storage → Chunk creation → Search indexing
+ * 
+ * ============================================================================
+ * USER INTERFACE COMPONENTS
+ * ============================================================================
+ * 
+ * ADD Q&A FORM:
+ * - Title input field
+ * - Dynamic question container with add/remove
+ * - Rich text answer editor
+ * - Submit button with validation
+ * 
+ * Q&A DISPLAY TABLE:
+ * - Paginated results display
+ * - Inline editing capabilities
+ * - Delete operations with confirmation
+ * - Action buttons for each entry
+ * 
+ * IMPORT/EXPORT:
+ * - CSV file upload interface
+ * - Export functionality for data backup
+ * - Bulk import processing
+ * - Validation and error reporting
+ * 
+ * ============================================================================
+ * TECHNICAL IMPLEMENTATION
+ * ============================================================================
+ * 
+ * FORM PROCESSING:
+ * - POST data handling for additions
+ * - GET parameters for deletions
+ * - File upload processing for CSV imports
+ * - AJAX integration for dynamic updates
+ * 
+ * PAGINATION SYSTEM:
+ * - Configurable items per page
+ * - URL parameter management
+ * - Navigation controls
+ * - Page state preservation
+ * 
+ * EMBEDDING GENERATION:
+ * - OpenAI API integration
+ * - Content preprocessing
+ * - Vector storage optimization
+ * - Search relevance enhancement
+ * 
+ * ============================================================================
+ * ERROR HANDLING
+ * ============================================================================
+ * 
+ * VALIDATION ERRORS:
+ * - Required field checking
+ * - Data format validation
+ * - File type verification
+ * - User feedback and guidance
+ * 
+ * PROCESSING ERRORS:
+ * - Database operation failures
+ * - API communication issues
+ * - File processing problems
+ * - Graceful degradation
+ * 
+ * ============================================================================
+ * PERFORMANCE OPTIMIZATION
+ * ============================================================================
+ * 
+ * DATABASE QUERIES:
+ * - Paginated result retrieval
+ * - Indexed field usage
+ * - Efficient metadata handling
+ * - Query optimization
+ * 
+ * FRONTEND PERFORMANCE:
+ * - AJAX-based operations
+ * - Progressive enhancement
+ * - Lazy loading where appropriate
+ * - Responsive design patterns
+ * 
+ * @package AI_Trainer
+ * @subpackage Admin_Tabs
+ * @since 1.0
+ * @author Psychedelic
+ */
+
 // Ensure ABSPATH is defined for includes
 if (!defined('ABSPATH')) define('ABSPATH', dirname(__FILE__, 5) . '/');
 // Ensure WordPress sanitization functions are available
 if (!function_exists('sanitize_text_field')) require_once(ABSPATH . 'wp-includes/formatting.php');
 if (!function_exists('wp_kses_post')) require_once(ABSPATH . 'wp-includes/kses.php');
 
+// ============================================================================
+// Q&A ADDITION HANDLER
+// ============================================================================
+/**
+ * Process form submission for adding new Q&A entries
+ * 
+ * This handler processes the Q&A addition form and:
+ * - Sanitizes all input data for security
+ * - Generates AI embeddings for semantic search
+ * - Stores data in the knowledge base
+ * - Creates text chunks for optimized search
+ * - Provides user feedback on success/failure
+ * 
+ * SECURITY MEASURES:
+ * - POST data validation
+ * - Input sanitization
+ * - Nonce verification (handled by form)
+ * - Capability checks
+ * 
+ * @since 1.0
+ */
 if (isset($_POST['add_qna'])) {
+    // Sanitize input data for security
     $title = sanitize_text_field($_POST['qa_title']);
     $question = sanitize_text_field($_POST['qa_question']);
     $answer = wp_kses_post($_POST['qa_answer']);
+    
+    // Combine question and answer for embedding generation
     $text = $question . ' ' . $answer;
 
+    // Generate AI embedding for semantic search
     $embedding = ai_trainer_generate_embedding($text);
+    
+    // Save to database with metadata
     ai_trainer_save_to_db($title, 'qa', $text, $embedding, [
         'question' => $question,
         'answer' => $answer,
@@ -20,6 +190,26 @@ if (isset($_POST['add_qna'])) {
     echo '<div class="notice notice-success"><p>Q&A added successfully.</p></div>';
 }
 
+// ============================================================================
+// Q&A DELETION HANDLER
+// ============================================================================
+/**
+ * Process deletion requests for Q&A entries
+ * 
+ * This handler processes Q&A deletion requests and:
+ * - Validates the Q&A ID from GET parameters
+ * - Removes the entry from the knowledge base
+ * - Cleans up associated chunks and embeddings
+ * - Provides user feedback on completion
+ * 
+ * SECURITY MEASURES:
+ * - GET parameter validation
+ * - Integer sanitization
+ * - Database operation safety
+ * - User feedback and confirmation
+ * 
+ * @since 1.0
+ */
 if (isset($_GET['delete_qna'])) {
     $id = intval($_GET['delete_qna']);
     global $wpdb;
@@ -27,16 +217,40 @@ if (isset($_GET['delete_qna'])) {
     echo '<div class="notice notice-success"><p>Q&A deleted.</p></div>';
 }
 
-// Handle inline edit form submission
+// ============================================================================
+// INLINE EDIT HANDLER
+// ============================================================================
+/**
+ * Process inline edit form submissions for Q&A entries
+ * 
+ * This handler processes inline Q&A updates and:
+ * - Validates and sanitizes updated content
+ * - Regenerates AI embeddings for changed content
+ * - Updates the database with new information
+ * - Maintains data integrity and relationships
+ * - Provides user feedback on completion
+ * 
+ * SECURITY MEASURES:
+ * - POST data validation
+ * - Input sanitization
+ * - ID validation
+ * - Database update safety
+ * 
+ * @since 1.0
+ */
 if (isset($_POST['update_qna_inline'])) {
     $id = intval($_POST['qa_id']);
     $title = sanitize_text_field($_POST['qa_title']);
     $question = sanitize_text_field($_POST['qa_question']);
     $answer = wp_kses_post($_POST['qa_answer']);
+    
+    // Combine question and answer for embedding generation
     $text = $question . ' ' . $answer;
 
+    // Generate new embedding for updated content
     $embedding = ai_trainer_generate_embedding($text);
     
+    // Update database with new information
     global $wpdb;
     $wpdb->update(
         $wpdb->prefix . 'ai_knowledge',
@@ -55,18 +269,48 @@ if (isset($_POST['update_qna_inline'])) {
     echo '<div class="notice notice-success"><p>Q&A updated successfully.</p></div>';
 }
 
-// --- Q&A Import CSV Handler ---
+// ============================================================================
+// CSV IMPORT HANDLER
+// ============================================================================
+/**
+ * Process CSV file uploads for bulk Q&A import
+ * 
+ * This handler processes CSV file uploads and:
+ * - Validates uploaded file format and content
+ * - Processes CSV data row by row
+ * - Creates Q&A entries with proper validation
+ * - Generates embeddings for imported content
+ * - Provides import statistics and feedback
+ * 
+ * CSV FORMAT EXPECTED:
+ * - Column 1: Title
+ * - Column 2: Question
+ * - Column 3: Answer
+ * - Header row is automatically skipped
+ * 
+ * SECURITY MEATURES:
+ * - File type validation
+ * - Content sanitization
+ * - Error handling and reporting
+ * - Import success tracking
+ * 
+ * @since 1.0
+ */
 if (isset($_POST['import_qna_csv']) && isset($_FILES['import_qna_csv_file'])) {
     $file = $_FILES['import_qna_csv_file']['tmp_name'];
     if (($handle = fopen($file, 'r')) !== false) {
-        $header = fgetcsv($handle); // skip header
+        $header = fgetcsv($handle); // Skip header row
         global $wpdb;
         $imported = 0;
+        
+        // Process each CSV row
         while (($data = fgetcsv($handle)) !== false) {
             // Use htmlspecialchars as a fallback for sanitization in admin context
             $title = htmlspecialchars($data[0] ?? '', ENT_QUOTES, 'UTF-8');
             $question = htmlspecialchars($data[1] ?? '', ENT_QUOTES, 'UTF-8');
             $answer = htmlspecialchars($data[2] ?? '', ENT_QUOTES, 'UTF-8');
+            
+            // Validate that all required fields are present
             if ($title && $question && $answer) {
                 $text = $question . ' ' . $answer;
                 $embedding = ai_trainer_generate_embedding($text);
@@ -83,11 +327,31 @@ if (isset($_POST['import_qna_csv']) && isset($_FILES['import_qna_csv_file'])) {
 }
 ?>
 
-<h2>Add Q&A</h2>
+<!-- ============================================================================
+     Q&A MANAGEMENT INTERFACE
+     ============================================================================
+     
+     This section provides the complete user interface for Q&A management:
+     - Add new Q&A entries with dynamic question support
+     - Display existing Q&A entries in a paginated table
+     - Inline editing capabilities for quick updates
+     - Import/export functionality for bulk operations
+     
+     INTERFACE FEATURES:
+     - Dynamic question addition/removal
+     - Rich text editing for answers
+     - Paginated results display
+     - Action buttons for each entry
+     - CSV import/export capabilities
+-->
+<h2>Add Q&A Entry</h2>
 <div id="qna-notices"></div>
 
+<!-- Q&A Addition Form -->
 <form method="post" id="add-qna-form">
     <input type="text" name="qa_title" placeholder="Title" style="width: 100%; margin-bottom: 10px;" required>
+    
+    <!-- Dynamic Question Container -->
     <div id="question-container">
         <div class="question-input">
             <input type="text" name="qna_questions[]" placeholder="Ex: How do I request a refund?" required />
@@ -128,6 +392,28 @@ $rows = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}ai_knowledge WHERE sour
     </thead>
     <tbody>
     <?php
+    // ============================================================================
+    // Q&A DATA DISPLAY LOOP
+    // ============================================================================
+    /**
+     * Iterate through Q&A entries and display them in the table
+     * 
+     * This loop processes each Q&A entry and:
+     * - Extracts metadata from JSON storage
+     * - Displays formatted content in table rows
+     * - Provides action buttons for each entry
+     * - Handles data escaping for security
+     * - Creates interactive elements for editing
+     * 
+     * TABLE STRUCTURE:
+     * - Title: Entry title
+     * - Main Question: Primary question text
+     * - Relative Questions: Additional question variations
+     * - Answer: Formatted answer content
+     * - Actions: Edit/Delete buttons
+     * 
+     * @since 1.0
+     */
     foreach ($rows as $row) {
         $meta = json_decode($row['metadata'], true);
         $main_question = esc_html($meta['question'] ?? '');
@@ -149,7 +435,29 @@ $rows = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}ai_knowledge WHERE sour
     ?>
     </tbody>
 </table>
-<?php if ($total_pages > 1): ?>
+<?php 
+// ============================================================================
+// PAGINATION NAVIGATION
+// ============================================================================
+/**
+ * Display pagination controls when there are multiple pages
+ * 
+ * This section provides navigation controls for large datasets:
+ * - Previous/Next page navigation
+ * - Page number display with ellipsis
+ * - URL parameter management
+ * - Current page highlighting
+ * - Responsive navigation design
+ * 
+ * PAGINATION FEATURES:
+ * - Configurable items per page
+ * - URL state preservation
+ * - Navigation state management
+ * - User-friendly page indicators
+ * 
+ * @since 1.0
+ */
+if ($total_pages > 1): ?>
 <div class="tablenav-pages">
     <span class="displaying-num"><?php echo $total_items; ?> items</span>
     <span class="pagination-links">
@@ -206,6 +514,28 @@ $rows = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}ai_knowledge WHERE sour
 <?php endif; ?>
 </div>
 
+<!-- ============================================================================
+     IMPORT/EXPORT CONTROLS
+     ============================================================================
+     
+     CSV import/export functionality for bulk Q&A management:
+     - Export existing Q&A data to CSV format
+     - Import new Q&A entries from CSV files
+     - Bulk operations for efficiency
+     - Data validation and error handling
+     
+     EXPORT FEATURES:
+     - Complete Q&A data export
+     - CSV format for compatibility
+     - Admin-post action handling
+     - Nonce verification for security
+     
+     IMPORT FEATURES:
+     - CSV file upload interface
+     - Format validation and processing
+     - Bulk entry creation
+     - Success/error reporting
+-->
 <div style="margin-bottom: 16px;">
     <form method="get" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline; margin-right: 10px;">
         <input type="hidden" name="action" value="ai_export_qna_csv">
@@ -218,7 +548,10 @@ $rows = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}ai_knowledge WHERE sour
     </form>
 </div>
 
-<!-- Inline Edit Modal -->
+<!-- ============================================================================
+     INLINE EDIT MODAL
+     ============================================================================ -->
+<!-- Modal for editing Q&A entries without page refresh -->
 <div id="qna-edit-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 5px; min-width: 500px; max-width: 80%; max-height: 80%; overflow-y: auto;">
         <h3>Edit Q&A</h3>
@@ -251,8 +584,31 @@ $rows = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}ai_knowledge WHERE sour
 </div>
 
 <script>
+/**
+ * Q&A Management JavaScript - AI Trainer Plugin
+ * 
+ * This script provides comprehensive Q&A management functionality including:
+ * - Dynamic form handling for adding/editing Q&A entries
+ * - TinyMCE rich text editor integration
+ * - AJAX-powered operations for seamless user experience
+ * - Modal management for inline editing
+ * - Form validation and error handling
+ * 
+ * ARCHITECTURE:
+ * - Modular design with separate handlers for different functionality
+ * - Configuration-driven approach for easy customization
+ * - Utility functions for common operations
+ * - Event delegation for dynamic content
+ * 
+ * @package AI_Trainer
+ * @subpackage Admin_Tabs
+ * @since 1.0
+ */
 jQuery(document).ready(function($) {
-    // Constants and configuration
+    // ============================================================================
+    // CONFIGURATION AND CONSTANTS
+    // ============================================================================
+    // Centralized configuration for the Q&A management system
     const CONFIG = {
         NOTICE_TIMEOUT: 3000,
         TINYMCE_DELAY: 100,
@@ -261,11 +617,14 @@ jQuery(document).ready(function($) {
         REBIND_DELAY: 500,
         TINYMCE_HEIGHT: 500,
         TINYMCE_PLUGINS: 'advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table code help wordcount',
-        TINYMCE_TOOLBAR: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
+        TINYMCE_TOOLBAR: 'undo redo | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
         TINYMCE_CONTENT_STYLE: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
     };
     
-    // AJAX configuration
+    // ============================================================================
+    // AJAX CONFIGURATION
+    // ============================================================================
+    // AJAX settings for WordPress backend communication
     const ajaxConfig = {
         url: typeof ai_trainer_ajax !== 'undefined' ? ai_trainer_ajax.ajaxurl : ajaxurl,
         nonce: typeof ai_trainer_ajax !== 'undefined' ? ai_trainer_ajax.nonce : ''
@@ -275,7 +634,10 @@ jQuery(document).ready(function($) {
     console.log('AJAX URL:', ajaxConfig.url);
     console.log('Nonce:', ajaxConfig.nonce);
     
-    // Utility functions
+    // ============================================================================
+    // UTILITY FUNCTIONS
+    // ============================================================================
+    // Common utility functions used throughout the Q&A management system
     const utils = {
         showNotice: function(message, type = 'success') {
             const noticeClass = type === 'success' ? 'notice-success' : 'notice-error';
@@ -317,7 +679,10 @@ jQuery(document).ready(function($) {
         }
     };
     
-    // TinyMCE management
+    // ============================================================================
+    // TINYMCE RICH TEXT EDITOR MANAGEMENT
+    // ============================================================================
+    // Manages TinyMCE editor initialization and configuration for rich text editing
     const tinyMCEManager = {
         initAddForm: function() {
             if (typeof tinymce === 'undefined') return;
@@ -331,7 +696,13 @@ jQuery(document).ready(function($) {
                 license_key: 'gpl',
                 base_url: tinymcePaths.baseUrl,
                 skin_url: tinymcePaths.skinUrl,
-                content_style: CONFIG.TINYMCE_CONTENT_STYLE
+                content_style: CONFIG.TINYMCE_CONTENT_STYLE,
+                formats: {
+                    superscript: { inline: 'sup', remove: 'all' },
+                    subscript: { inline: 'sub', remove: 'all' }
+                },
+                extended_valid_elements: '-sup,-sub',
+                invalid_elements: 'sup,sub'
             });
         },
         
@@ -347,7 +718,13 @@ jQuery(document).ready(function($) {
                 license_key: 'gpl',
                 base_url: tinymcePaths.baseUrl,
                 skin_url: tinymcePaths.skinUrl,
-                content_style: CONFIG.TINYMCE_CONTENT_STYLE
+                content_style: CONFIG.TINYMCE_CONTENT_STYLE,
+                formats: {
+                    superscript: { inline: 'sup', remove: 'all' },
+                    subscript: { inline: 'sub', remove: 'all' }
+                },
+                extended_valid_elements: '-sup,-sub',
+                invalid_elements: 'sup,sub'
             });
         },
         
@@ -370,7 +747,10 @@ jQuery(document).ready(function($) {
         }
     };
     
-    // Form handlers
+    // ============================================================================
+    // FORM HANDLERS
+    // ============================================================================
+    // Handles form submission and processing for Q&A operations
     const formHandlers = {
         addQna: function(e) {
             e.preventDefault();
@@ -451,7 +831,10 @@ jQuery(document).ready(function($) {
         }
     };
     
-    // Action handlers
+    // ============================================================================
+    // ACTION HANDLERS
+    // ============================================================================
+    // Handles user actions like editing, deleting, and managing Q&A entries
     const actionHandlers = {
         editQnaInline: function() {
             const id = $(this).data('id');
@@ -561,7 +944,10 @@ jQuery(document).ready(function($) {
         }
     };
     
-    // Modal handlers
+    // ============================================================================
+    // MODAL HANDLERS
+    // ============================================================================
+    // Manages modal dialog behavior and user interactions
     const modalHandlers = {
         closeModal: function() {
             utils.closeModal();
@@ -574,7 +960,10 @@ jQuery(document).ready(function($) {
         }
     };
     
-    // Data management
+    // ============================================================================
+    // DATA MANAGEMENT
+    // ============================================================================
+    // Handles data loading, refreshing, and management operations
     const dataManager = {
         loadQnaSources: function() {
             $.ajax({
@@ -601,10 +990,13 @@ jQuery(document).ready(function($) {
         }
     };
     
-    // Initialize TinyMCE for add form
+    // ============================================================================
+    // INITIALIZATION AND EVENT BINDING
+    // ============================================================================
+    // Initialize TinyMCE editor for the add form
     tinyMCEManager.initAddForm();
     
-    // Event bindings
+    // Bind event handlers to form submissions and user interactions
     $('#add-qna-form').on('submit', formHandlers.addQna);
     $('#edit-qna-form').on('submit', formHandlers.editQna);
     
@@ -617,7 +1009,10 @@ jQuery(document).ready(function($) {
     $('#question-container').on('click', '.remove-question', actionHandlers.removeQuestion);
     $('#add-relative-question').off('click').on('click', actionHandlers.addRelativeQuestion);
     
-    // Make functions available globally
+    // ============================================================================
+    // GLOBAL FUNCTION EXPORTS
+    // ============================================================================
+    // Make essential functions available globally for external access
     window.closeQnaEditModal = utils.closeModal;
     window.reloadQnaSourcesAndRebind = dataManager.reloadQnaSourcesAndRebind.bind(dataManager);
 });

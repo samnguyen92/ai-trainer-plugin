@@ -247,6 +247,9 @@
   /* hide native scrollbar */
   -ms-overflow-style: none;
   scrollbar-width: none;
+  /* Enhanced scrolling for more sources */
+  scroll-padding: 0 20px;
+  -webkit-overflow-scrolling: touch;
 }
 .psybrarian-wrapper .psybrarian-content .psy-search-ai-wrapper .psy-search-ai-container .answer-block .exa-results .top-sources-wrapper::-webkit-scrollbar {
   display: none;

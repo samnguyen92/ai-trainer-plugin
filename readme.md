@@ -1,154 +1,220 @@
 
 # RAG-EXA Plugin Setup
 
-This repository contains the **RAG-EXA Plugin** for WordPress. Follow the steps below to set up a local WordPress environment and configure the plugin.
+A WordPress plugin that integrates **RAG search with Exa.ai and OpenAI**, providing an AI-powered training dashboard with comprehensive analytics and monitoring capabilities.
 
 ---
 
-## Features
-- AI-powered search with Exa + OpenAI integration.
-- Autopage creation with custom template (`psybrarian`).
-- Embedding for Q&A, files, and text into vector DB.
-- Greenshift integration for frontend styling.
+## 🚀 Features
+- **AI-powered search** with Exa + OpenAI integration
+- **Autopage creation** with custom Psybrarian template
+- **Knowledge management** for Q&A, files, text, and websites
+- **CSAT Analytics** with reaction tracking and satisfaction metrics
+- **Psychedelics.com Monitor** for content guarantee compliance
+- **Domain management** with tier-based prioritization
+- **Modern UI** with dark theme and enhanced user experience
+- **Reaction system** for user feedback (like/dislike)
+- **Export functionality** for data analysis
+- **Greenshift integration** for frontend styling
 
 ---
 
-## Requirements
-- **Local WP**
+## 📦 Requirements
+- **WordPress 6.0+**  
+- **PHP 7.4+**  
+- [**Greenshift Animation and Page Builder**](https://wordpress.org/plugins/greenshift-animation-and-page-builder/) (required for design/layout)  
+- **Composer** (for PHP dependencies)
 
 ---
 
-## Installation
+## ⚙️ Installation
 
-### 1. Local WordPress Environment
-We use [LocalWP](https://localwp.com/) to run local instances of WordPress.
+1. **Install and activate WordPress 6.0+**
+2. **Install and activate GreenShift Animation and Page Builder**
+3. **Download or clone this plugin** into your `wp-content/plugins/` directory:
 
-1. Install and activate Local WordPress.
-2. Create a new site using LocalWP.
-   - ![Image 1](assets/images/readme/1.png)
-   - Name the site whatever you like (example: **Local Psybrary**)
-      - ![Image 2](assets/images/readme/2.png)
-   - Choose preferred settings
-      - ![Image 3](assets/images/readme/3.png)
-   - Create a simple username/password and use your primary email address
-      - ![Image 4](assets/images/readme/4.png)
-   - Turn on **OneClick Admin**
-      - ![Image 5](assets/images/readme/5.png)
-3. Go to your WordPress Admin Dashboard.
-   - ![Image 6](assets/images/readme/6.png)
+   ```bash
+   cd wp-content/plugins/
+   git clone https://github.com/samnguyen92/rag-exa-plugin.git
+   ```
+4. **Install PHP dependencies**:
+   ```bash
+   cd rag-exa-plugin
+   composer install
+   ```
+5. **Create environment file** for your API keys:
+   ```bash
+   # Create .env file (do not commit this to git)
+   EXA_API_KEY=your_real_exa_key
+   OPENAI_API_KEY=your_real_openai_key
+   ```
+6. **Activate the plugin** from **WordPress Dashboard → Plugins**
 
+---
 
-### 2. Request Access to Google Drive Assets
-[Google Drive Assets](https://drive.google.com/drive/folders/1K-sBTSJfs7H6dkAohUhN5BWVwhpG04gz?usp=drive_link)
+## 🚀 Usage
 
+### **Frontend Integration**
+- The plugin automatically creates a training dashboard page when activated
+- Use the shortcode to embed the AI Search box anywhere:
+  ```php
+  [ai_trainer_dashboard]
+  ```
+- For advanced styling, use the provided **Psybrarian Page Template**
 
-### 3. Required Plugins
-1. Go to **Plugins → Add Plugin**
-   - ![Image 7](assets/images/readme/7.png)
-   - ![Image 8](assets/images/readme/8.png)
-2. Search for **All-in-One WP Migration**
-   - ![Image 9](assets/images/readme/9.png)
-3. Install and activate the plugin: [All-in-One WP Migration](https://wordpress.org/plugins/all-in-one-wp-migration/)
-4. Manually install the paid extension (Psybrarian Resources in Google Drive).
-   - Download `all-in-one-wp-migration-unlimited-extension`
-   - Go to **Plugins → Add New → Upload Plugin**
-      - ![Image 10](assets/images/readme/10.png)
-      - ![Image 11](assets/images/readme/11.png)
-   - Upload the file, click **Install Now**, then **Activate Plugin**
-      - ![Image 12](assets/images/readme/12.png)
-      - ![Image 13](assets/images/readme/13.png)
-   - Check for updates and click **Update Now** if available
-      - ![Image 14](assets/images/readme/14.png)
-      - ![Image 15](assets/images/readme/15.png)
+### **Admin Dashboard**
+Access the admin interface at **AI Trainer** in your WordPress admin menu:
 
+- **Q&A Management**: Add/edit Q&A pairs for training
+- **File Management**: Upload and process PDFs, documents
+- **Text Management**: Add custom text content
+- **Website Management**: Configure domain priorities and sources
+- **Block Website**: Manage blocked domains
+- **Chat Log**: View conversation history
+- **CSAT Analytics**: Monitor user satisfaction metrics
+- **Psychedelics.com Monitor**: Track content guarantee compliance
 
-### 4. Install the RAG-EXA Plugin
-Download or clone this repo into your `wp-content/plugins/` directory:
+### **Knowledge Sources**
+- **Q&A**: Question-answer pairs for direct responses
+- **Files**: PDF and document processing with embedding
+- **Text**: Custom text content for training
+- **Websites**: Domain-based content with tier prioritization
 
-```bash
-cd app/public/wp-content/plugins/
-git clone https://github.com/samnguyen92/rag-exa-plugin.git
-```
+---
 
 ### 5. Configure API Keys
 From the plugins folder:
 
-```bash
-cd rag-exa-plugin
-cp .env.example .env
+```
+rag-exa-plugin/
+├── admin/                    # Admin interface
+│   ├── admin-ui.php         # Main admin UI
+│   └── tabs/                # Admin tab content
+│       ├── qna.php          # Q&A management
+│       ├── files.php        # File management
+│       ├── text.php         # Text management
+│       ├── website.php      # Website management
+│       ├── block-website.php # Domain blocking
+│       ├── chatlog.php      # Chat history
+│       └── csat-analytics.php # Satisfaction analytics
+├── assets/                   # Frontend assets
+│   ├── css/                 # Stylesheets
+│   │   ├── core.scss        # Core styles (compiled)
+│   │   ├── style.css        # Main styles
+│   │   ├── admin.css        # Admin styles
+│   │   └── icons.css        # Icon styles
+│   ├── js/                  # JavaScript
+│   │   ├── exa.js          # Main frontend logic
+│   │   └── admin.js        # Admin functionality
+│   └── images/              # Images and icons
+├── build/                    # Compiled assets
+│   └── index.css            # Compiled core styles
+├── includes/                 # Core functionality
+│   ├── openai.php           # OpenAI integration
+│   ├── utils.php            # Helper functions
+│   └── autopage.php         # Auto-page creation
+├── src/                      # Source files
+│   └── index.js             # Build entry point
+├── vendor/                   # Composer dependencies
+├── ai-trainer.php            # Main plugin file
+├── reaction-logger.php       # User reaction handling
+├── composer.json             # PHP dependencies
+├── package.json              # Node.js dependencies
+└── readme.md                 # This file
+
 ```
 
 Edit `.env` with your real keys:
 
-```bash
+## 🔑 Environment Variables
+
+Create a `.env` file in the plugin root directory:
+
+```env
 EXA_API_KEY=your_real_exa_key
 OPENAI_API_KEY=your_real_openai_key
 ```
 
-Save the file.
-
-### 6. Activate the Plugin
-From your WordPress Dashboard:
-**Plugins → Installed Plugins → Activate RAG-EXA Plugin**
-   - ![Image 16](assets/images/readme/16.png)
-
-
-### 7. Import the Preconfigured Site
-1. Go to **All-in-One WP Migration → Import**
-   - ![Image 17](assets/images/readme/17.png)
-2. [Download .wpress Backup](https://drive.google.com/file/d/10rFN5wcDccXvQ4lAJjlygMMf-Cj2uFq7/view?usp=drive_link)
-3. Upload the `.wpress` backup file.
-4. Follow the prompts to restore the site.
-   - This will replicate the beta setup.
-      - ![Image 18](assets/images/readme/18.png)
-
-### 8. Login Credentials
-⚠️ **Note:** Your LocalWP credentials will be overwritten after the restore.
-   - Use your beta credentials to log in
-   - Or enable auto-login in LocalWP
-      - ![Image 19](assets/images/readme/19.png)
-
-### 9. Add the AI-Trainer Plugin
-1. [Download AI-Trainer Plugin](https://drive.google.com/file/d/10rFN5wcDccXvQ4lAJjlygMMf-Cj2uFq7/view?usp=drive_link)
-2. Go to **Plugins → Add New → Upload Plugin**
-   - ![Image 20](assets/images/readme/20.png)
-   - ![Image 21](assets/images/readme/21.png)
-3. Upload the file, click **Install Now**, then **Replace Current** if prompted
-   - ![Image 22](assets/images/readme/22.png)
-   - ![Image 23](assets/images/readme/23.png)
-4. Activate the plugin
-
-### ✅ Test Installation
-1. Go to **Pages**
-   - ![Image 24](assets/images/readme/24.png)
-2. Search for **Psybrarian**
-   - ![Image 25](assets/images/readme/25.png)
-3. View the page
-   - ![Image 26](assets/images/readme/26.png)
-4. Run a query
-   - If you get both sources and a summary → ✅ Success!
+⚠️ **Important**: Never commit `.env` to GitHub. The `.gitignore` file is configured to exclude it.
 
 ---
 
 ## Usage
 
-- The plugin automatically creates a training dashboard page when activated.
-- Use the shortcode to embed the AI Search box anywhere:
-  ```php
-  [exa_search]
-  ```
-- You can manage **Q&A, Files, and Text** training data directly in the AI Trainer Dashboard plugin.
-- For advanced styling, use the provided **Psybrarian Page Template**.
+### **Build System**
+The plugin uses a modern build system for CSS compilation:
+
+```bash
+# Install Node.js dependencies
+npm install
+
+# Build CSS from SCSS
+npm run build
+
+# Development mode with watch
+npm run start
+```
+
+### **PHP Dependencies**
+Manage PHP dependencies with Composer:
+
+```bash
+# Install dependencies
+composer install
+
+# Update dependencies
+composer update
+```
+
+### **Useful Commands**
+
+```bash
+# Check project status
+ls -la
+git status
+
+# Build assets
+npm run build
+
+# Install PHP dependencies
+composer install
+
+# Stage and commit changes
+git add .
+git commit -m "Update feature"
+git push origin main
+```
 
 ---
 
-## 🔑 Environment Variables
+## 📊 Key Features Explained
 
-- `EXA_API_KEY` → Your Exa.ai API key
-- `OPENAI_API_KEY` → Your OpenAI API key
+### **CSAT Analytics**
+- **Customer Satisfaction** tracking via user reactions
+- **Time-based filtering** (Today, Week, Month, Year, All Time)
+- **Trend analysis** with week-over-week comparisons
+- **Export functionality** for data analysis
+
+### **Psychedelics.com Guarantee**
+- **Content guarantee** system ensures relevant content inclusion
+- **Fallback search** when primary results are insufficient
+- **Relevance scoring** to maintain content quality
+- **Performance monitoring** and analytics
+
+### **Domain Management**
+- **Tier-based prioritization** (1-4 levels)
+- **Automatic content inclusion** based on domain tiers
+- **Blocked domain management** for content filtering
+- **Real-time monitoring** of domain performance
 
 ---
 
 ## 📜 License
 
 MIT License © 2025
+
+---
+
+## 🤝 Support
+
+For support and questions, please refer to the plugin documentation or contact the development team.
