@@ -225,7 +225,7 @@
 
                 #exa-search-box {
                     display: flex;
-                    background-color: rgba(255, 255, 255, 0.05);
+                    background-color: #2F257D;
                     border-radius: 28px;
                     border: 1px solid rgba(217, 217, 217, 0.10);
                     color: #fff;
@@ -412,7 +412,7 @@
                     font-weight: 800;
                     text-align: center;
                     padding: 3px 30px;
-                    background-image: url('/assets/images/loading.gif');
+                    // background-image: url('/assets/images/loading.gif');
                     text-transform: uppercase;
                     border-radius: 20px;
                     background-size: cover;
@@ -426,6 +426,16 @@
                     align-items: center;
                     justify-content: center;
                     min-height: 60px;
+                    overflow: hidden;
+                    video {
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        object-fit: cover;  /* Crop to fill container */
+                        z-index: -1;  
+                    }
                 }
                 #exa-results {
                     font-size: 10px;

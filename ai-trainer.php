@@ -1,6 +1,13 @@
 <?php
 
 /**
+ * Plugin Name: AI Trainer Dashboard
+ * Description: Training for Search AI.
+ * Version: 1.1
+ * Author: Psychedelic
+ */
+
+/**
  * AI Trainer Dashboard - WordPress Plugin
  * 
  * This plugin provides an AI-powered training dashboard that integrates with Exa.ai and OpenAI
@@ -2073,7 +2080,12 @@ class Exa_AI_Integration {
                 <div id="exa-question"></div>
                 <!-- <div id="exa-results">Disclaimer - By submitting your question, you ackowledge that the Psybrarian may make mistakes. Double-check important info and consult a medical professional before making health decisions.</div> -->
                 <div id="exa-answer"></div>
-                <div id="exa-loading" style="display:none;">Thinking...</div>
+                <div id="exa-loading" style="display:none;">  
+                    <video autoplay muted loop playsinline>
+                        <source src="<?php echo plugin_dir_url(__FILE__) . 'assets/images/thinking-mini.mp4'; ?>" type="video/mp4">
+                    </video>
+                    <span>Loading...</span>
+                </div>
                 <div class="exa-box-wrapper">
                     <div id="exa-search-box">
                         <input type="text" id="exa-input" placeholder="Ask anything about psychedelics" />

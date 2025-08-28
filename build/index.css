@@ -1,6 +1,48 @@
 /*!*********************************************************************************************************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[4].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[4].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[4].use[3]!./assets/css/core.scss ***!
   \*********************************************************************************************************************************************************************************************************************************************/
+/**
+ * AI Trainer Plugin - Core SCSS Styles
+ * 
+ * This file contains the core styling for the AI Trainer plugin's frontend interface,
+ * specifically the Psybrarian assistant page. It provides responsive design, modern
+ * UI components, and consistent styling across different screen sizes.
+ * 
+ * ARCHITECTURE OVERVIEW:
+ * - Responsive mixins for mobile-first design
+ * - Component-based SCSS structure
+ * - CSS custom properties for theming
+ * - Modular styling approach
+ * 
+ * KEY COMPONENTS:
+ * - Psybrarian wrapper and layout
+ * - Header and navigation styling
+ * - Main content area with background overlays
+ * - Search interface styling
+ * - Responsive breakpoints and media queries
+ * 
+ * RESPONSIVE FEATURES:
+ * - Mobile-first approach with max/min mixins
+ * - Flexible grid layouts
+ * - Adaptive typography and spacing
+ * - Touch-friendly interface elements
+ * 
+ * @package AI_Trainer
+ * @subpackage Assets
+ * @since 1.0
+ */
+/**
+ * Maximum width media query mixin
+ * 
+ * @param {number} $value - Maximum width in pixels
+ * @content - CSS content to apply within the media query
+ */
+/**
+ * Minimum width media query mixin
+ * 
+ * @param {number} $value - Minimum width in pixels
+ * @content - CSS content to apply within the media query
+ */
 .psybrarian-wrapper .psybrarian-header-wrapper {
   text-align: center;
   position: absolute;
@@ -129,7 +171,7 @@
 }
 .psybrarian-wrapper .psybrarian-content .psy-search-ai-wrapper .psy-search-ai-container #exa-search-box {
   display: flex;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: #2F257D;
   border-radius: 28px;
   border: 1px solid rgba(217, 217, 217, 0.1);
   color: #fff;
@@ -247,9 +289,6 @@
   /* hide native scrollbar */
   -ms-overflow-style: none;
   scrollbar-width: none;
-  /* Enhanced scrolling for more sources */
-  scroll-padding: 0 20px;
-  -webkit-overflow-scrolling: touch;
 }
 .psybrarian-wrapper .psybrarian-content .psy-search-ai-wrapper .psy-search-ai-container .answer-block .exa-results .top-sources-wrapper::-webkit-scrollbar {
   display: none;
@@ -333,7 +372,6 @@
   font-weight: 800;
   text-align: center;
   padding: 3px 30px;
-  background-image: url(images/loading.623a4501.gif);
   text-transform: uppercase;
   border-radius: 20px;
   background-size: cover;
@@ -347,6 +385,18 @@
   align-items: center;
   justify-content: center;
   min-height: 60px;
+  overflow: hidden;
+}
+.psybrarian-wrapper .psybrarian-content .psy-search-ai-wrapper .psy-search-ai-container #exa-loading video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  -o-object-fit: cover;
+     object-fit: cover;
+  /* Crop to fill container */
+  z-index: -1;
 }
 .psybrarian-wrapper .psybrarian-content .psy-search-ai-wrapper .psy-search-ai-container #exa-results {
   font-size: 10px;
@@ -445,7 +495,7 @@
 }
 .psybrarian-wrapper .psybrarian-ticket-wrapper .container .submit-ticket-button::after {
   content: "";
-  background-image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzMiIGhlaWdodD0iMzMiIHZpZXdCb3g9IjAgMCAzMyAzMyIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGcgY2xpcC1wYXRoPSJ1cmwoI2NsaXAwXzQzNl8xMDIpIj4KPHBhdGggb3BhY2l0eT0iMC4yIiBkPSJNMjYuNSAxMy41SDYuNTAwMDNWMjcuNUgyNi41VjEzLjVaIiBmaWxsPSIjRkZFN0NFIi8+CjxwYXRoIGQ9Ik0yMi41IDEzLjVIMjUuNUMyNS43NjUyIDEzLjUgMjYuMDE5NiAxMy42MDU0IDI2LjIwNzEgMTMuNzkyOUMyNi4zOTQ3IDEzLjk4MDQgMjYuNSAxNC4yMzQ4IDI2LjUgMTQuNVYyNi41QzI2LjUgMjYuNzY1MiAyNi4zOTQ3IDI3LjAxOTYgMjYuMjA3MSAyNy4yMDcxQzI2LjAxOTYgMjcuMzk0NiAyNS43NjUyIDI3LjUgMjUuNSAyNy41SDcuNTAwMDNDNy4yMzQ4MSAyNy41IDYuOTgwNDYgMjcuMzk0NiA2Ljc5MjkyIDI3LjIwNzFDNi42MDUzOSAyNy4wMTk2IDYuNTAwMDMgMjYuNzY1MiA2LjUwMDAzIDI2LjVWMTQuNUM2LjUwMDAzIDE0LjIzNDggNi42MDUzOSAxMy45ODA0IDYuNzkyOTIgMTMuNzkyOUM2Ljk4MDQ2IDEzLjYwNTQgNy4yMzQ4MSAxMy41IDcuNTAwMDMgMTMuNUgxMC41IiBzdHJva2U9IiNGRkU3Q0UiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9Ik0xMS41IDguNUwxNi41IDMuNUwyMS41IDguNSIgc3Ryb2tlPSIjRkZFN0NFIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNMTYuNSAzLjVWMTcuNSIgc3Ryb2tlPSIjRkZFN0NFIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L2c+CjxkZWZzPgo8Y2xpcFBhdGggaWQ9ImNsaXAwXzQzNl8xMDIiPgo8cmVjdCB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIGZpbGw9IndoaXRlIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLjUwMDAzMSAwLjUpIi8+CjwvY2xpcFBhdGg+CjwvZGVmcz4KPC9zdmc+Cg==);
+  background-image: url(data:image/svg+xml;base64,PCEtLQogKiBBSSBUcmFpbmVyIFBsdWdpbiAtIFVwbG9hZC9Eb3dubG9hZCBCdXR0b24gSWNvbgogKiAKICogVGhpcyBTVkcgaWNvbiByZXByZXNlbnRzIGFuIHVwbG9hZC9kb3dubG9hZCBhY3Rpb24gYnV0dG9uIHdpdGggYQogKiBkb2N1bWVudCBhbmQgYXJyb3cgZGVzaWduLiBJdCdzIHVzZWQgdGhyb3VnaG91dCB0aGUgaW50ZXJmYWNlIHRvCiAqIGluZGljYXRlIGZpbGUgdXBsb2FkLCBkb3dubG9hZCwgb3IgaW1wb3J0L2V4cG9ydCBhY3Rpb25zLgogKiAKICogREVTSUdOIFNQRUNJRklDQVRJT05TOgogKiAtIERpbWVuc2lvbnM6IDMzeDMzIHBpeGVscyAoc2NhbGFibGUpCiAqIC0gVmlld3BvcnQ6IDMzeDMzIGZvciBjcmlzcCByZW5kZXJpbmcKICogLSBDb2xvcnM6ICNGRkU3Q0UgKGNyZWFtL2JlaWdlKSB3aXRoIG9wYWNpdHkgdmFyaWF0aW9ucwogKiAtIFN0eWxlOiBPdXRsaW5lZCBpY29uIHdpdGggcm91bmRlZCBzdHJva2UgY2FwcwogKiAtIFRoZW1lOiBMaWdodCwgd2FybSBjb2xvciBzY2hlbWUKICogCiAqIFZJU1VBTCBFTEVNRU5UUzoKICogLSBEb2N1bWVudC9wYXBlciByZXByZXNlbnRhdGlvbgogKiAtIFVwd2FyZCBhcnJvdyBpbmRpY2F0aW5nIHVwbG9hZCBhY3Rpb24KICogLSBSb3VuZGVkIGNvcm5lcnMgZm9yIG1vZGVybiBhcHBlYXJhbmNlCiAqIC0gU3VidGxlIG9wYWNpdHkgZm9yIGRlcHRoCiAqIAogKiBVU0FHRToKICogLSBGaWxlIHVwbG9hZCBidXR0b25zCiAqIC0gSW1wb3J0L2V4cG9ydCBjb250cm9scwogKiAtIERvY3VtZW50IG1hbmFnZW1lbnQgYWN0aW9ucwogKiAtIERhdGEgdHJhbnNmZXIgaW5kaWNhdG9ycwogKiAtIENvbnRlbnQgc3VibWlzc2lvbiBidXR0b25zCiAqIAogKiBAcGFja2FnZSBBSV9UcmFpbmVyCiAqIEBzdWJwYWNrYWdlIEFzc2V0c19JbWFnZXMKICogQHNpbmNlIDEuMAogLS0+Cjxzdmcgd2lkdGg9IjMzIiBoZWlnaHQ9IjMzIiB2aWV3Qm94PSIwIDAgMzMgMzMiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMF80MzZfMTAyKSI+CjxwYXRoIG9wYWNpdHk9IjAuMiIgZD0iTTI2LjUgMTMuNUg2LjUwMDAzVjI3LjVIMjYuNVYxMy41WiIgZmlsbD0iI0ZGRTdDRSIvPgo8cGF0aCBkPSJNMjIuNSAxMy41SDI1LjVDMjUuNzY1MiAxMy41IDI2LjAxOTYgMTMuNjA1NCAyNi4yMDcxIDEzLjc5MjlDMjYuMzk0NyAxMy45ODA0IDI2LjUgMTQuMjM0OCAyNi41IDE0LjVWMjYuNUMyNi41IDI2Ljc2NTIgMjYuMzk0NyAyNy4wMTk2IDI2LjIwNzEgMjcuMjA3MUMyNi4wMTk2IDI3LjM5NDYgMjUuNzY1MiAyNy41IDI1LjUgMjcuNUg3LjUwMDAzQzcuMjM0ODEgMjcuNSA2Ljk4MDQ2IDI3LjM5NDYgNi43OTI5MiAyNy4yMDcxQzYuNjA1MzkgMjcuMDE5NiA2LjUwMDAzIDI2Ljc2NTIgNi41MDAwMyAyNi41VjE0LjVDNi41MDAwMyAxNC4yMzQ4IDYuNjA1MzkgMTMuOTgwNCA2Ljc5MjkyIDEzLjc5MjlDNi45ODA0NiAxMy42MDU0IDcuMjM0ODEgMTMuNSA3LjUwMDAzIDEzLjVIMTAuNSIgc3Ryb2tlPSIjRkZFN0NFIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNMTEuNSA4LjVMMTYuNSAzLjVMMjEuNSA4LjUiIHN0cm9rZT0iI0ZGRTdDRSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHBhdGggZD0iTTE2LjUgMy41VjE3LjUiIHN0cm9rZT0iI0ZGRTdDRSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9nPgo8ZGVmcz4KPGNsaXBQYXRoIGlkPSJjbGlwMF80MzZfMTAyIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSJ3aGl0ZSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMC41MDAwMzEgMC41KSIvPgo8L2NsaXBQYXRoPgo8L2RlZnM+Cjwvc3ZnPgo=);
   width: 32px;
   height: 32px;
   display: block;
