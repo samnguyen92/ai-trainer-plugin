@@ -2150,67 +2150,20 @@ class Exa_AI_Integration {
     }
     
     /**
-     * Cache query results for better performance
+     * Query processing and result generation
      * 
-     * Implements intelligent caching strategy:
-     * - Uses WordPress transients for fast access
-     * - Implements cache warming for common queries
-     * - Automatic cache invalidation based on content updates
+     * Implements intelligent search strategy:
+     * - Direct query processing without caching
+     * - Fresh results for each user query
+     * - Real-time response generation
      * 
      * @param string $query User query string
      * @param array $result Query result data
      * @since 1.0
      */
-    private function cache_query_result($query, $result) {
-        try {
-            // Create cache key based on query and conversation context
-            $cache_key = 'exa_query_' . md5($query);
-            
-            // Cache for 1 hour with automatic cleanup
-            set_transient($cache_key, $result, HOUR_IN_SECONDS);
-            
-            // Also store in object cache if available
-            if (wp_cache_add($cache_key, $result, '', HOUR_IN_SECONDS)) {
-                error_log("Query cached successfully: $cache_key");
-            }
-            
-        } catch (Exception $e) {
-            error_log('Failed to cache query result: ' . $e->getMessage());
-        }
-    }
+
     
-    /**
-     * Get cached query result if available
-     * 
-     * @param string $query User query string
-     * @return array|false Cached result or false if not found
-     * @since 1.0
-     */
-    private function get_cached_query_result($query) {
-        try {
-            $cache_key = 'exa_query_' . md5($query);
-            
-            // Try object cache first (faster)
-            $cached = wp_cache_get($cache_key);
-            if ($cached !== false) {
-                return $cached;
-            }
-            
-            // Fallback to transients
-            $cached = get_transient($cache_key);
-            if ($cached !== false) {
-                // Store in object cache for next time
-                wp_cache_set($cache_key, $cached, '', HOUR_IN_SECONDS);
-                return $cached;
-            }
-            
-            return false;
-            
-        } catch (Exception $e) {
-            error_log('Failed to get cached query result: ' . $e->getMessage());
-            return false;
-        }
-    }
+
     
     /**
      * Optimize database queries with prepared statements
@@ -2454,17 +2407,11 @@ class Exa_AI_Integration {
         
         $data = [];
         $sources = [];
-        $cache_key = '';
+
         $query = sanitize_text_field($_POST['query'] ?? '');
         $conversation_history = isset($_POST['conversation_history']) ? json_decode(stripslashes($_POST['conversation_history']), true) : [];
         
-        // Check cache first for better performance
-        $cached_result = $this->get_cached_query_result($query);
-        if ($cached_result !== false) {
-            error_log('Cache hit for query: ' . $query);
-            wp_send_json_success($cached_result);
-            return;
-        }
+
         // Build conversational prompt for OpenAI if context is present
         $conversational_prompt = '';
         if (!empty($conversation_history) && is_array($conversation_history)) {
@@ -2710,8 +2657,7 @@ class Exa_AI_Integration {
             ], ['id' => $chatlog_id]);
         }
         
-        // Cache the result for better performance
-        $this->cache_query_result($query, $result);
+
         
         // Performance logging
         $end_time = microtime(true);

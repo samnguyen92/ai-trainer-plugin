@@ -466,8 +466,8 @@ Check browser console for JavaScript errors and AJAX responses.
 
 #### **Caching**
 
-- **Embedding Cache**: Cache generated embeddings
-- **Search Results**: Cache frequent search results
+- **Embedding Generation**: Generate embeddings on-demand
+- **Search Results**: Fresh results for each query
 - **Page Cache**: Use WordPress caching plugins
 
 ---

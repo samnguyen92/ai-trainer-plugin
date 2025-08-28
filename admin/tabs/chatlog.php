@@ -263,21 +263,21 @@ function chatlog_question_in_training($question) {
 }
 
 // ============================================================================
-// TRAINING STATUS CACHING
+// TRAINING STATUS OPTIMIZATION
 // ============================================================================
 /**
- * Cache training status for better performance when displaying multiple logs
+ * Optimize training status queries for better performance when displaying multiple logs
  * 
- * This section implements intelligent caching to optimize performance:
+ * This section implements intelligent query optimization to improve performance:
  * - Batch querying for training status
- * - Memory-efficient caching strategy
+ * - Memory-efficient data processing
  * - Performance optimization for large datasets
  * - Reduced database query overhead
  * 
- * CACHING STRATEGY:
+ * OPTIMIZATION STRATEGY:
  * - Batch processing of multiple questions
  * - Single database query for multiple status checks
- * - Memory-efficient array-based caching
+ * - Memory-efficient array-based processing
  * - Performance improvement for large chat log collections
  * 
  * OPTIMIZATION BENEFITS:
@@ -288,7 +288,7 @@ function chatlog_question_in_training($question) {
  * 
  * @since 1.0
  */
-$training_status_cache = [];
+$training_status_lookup = [];
 if (!empty($logs)) {
     $questions = array_column($logs, 'question');
     $placeholders = implode(',', array_fill(0, count($questions), '%s'));
@@ -304,7 +304,7 @@ if (!empty($logs)) {
     foreach ($training_results as $result) {
         $meta = json_decode($result->metadata, true);
         if (isset($meta['question'])) {
-            $training_status_cache[$meta['question']] = true;
+            $training_status_lookup[$meta['question']] = true;
         }
     }
 }
@@ -398,7 +398,7 @@ if (!empty($logs)) {
                 <tr><td colspan="10">No chat logs found.</td></tr>
             <?php else: ?>
                 <?php foreach ($logs as $log):
-                    $in_training = isset($training_status_cache[$log['question']]);
+                    $in_training = isset($training_status_lookup[$log['question']]);
                     $reactions = isset($log['reaction']) ? json_decode($log['reaction'], true) : ['like' => 0, 'dislike' => 0];
                 ?>
                     <tr data-id="<?php echo esc_attr($log['id']); ?>">
