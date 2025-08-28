@@ -171,7 +171,7 @@
 }
 .psybrarian-wrapper .psybrarian-content .psy-search-ai-wrapper .psy-search-ai-container #exa-search-box {
   display: flex;
-  background-color: #2F257D;
+  background-color: rgba(255, 255, 255, 0.05);
   border-radius: 28px;
   border: 1px solid rgba(217, 217, 217, 0.1);
   color: #fff;
@@ -250,7 +250,7 @@
 }
 .psybrarian-wrapper .psybrarian-content .psy-search-ai-wrapper .psy-search-ai-container.active #exa-search-box {
   display: flex;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: #2F257D;
   border-radius: 25px;
   color: #fff;
   overflow: hidden;
