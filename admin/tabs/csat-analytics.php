@@ -320,34 +320,39 @@ function get_csat_data($time_filter = 'all_time') {
                 
                 // Get detailed breakdown from reaction detail
                 if (!empty($reaction->reaction_detail)) {
-                    // Handle escaped JSON strings (with backslashes before quotes)
-                    $detail = $reaction->reaction_detail;
-                    if (is_string($detail)) {
-                        // First, try to decode as-is
-                        $detail = json_decode($detail, true);
-                        
-                        // If that fails or returns null, try with stripslashes
-                        if ($detail === null) {
-                            $detail = json_decode(stripslashes($detail), true);
+                    $detail = parse_feedback_detail($reaction->reaction_detail);
+                    
+                    // Handle different feedback system formats
+                    if (is_array($detail)) {
+                        // NEW FORMAT: Modern feedback system with categories array
+                        if (isset($detail['categories']) && is_array($detail['categories'])) {
+                            foreach ($detail['categories'] as $category) {
+                                $mapped_option = map_category_to_csat($category, 'positive');
+                                if (isset($thumbs_up_breakdown[$mapped_option])) {
+                                    $thumbs_up_breakdown[$mapped_option] += $reaction_data['like'];
+                                }
+                            }
                         }
-                        
-                        // If still fails, try with addslashes removed
-                        if ($detail === null) {
-                            $detail = json_decode(str_replace('\\"', '"', $reaction->reaction_detail), true);
+                        // OLD FORMAT: Legacy system with single option
+                        elseif (isset($detail['option'])) {
+                            $option = $detail['option'];
+                            $mapped_option = map_feedback_option($option, 'positive');
+                            if (isset($thumbs_up_breakdown[$mapped_option])) {
+                                $thumbs_up_breakdown[$mapped_option] += $reaction_data['like'];
+                            } else {
+                                $thumbs_up_breakdown['Other'] += $reaction_data['like'];
+                            }
                         }
-                    }
-                    if (is_array($detail) && isset($detail['option'])) {
-                        $option = $detail['option'];
-                        // Map common variations to our standard categories
-                        $mapped_option = map_feedback_option($option, 'positive');
-                        
-                        if (isset($thumbs_up_breakdown[$mapped_option])) {
-                            $thumbs_up_breakdown[$mapped_option] += $reaction_data['like'];
-                        } else {
+                        // BASIC FORMAT: Simple feedback
+                        elseif (isset($detail['basic']) && $detail['basic'] === true) {
+                            $thumbs_up_breakdown['Other'] += $reaction_data['like'];
+                        }
+                        else {
+                            // No specific category, count as "Other"
                             $thumbs_up_breakdown['Other'] += $reaction_data['like'];
                         }
                     } else {
-                        // No specific category, count as "Other"
+                        // Parsing failed, count as "Other"
                         $thumbs_up_breakdown['Other'] += $reaction_data['like'];
                     }
                 } else {
@@ -362,34 +367,39 @@ function get_csat_data($time_filter = 'all_time') {
                 
                 // Get detailed breakdown from reaction detail
                 if (!empty($reaction->reaction_detail)) {
-                    // Handle escaped JSON strings (with backslashes before quotes)
-                    $detail = $reaction->reaction_detail;
-                    if (is_string($detail)) {
-                        // First, try to decode as-is
-                        $detail = json_decode($detail, true);
-                        
-                        // If that fails or returns null, try with stripslashes
-                        if ($detail === null) {
-                            $detail = json_decode(stripslashes($detail), true);
+                    $detail = parse_feedback_detail($reaction->reaction_detail);
+                    
+                    // Handle different feedback system formats
+                    if (is_array($detail)) {
+                        // NEW FORMAT: Modern feedback system with categories array
+                        if (isset($detail['categories']) && is_array($detail['categories'])) {
+                            foreach ($detail['categories'] as $category) {
+                                $mapped_option = map_category_to_csat($category, 'negative');
+                                if (isset($thumbs_down_breakdown[$mapped_option])) {
+                                    $thumbs_down_breakdown[$mapped_option] += $reaction_data['dislike'];
+                                }
+                            }
                         }
-                        
-                        // If still fails, try with addslashes removed
-                        if ($detail === null) {
-                            $detail = json_decode(str_replace('\\"', '"', $reaction->reaction_detail), true);
+                        // OLD FORMAT: Legacy system with single option
+                        elseif (isset($detail['option'])) {
+                            $option = $detail['option'];
+                            $mapped_option = map_feedback_option($option, 'negative');
+                            if (isset($thumbs_down_breakdown[$mapped_option])) {
+                                $thumbs_down_breakdown[$mapped_option] += $reaction_data['dislike'];
+                            } else {
+                                $thumbs_down_breakdown['Other'] += $reaction_data['dislike'];
+                            }
                         }
-                    }
-                    if (is_array($detail) && isset($detail['option'])) {
-                        $option = $detail['option'];
-                        // Map common variations to our standard categories
-                        $mapped_option = map_feedback_option($option, 'negative');
-                        
-                        if (isset($thumbs_down_breakdown[$mapped_option])) {
-                            $thumbs_down_breakdown[$mapped_option] += $reaction_data['dislike'];
-                        } else {
+                        // BASIC FORMAT: Simple feedback
+                        elseif (isset($detail['basic']) && $detail['basic'] === true) {
+                            $thumbs_down_breakdown['Other'] += $reaction_data['dislike'];
+                        }
+                        else {
+                            // No specific category, count as "Other"
                             $thumbs_down_breakdown['Other'] += $reaction_data['dislike'];
                         }
                     } else {
-                        // No specific category, count as "Other"
+                        // Parsing failed, count as "Other"
                         $thumbs_down_breakdown['Other'] += $reaction_data['dislike'];
                     }
                 } else {
@@ -427,6 +437,77 @@ function get_csat_data($time_filter = 'all_time') {
 // ============================================================================
 // FEEDBACK OPTION MAPPING
 // ============================================================================
+/**
+ * Parse feedback detail from various formats
+ * 
+ * Handles different JSON structures and escaped strings from the database
+ * 
+ * @param string $detail Raw feedback detail from database
+ * @return array|null Parsed feedback data
+ */
+function parse_feedback_detail($detail) {
+    if (empty($detail)) return null;
+    
+    // Handle escaped JSON strings (with backslashes before quotes)
+    if (is_string($detail)) {
+        // First, try to decode as-is
+        $parsed = json_decode($detail, true);
+        
+        // If that fails or returns null, try with stripslashes
+        if ($parsed === null) {
+            $parsed = json_decode(stripslashes($detail), true);
+        }
+        
+        // If still fails, try with addslashes removed
+        if ($parsed === null) {
+            $parsed = json_decode(str_replace('\\"', '"', $detail), true);
+        }
+        
+        return $parsed;
+    }
+    
+    return $detail;
+}
+
+/**
+ * Map modern feedback categories to CSAT categories
+ * 
+ * Converts new feedback system categories to legacy CSAT categories
+ * 
+ * @param string $category Modern feedback category ID
+ * @param string $type Type of feedback ('positive' or 'negative')
+ * @return string The standardized CSAT category name
+ */
+function map_category_to_csat($category, $type) {
+    if ($type === 'positive') {
+        switch ($category) {
+            case 'accurate':
+                return 'Accurate';
+            case 'clear':
+            case 'helpful':
+                return 'Clear explanation';
+            case 'sources':
+            case 'comprehensive':
+                return 'Useful sources';
+            default:
+                return 'Other';
+        }
+    } else {
+        switch ($category) {
+            case 'inaccurate':
+                return 'Inaccurate';
+            case 'unclear':
+            case 'irrelevant':
+                return 'Unclear';
+            case 'incomplete':
+            case 'outdated':
+                return 'Missing info';
+            default:
+                return 'Other';
+        }
+    }
+}
+
 /**
  * Map user feedback options to standardized categories for consistent analytics
  * 

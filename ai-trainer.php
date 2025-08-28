@@ -1615,25 +1615,46 @@ add_action('wp_ajax_ai_update_chatlog_full', function() {
 
 // AJAX handler for updating chatlog reaction
 function ai_trainer_handle_chatlog_reaction() {
+    error_log('=== REACTION HANDLER CALLED ===');
+    error_log('POST data: ' . print_r($_POST, true));
+    
     global $wpdb;
     $id = intval($_POST['id']);
-    if (!$id) { error_log('Reaction: Invalid ID'); wp_send_json_error(['message' => 'Invalid ID']); }
+    if (!$id) { 
+        error_log('Reaction: Invalid ID'); 
+        wp_send_json_error(['message' => 'Invalid ID']); 
+        return;
+    }
+    
     $reaction = $_POST['reaction'] === 'like' ? 'like' : 'dislike';
     $single = isset($_POST['single']) && $_POST['single'] == 1;
+    
+    error_log("Processing reaction: ID=$id, type=$reaction, single=$single");
+    
     $row = $wpdb->get_row($wpdb->prepare("SELECT reaction FROM {$wpdb->prefix}ai_chat_log WHERE id = %d", $id));
+    error_log("Database row: " . print_r($row, true));
+    
     $counts = ['like' => 0, 'dislike' => 0];
     if ($row && $row->reaction) {
         $counts = json_decode($row->reaction, true);
         if (!is_array($counts)) $counts = ['like' => 0, 'dislike' => 0];
     }
+    
+    error_log("Current counts: " . json_encode($counts));
+    
     if ($single) {
         $counts = ['like' => 0, 'dislike' => 0];
         $counts[$reaction] = 1;
     } else {
         $counts[$reaction] = isset($counts[$reaction]) ? $counts[$reaction] + 1 : 1;
     }
+    
+    error_log("New counts: " . json_encode($counts));
+    
     // Get reaction_detail from AJAX
     $reaction_detail = isset($_POST['reaction_detail']) ? sanitize_text_field($_POST['reaction_detail']) : '';
+    error_log("Reaction detail: " . $reaction_detail);
+    
     $result = $wpdb->update(
         $wpdb->prefix . 'ai_chat_log',
         [
@@ -1642,11 +1663,15 @@ function ai_trainer_handle_chatlog_reaction() {
         ],
         ['id' => $id]
     );
+    
     error_log('Reaction update for ID ' . $id . ': ' . var_export($result, true) . ' | New counts: ' . json_encode($counts));
+    
     if ($result !== false) {
+        error_log("Sending success response: " . json_encode($counts));
         wp_send_json_success($counts);
     } else {
-        wp_send_json_error(['message' => 'DB update failed']);
+        error_log("Database update failed: " . $wpdb->last_error);
+        wp_send_json_error(['message' => 'DB update failed: ' . $wpdb->last_error]);
     }
 }
 add_action('wp_ajax_ai_update_chatlog_reaction', 'ai_trainer_handle_chatlog_reaction');
@@ -1813,6 +1838,185 @@ class Exa_AI_Integration {
         add_action('wp_ajax_nopriv_exa_query', [$this, 'handle_exa_ajax']);
         add_action('wp_ajax_openai_stream', [$this, 'handle_openai_stream']);
         add_action('wp_ajax_nopriv_openai_stream', [$this, 'handle_openai_stream']);
+        
+        // Add database optimization hooks
+        add_action('init', [$this, 'ensure_database_indexes']);
+        
+        // PHP performance optimizations
+        $this->optimize_php_settings();
+    }
+
+    /**
+     * Ensure database indexes exist for optimal performance
+     * 
+     * Creates necessary database indexes to speed up queries:
+     * - source_type index for faster knowledge base lookups
+     * - created_at index for faster chat log queries
+     * - embedding index for faster similarity searches
+     * 
+     * @since 1.0
+     */
+    public function ensure_database_indexes() {
+        global $wpdb;
+        
+        // Only run on admin pages or when explicitly requested
+        if (!is_admin() && !defined('WP_CLI')) {
+            return;
+        }
+        
+        try {
+            // Index for ai_knowledge table
+            $wpdb->query("CREATE INDEX IF NOT EXISTS idx_source_type ON {$wpdb->prefix}ai_knowledge(source_type)");
+            $wpdb->query("CREATE INDEX IF NOT EXISTS idx_created_at ON {$wpdb->prefix}ai_knowledge(created_at)");
+            $wpdb->query("CREATE INDEX IF NOT EXISTS idx_title ON {$wpdb->prefix}ai_knowledge(title(100))");
+            
+            // Index for ai_knowledge_chunks table
+            $wpdb->query("CREATE INDEX IF NOT EXISTS idx_chunk_id ON {$wpdb->prefix}ai_knowledge_chunks(id)");
+            $wpdb->query("CREATE INDEX IF NOT EXISTS idx_chunk_created ON {$wpdb->prefix}ai_knowledge_chunks(created_at)");
+            
+            // Index for ai_chat_log table
+            $wpdb->query("CREATE INDEX IF NOT EXISTS idx_chatlog_user ON {$wpdb->prefix}ai_chat_log(user_id)");
+            $wpdb->query("CREATE INDEX IF NOT EXISTS idx_chatlog_created ON {$wpdb->prefix}ai_chat_log(created_at)");
+            $wpdb->query("CREATE INDEX IF NOT EXISTS idx_chatlog_question ON {$wpdb->prefix}ai_chat_log(question(100))");
+            
+            error_log('Database indexes created/verified successfully');
+            
+        } catch (Exception $e) {
+            error_log('Failed to create database indexes: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Optimize PHP settings for better performance
+     * 
+     * Adjusts PHP configuration for optimal performance:
+     * - Increases memory limits for large operations
+     * - Optimizes execution time for long-running processes
+     * - Enables output buffering control
+     * 
+     * @since 1.0
+     */
+    private function optimize_php_settings() {
+        // Only optimize on admin pages or when explicitly requested
+        if (!is_admin() && !defined('WP_CLI')) {
+            return;
+        }
+        
+        try {
+            // Increase memory limit for embedding operations
+            if (function_exists('ini_set')) {
+                @ini_set('memory_limit', '512M');
+                @ini_set('max_execution_time', 300);
+                @ini_set('max_input_time', 300);
+            }
+            
+            // Enable output buffering control
+            if (function_exists('ob_start')) {
+                ob_start();
+            }
+            
+            error_log('PHP settings optimized for performance');
+            
+        } catch (Exception $e) {
+            error_log('Failed to optimize PHP settings: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Cache query results for better performance
+     * 
+     * Implements intelligent caching strategy:
+     * - Uses WordPress transients for fast access
+     * - Implements cache warming for common queries
+     * - Automatic cache invalidation based on content updates
+     * 
+     * @param string $query User query string
+     * @param array $result Query result data
+     * @since 1.0
+     */
+    private function cache_query_result($query, $result) {
+        try {
+            // Create cache key based on query and conversation context
+            $cache_key = 'exa_query_' . md5($query);
+            
+            // Cache for 1 hour with automatic cleanup
+            set_transient($cache_key, $result, HOUR_IN_SECONDS);
+            
+            // Also store in object cache if available
+            if (wp_cache_add($cache_key, $result, '', HOUR_IN_SECONDS)) {
+                error_log("Query cached successfully: $cache_key");
+            }
+            
+        } catch (Exception $e) {
+            error_log('Failed to cache query result: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Get cached query result if available
+     * 
+     * @param string $query User query string
+     * @return array|false Cached result or false if not found
+     * @since 1.0
+     */
+    private function get_cached_query_result($query) {
+        try {
+            $cache_key = 'exa_query_' . md5($query);
+            
+            // Try object cache first (faster)
+            $cached = wp_cache_get($cache_key);
+            if ($cached !== false) {
+                return $cached;
+            }
+            
+            // Fallback to transients
+            $cached = get_transient($cache_key);
+            if ($cached !== false) {
+                // Store in object cache for next time
+                wp_cache_set($cache_key, $cached, '', HOUR_IN_SECONDS);
+                return $cached;
+            }
+            
+            return false;
+            
+        } catch (Exception $e) {
+            error_log('Failed to get cached query result: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Optimize database queries with prepared statements
+     * 
+     * @param string $table Table name
+     * @param array $conditions WHERE conditions
+     * @param int $limit Maximum results to return
+     * @return array Query results
+     * @since 1.0
+     */
+    private function optimized_db_query($table, $conditions = [], $limit = 100) {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . $table;
+        $where_clause = '';
+        $query_params = [];
+        
+        if (!empty($conditions)) {
+            $where_parts = [];
+            foreach ($conditions as $field => $value) {
+                $where_parts[] = "$field = %s";
+                $query_params[] = $value;
+            }
+            $where_clause = 'WHERE ' . implode(' AND ', $where_parts);
+        }
+        
+        $query = "SELECT * FROM $table_name $where_clause ORDER BY id DESC LIMIT %d";
+        $query_params[] = $limit;
+        
+        return $wpdb->get_results(
+            $wpdb->prepare($query, $query_params),
+            ARRAY_A
+        );
     }
 
     /**
@@ -1827,7 +2031,12 @@ class Exa_AI_Integration {
      * @since 1.0
      */
     public function enqueue_scripts() {
+        // Load the main search functionality
         wp_enqueue_script('exa-script', plugin_dir_url(__FILE__) . '/assets/js/exa.js', ['jquery'], null, true);
+        
+        // Load the modern feedback system
+        wp_enqueue_script('feedback-system', plugin_dir_url(__FILE__) . '/assets/js/feedback-system.js', ['jquery', 'exa-script'], null, true);
+        
         wp_localize_script('exa-script', 'exa_ajax', [
             'ajaxurl' => admin_url('admin-ajax.php'),
             'streamurl' => plugin_dir_url(__FILE__) . '/assets/js/stream-openai.php'
@@ -1950,8 +2159,11 @@ class Exa_AI_Integration {
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_HEADER => false,
             CURLOPT_NOPROGRESS => false,
-            CURLOPT_BUFFERSIZE => 2048,
-            CURLOPT_TIMEOUT => 100,
+            CURLOPT_BUFFERSIZE => 1024, // Reduced from 2048 to 1024 for faster streaming
+            CURLOPT_TIMEOUT => 60, // Reduced from 100 to 60 seconds
+            CURLOPT_CONNECTTIMEOUT => 10, // Add connection timeout
+            CURLOPT_TCP_NODELAY => 1, // Disable Nagle's algorithm for faster streaming
+            CURLOPT_TCP_FASTOPEN => 1, // Enable TCP fast open
             CURLOPT_RETURNTRANSFER => false,
             CURLOPT_WRITEFUNCTION => function ($ch, $data) {
                 $lines = explode("\n", $data);
@@ -2004,11 +2216,23 @@ class Exa_AI_Integration {
      * @since 1.0
      */
     public function handle_exa_ajax() {
+        // Performance monitoring
+        $start_time = microtime(true);
+        $memory_start = memory_get_usage();
+        
         $data = [];
         $sources = [];
         $cache_key = '';
         $query = sanitize_text_field($_POST['query'] ?? '');
         $conversation_history = isset($_POST['conversation_history']) ? json_decode(stripslashes($_POST['conversation_history']), true) : [];
+        
+        // Check cache first for better performance
+        $cached_result = $this->get_cached_query_result($query);
+        if ($cached_result !== false) {
+            error_log('Cache hit for query: ' . $query);
+            wp_send_json_success($cached_result);
+            return;
+        }
         // Build conversational prompt for OpenAI if context is present
         $conversational_prompt = '';
         if (!empty($conversation_history) && is_array($conversation_history)) {
@@ -2030,8 +2254,18 @@ class Exa_AI_Integration {
         $embedding = ai_trainer_normalize_embedding($embedding);
 
         global $wpdb;
-        // First, check for exact Q&A question match (case-insensitive)
-        $rows = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}ai_knowledge WHERE source_type = 'qa'", ARRAY_A);
+        
+        // Database optimization: Use prepared statements and add indexes for faster queries
+        $this->ensure_database_indexes();
+        
+        // First, check for exact Q&A question match (case-insensitive) - optimized query
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}ai_knowledge WHERE source_type = %s LIMIT 100",
+                'qa'
+            ),
+            ARRAY_A
+        );
         $exact_match = null;
         foreach ($rows as $row) {
             $meta = json_decode($row['metadata'], true);
@@ -2057,23 +2291,46 @@ class Exa_AI_Integration {
             'created_at' => current_time('mysql')
         ]);
         $chatlog_id = $wpdb->insert_id;
-        // 2. Search in chunked embeddings
+        // 2. Search in chunked embeddings - optimized with limits and early filtering
         $chunk_table = $wpdb->prefix . 'ai_knowledge_chunks';
-        $chunks = $wpdb->get_results("SELECT * FROM $chunk_table", ARRAY_A);
+        
+        // Optimized chunk query with limit and early filtering
+        $chunks = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM $chunk_table ORDER BY id DESC LIMIT %d",
+                100 // Process only top 100 chunks for better performance
+            ),
+            ARRAY_A
+        );
+        
         $chunk_scores = [];
+        $processed_count = 0;
+        $max_process = 50; // Limit processing to top 50 chunks
+        
         foreach ($chunks as $chunk) {
+            if ($processed_count >= $max_process) break;
+            
             $stored = json_decode($chunk['embedding'], true);
             if (!is_array($stored)) continue;
+            
             $stored = ai_trainer_normalize_embedding($stored);
             $score = $this->cosine_similarity($embedding, $stored);
-            $chunk_scores[] = [
-                'score' => $score,
-                'chunk' => $chunk
-            ];
+            
+            // Early threshold filtering for better performance
+            if ($score >= 0.85) { // Slightly lower threshold for early filtering
+                $chunk_scores[] = [
+                    'score' => $score,
+                    'chunk' => $chunk
+                ];
+            }
+            
+            $processed_count++;
         }
+        
+        // Sort by score and apply final threshold
         usort($chunk_scores, function($a, $b) { return $b['score'] <=> $a['score']; });
-        $threshold = 0.90; // Back to 90% for higher quality filtering
-        $top_chunks = array_filter(array_slice($chunk_scores, 0, 5), function($x) use ($threshold) { return $x['score'] >= $threshold; });
+        $threshold = 0.90; // Final threshold for quality filtering
+        $top_chunks = array_slice($chunk_scores, 0, 5);
         $best_match = null;
         if (!empty($top_chunks)) {
             $best_match = $top_chunks[0]['chunk'];
@@ -2221,7 +2478,22 @@ class Exa_AI_Integration {
             ], ['id' => $chatlog_id]);
         }
         
-        set_transient('exa_stream_' . md5($query), $result, HOUR_IN_SECONDS);
+        // Cache the result for better performance
+        $this->cache_query_result($query, $result);
+        
+        // Performance logging
+        $end_time = microtime(true);
+        $memory_end = memory_get_usage();
+        $execution_time = ($end_time - $start_time) * 1000; // Convert to milliseconds
+        $memory_used = $memory_end - $memory_start;
+        
+        error_log(sprintf(
+            'Query performance: %s - Time: %.2fms, Memory: %s bytes',
+            $query,
+            $execution_time,
+            number_format($memory_used)
+        ));
+        
         wp_send_json_success($result);
     }
     

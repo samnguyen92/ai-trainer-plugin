@@ -466,9 +466,11 @@ if (!empty($logs)) {
                                         }
                                     }
                                     
-                                    if (is_array($detail) && isset($detail['option'])) {
+                                                                    if (is_array($detail)) {
+                                    // Handle new format with 'option' field (current system)
+                                    if (isset($detail['option'])) {
                                         $option = $detail['option'];
-                                        $feedback = isset($detail['feedback']) ? $detail['feedback'] : '';
+                                        $feedback = isset($detail['feedback']) ? $detail['feedback'] : (isset($detail['text']) ? $detail['text'] : '');
                                         
                                         // Display the selected feedback option with better formatting
                                         if ($option === 'Other' && !empty($feedback)) {
@@ -487,9 +489,33 @@ if (!empty($logs)) {
                                             echo esc_html($feedback);
                                             echo '</small>';
                                         }
-                                    } else {
-                                        echo '<span style="color: #999; font-style: italic;">Invalid format</span>';
                                     }
+                                    // Handle new format with 'categories' array (modern system)
+                                    elseif (isset($detail['categories']) && is_array($detail['categories'])) {
+                                        $categories = $detail['categories'];
+                                        $text = isset($detail['text']) ? $detail['text'] : '';
+                                        
+                                        foreach ($categories as $category) {
+                                            $display_category = ucfirst(str_replace('_', ' ', $category));
+                                            echo '<span style="background: #e8f5e8; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #2e7d32; margin-right: 4px;">';
+                                            echo esc_html($display_category);
+                                            echo '</span>';
+                                        }
+                                        
+                                        // Show additional text feedback if provided
+                                        if (!empty($text)) {
+                                            echo '<br><small style="color: #666; margin-top: 4px; display: block;">';
+                                            echo esc_html($text);
+                                            echo '</small>';
+                                        }
+                                    }
+                                    // Handle basic feedback format
+                                    else {
+                                        echo '<span style="background: #f5f5f5; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: #666;">Basic feedback</span>';
+                                    }
+                                } else {
+                                    echo '<span style="color: #999; font-style: italic;">Invalid format</span>';
+                                }
                                 } else {
                                     echo '<span style="color: #999; font-style: italic;">No feedback</span>';
                                 }

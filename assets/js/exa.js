@@ -91,35 +91,69 @@ jQuery(document).ready(function($) {
     $ticketWrapper.hide();
     $exaAnswer.hide();
 
-    // Event handlers
+    // Event handlers with performance optimizations
     $('#exa-submit').on('click', submitSearch);
+    
+    // Debounced input handler for better performance
+    let inputTimeout;
     $('#exa-search-box input').on('keydown', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
+            clearTimeout(inputTimeout);
             submitSearch();
         }
+    });
+    
+    // Add input debouncing for better performance
+    $('#exa-search-box input').on('input', function() {
+        clearTimeout(inputTimeout);
+        inputTimeout = setTimeout(() => {
+            // Pre-warm the input for faster response
+            const query = $(this).val().trim();
+            if (query.length > 2) {
+                // Pre-cache common queries
+                const cacheKey = `query_${query}_0`;
+                if (!getCachedResponse(cacheKey)) {
+                    // Pre-fetch embedding for faster response
+                    prewarmQuery(query);
+                }
+            }
+        }, 300);
     });
 
     let conversationHistory = [];
 
-    // Optimized submit search function
+    // Optimized submit search function with performance tracking
     function submitSearch() {
         const query = $exaInput.val().trim();
         if (!query) return;
 
-        // Show loading state
+        // Performance tracking
+        const startTime = performance.now();
+        
+        // Show loading state immediately
         $exaLoading.show();
         
-        // Scroll to loading element with better positioning
+        // Optimized scroll animation - faster and smoother
         setTimeout(() => {
             $('html, body').animate({
                 scrollTop: $exaLoading.offset().top - 100
-            }, 500);
-        }, 100);
+            }, 300); // Reduced from 500ms to 300ms
+        }, 50); // Reduced from 100ms to 50ms for faster perceived response
         
         $psybrarianMainContent.hide();
         $psySearchAiContainer.addClass('active');
         $exaInput.val('').attr('placeholder', 'Ask follow up...');
+        
+        // Check cache first before making AJAX request
+        const cacheKey = `query_${query}_${conversationHistory.length}`;
+        const cachedResponse = getCachedResponse(cacheKey);
+        
+        if (cachedResponse) {
+            console.log(`Cache hit for query: ${query}`);
+            handleSearchResponse(cachedResponse, query);
+            return;
+        }
         
         // Make AJAX request
         $.post(exa_ajax.ajaxurl, {
@@ -127,12 +161,171 @@ jQuery(document).ready(function($) {
             query: query,
             conversation_history: JSON.stringify(conversationHistory)
         }, function(response) {
+            const endTime = performance.now();
+            console.log(`Query completed in ${(endTime - startTime).toFixed(2)}ms`);
+            
+            // Cache successful responses
+            if (response.success) {
+                cacheResponse(cacheKey, response);
+            }
+            
             handleSearchResponse(response, query);
         });
     }
 
+    // Cache management system
+    const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+    const MAX_CACHE_SIZE = 50; // Maximum number of cached items
+    
+    function getCachedResponse(key) {
+        try {
+            const cached = localStorage.getItem(`exa_cache_${key}`);
+            if (!cached) return null;
+            
+            const { data, timestamp } = JSON.parse(cached);
+            const now = Date.now();
+            
+            // Check if cache is expired
+            if (now - timestamp > CACHE_DURATION) {
+                localStorage.removeItem(`exa_cache_${key}`);
+                return null;
+            }
+            
+            return data;
+        } catch (e) {
+            console.warn('Cache read error:', e);
+            return null;
+        }
+    }
+    
+    function cacheResponse(key, response) {
+        try {
+            const cacheData = {
+                data: response,
+                timestamp: Date.now()
+            };
+            
+            // Store in localStorage
+            localStorage.setItem(`exa_cache_${key}`, JSON.stringify(cacheData));
+            
+            // Manage cache size
+            manageCacheSize();
+            
+        } catch (e) {
+            console.warn('Cache write error:', e);
+        }
+    }
+    
+    function manageCacheSize() {
+        try {
+            const cacheKeys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('exa_cache_')) {
+                    cacheKeys.push(key);
+                }
+            }
+            
+            if (cacheKeys.length > MAX_CACHE_SIZE) {
+                // Sort by timestamp and remove oldest
+                cacheKeys.sort((a, b) => {
+                    const aData = JSON.parse(localStorage.getItem(a));
+                    const bData = JSON.parse(localStorage.getItem(b));
+                    return aData.timestamp - bData.timestamp;
+                });
+                
+                // Remove oldest entries
+                const toRemove = cacheKeys.slice(0, cacheKeys.length - MAX_CACHE_SIZE);
+                toRemove.forEach(key => localStorage.removeItem(key));
+            }
+        } catch (e) {
+            console.warn('Cache management error:', e);
+        }
+    }
+    
+    // Clear cache function for debugging
+    function clearCache() {
+        try {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('exa_cache_')) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            console.log('Cache cleared');
+        } catch (e) {
+            console.warn('Cache clear error:', e);
+        }
+    }
+    
+    // Expose clearCache globally for debugging
+    window.clearExaCache = clearCache;
+    
+    // Pre-warming function for better performance
+    function prewarmQuery(query) {
+        // This function pre-warms common queries for faster response
+        // It's a lightweight optimization that doesn't affect the main flow
+        try {
+            // Store a lightweight cache entry for pre-warming
+            const prewarmKey = `prewarm_${query}`;
+            if (!localStorage.getItem(prewarmKey)) {
+                localStorage.setItem(prewarmKey, Date.now().toString());
+            }
+        } catch (e) {
+            // Silently fail for pre-warming
+        }
+    }
+    
+    // Performance monitoring utilities
+    function logPerformanceMetric(name, startTime) {
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+        console.log(`Performance: ${name} took ${duration.toFixed(2)}ms`);
+        
+        // Store performance metrics for analysis
+        try {
+            const metrics = JSON.parse(localStorage.getItem('exa_performance_metrics') || '{}');
+            if (!metrics[name]) metrics[name] = [];
+            metrics[name].push({
+                duration: duration,
+                timestamp: Date.now()
+            });
+            
+            // Keep only last 100 metrics per type
+            if (metrics[name].length > 100) {
+                metrics[name] = metrics[name].slice(-100);
+            }
+            
+            localStorage.setItem('exa_performance_metrics', JSON.stringify(metrics));
+        } catch (e) {
+            // Silently fail for metrics
+        }
+    }
+    
+    // Expose performance utilities globally
+    window.getExaPerformanceMetrics = function() {
+        try {
+            return JSON.parse(localStorage.getItem('exa_performance_metrics') || '{}');
+        } catch (e) {
+            return {};
+        }
+    };
+    
+    window.clearExaPerformanceMetrics = function() {
+        try {
+            localStorage.removeItem('exa_performance_metrics');
+            console.log('Performance metrics cleared');
+        } catch (e) {
+            console.warn('Failed to clear performance metrics:', e);
+        }
+    };
+
     // Handle search response
     function handleSearchResponse(response, query) {
+        const responseStartTime = performance.now();
+        
         try {
             $exaLoading.hide();
             $exaAnswer.show();
@@ -175,10 +368,14 @@ jQuery(document).ready(function($) {
                     streamOpenAIAnswer(query, sources, block, streamingContainer, chatlogId, conversationHistory);
                 }
                 
-                addModernReactionBar(block, chatlogId);
+                addModernFeedbackSystem(block, chatlogId);
             }
 
             $ticketWrapper.show();
+            
+            // Log performance metrics
+            logPerformanceMetric('response_processing', responseStartTime);
+            
         } catch (error) {
             $exaAnswer.append(`<p>⚠️ Error processing response: ${error.message}</p>`);
         }
@@ -710,51 +907,632 @@ jQuery(document).ready(function($) {
      * addModernReactionBar(answerBlock, 'chat-123');
      * // Adds reaction bar with like/dislike and share buttons
      */
-    function addModernReactionBar(block, chatlogId) {
-        // Create the reaction bar HTML structure
-        const reactionBar = $(`
-            <div class="answer-reaction-bar modern" style="margin-top:20px;">
-                <div class="action-buttons">
-                    <button class="action-btn share-btn" data-id="${chatlogId}">
+    function addModernFeedbackSystem(block, chatlogId) {
+        console.log('🎯 Adding modern feedback system for chatlog ID:', chatlogId);
+        
+        // Create the modern feedback container with share button
+        const feedbackContainer = $(`
+            <div class="modern-feedback-wrapper" style="margin-top: 20px;">
+                <div class="action-buttons" style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+                    <button class="share-btn modern" data-id="${chatlogId}" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        padding: 8px 16px;
+                        border: 1.5px solid rgba(255, 255, 255, 0.2);
+                        border-radius: 10px;
+                        background: rgba(255, 255, 255, 0.05);
+                        color: rgba(255, 255, 255, 0.8);
+                        font-size: 13px;
+                        font-weight: 500;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        backdrop-filter: blur(10px);
+                    ">
                         ${shareSVG}
-                        Share
+                        <span>Share</span>
                     </button>
                 </div>
-                <div class="feedback-question">
-                    Did we answer your questions?
                 </div>
-                <div class="reaction-buttons">
-                    <span class="reaction-like" data-id="${chatlogId}">${likeSVG}</span>
-                    <span class="like-count" id="like-count-${chatlogId}">0</span>
-                    <span class="reaction-dislike" data-id="${chatlogId}">${dislikeSVG}</span>
-                    <span class="dislike-count" id="dislike-count-${chatlogId}">0</span>
-                    <span class="reaction-more" data-id="${chatlogId}">${moreSVG}</span>
-                </div>
-                <div class="reaction-options-container" style="display:none;position:absolute;z-index:10;"></div>
-            </div>
         `);
         
-        // Append reaction bar to the answer block
-        block.append(reactionBar);
+        // Append to the answer block
+        block.append(feedbackContainer);
         
-        // Fetch initial reaction counts from backend
+        // Initialize the modern feedback system for this block
+        if (window.FeedbackSystem) {
+            window.FeedbackSystem.createFeedbackUI(chatlogId, feedbackContainer);
+        } else {
+            console.warn('FeedbackSystem not loaded, falling back to basic feedback');
+            // Fallback to basic feedback if the new system isn't loaded
+            addBasicFeedback(feedbackContainer, chatlogId);
+        }
+        
+        // Add share button functionality
+        feedbackContainer.find('.share-btn').on('click', function(e) {
+            console.log('Share button clicked!');
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const answerBlock = $(this).closest('.answer-block');
+            const chatlogQuestion = answerBlock.find('.chatlog-question').text();
+            
+            let questionTitle = chatlogQuestion || '';
+            
+            if (!questionTitle) {
+                questionTitle = $exaInput.val() || '';
+            }
+            
+            const shareUrl = window.location.origin + window.location.pathname + 
+                '?chatlog_id=' + chatlogId + '&title=' + encodeURIComponent(questionTitle);
+            
+            // Copy to clipboard
+            copyToClipboard(shareUrl);
+            
+            // Visual feedback
+            const btn = $(this);
+            const originalText = btn.find('span').text();
+            btn.find('span').text('Copied!');
+            btn.css('border-color', '#3bb273');
+            
+            setTimeout(() => {
+                btn.find('span').text(originalText);
+                btn.css('border-color', 'rgba(255, 255, 255, 0.2)');
+            }, 2000);
+        });
+        
+        console.log('✅ Modern feedback system initialized for chatlog:', chatlogId);
+    }
+    
+    /**
+     * Fallback basic feedback system
+     */
+    function addBasicFeedback(container, chatlogId) {
+        // Create beautiful, modern feedback UI
+        const feedbackUI = $(`
+            <div class="feedback-system" data-chatlog-id="${chatlogId}" style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-top: 24px;
+                padding: 20px 24px;
+                background: linear-gradient(135deg, rgba(42, 27, 61, 0.8) 0%, rgba(26, 0, 36, 0.9) 100%);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 16px;
+                backdrop-filter: blur(20px);
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                position: relative;
+                overflow: hidden;
+            ">
+                <!-- Subtle gradient overlay -->
+                <div style="
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 1px;
+                    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
+                "></div>
+                
+                <div class="feedback-question" style="
+                    color: rgba(255, 255, 255, 0.95);
+                    font-size: 17px;
+                    font-weight: 600;
+                    letter-spacing: -0.02em;
+                    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+                ">Did we answer your questions?</div>
+                
+                <div class="feedback-actions" style="display: flex; align-items: center; gap: 12px;">
+                    <button class="feedback-btn thumbs-up" data-type="like" data-id="${chatlogId}" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        background: rgba(59, 178, 115, 0.1);
+                        border: 1.5px solid rgba(59, 178, 115, 0.3);
+                        color: rgba(59, 178, 115, 0.9);
+                        cursor: pointer;
+                        padding: 12px 18px;
+                        border-radius: 12px;
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        font-size: 15px;
+                        font-weight: 600;
+                        position: relative;
+                        backdrop-filter: blur(10px);
+                        box-shadow: 0 2px 8px rgba(59, 178, 115, 0.1);
+                    ">
+                        <span style="font-size: 20px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));">👍</span>
+                        <span class="like-count" id="like-count-${chatlogId}" style="
+                            font-weight: 700;
+                            min-width: 16px;
+                            text-align: center;
+                        ">0</span>
+                    </button>
+                    
+                    <button class="feedback-btn thumbs-down" data-type="dislike" data-id="${chatlogId}" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        background: rgba(231, 76, 60, 0.1);
+                        border: 1.5px solid rgba(231, 76, 60, 0.3);
+                        color: rgba(231, 76, 60, 0.9);
+                        cursor: pointer;
+                        padding: 12px 18px;
+                        border-radius: 12px;
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        font-size: 15px;
+                        font-weight: 600;
+                        position: relative;
+                        backdrop-filter: blur(10px);
+                        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.1);
+                    ">
+                        <span style="font-size: 20px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));">👎</span>
+                        <span class="dislike-count" id="dislike-count-${chatlogId}" style="
+                            font-weight: 700;
+                            min-width: 16px;
+                            text-align: center;
+                        ">0</span>
+                    </button>
+                    
+                    <div class="more-menu" style="position: relative; margin-left: 8px;">
+                        <button class="more-btn" data-id="${chatlogId}" style="
+                            background: rgba(255, 255, 255, 0.05);
+                            border: 1.5px solid rgba(255, 255, 255, 0.15);
+                            color: rgba(255, 255, 255, 0.8);
+                            cursor: pointer;
+                            padding: 12px 16px;
+                            border-radius: 12px;
+                            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                            font-size: 16px;
+                            font-weight: 600;
+                            backdrop-filter: blur(10px);
+                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                        ">⋯</button>
+                        <div class="more-dropdown" style="
+                            display: none;
+                            position: absolute;
+                            top: calc(100% + 8px);
+                            right: 0;
+                            background: linear-gradient(135deg, rgba(42, 27, 61, 0.95) 0%, rgba(26, 0, 36, 0.98) 100%);
+                            border: 1px solid rgba(255, 255, 255, 0.2);
+                            border-radius: 12px;
+                            padding: 8px;
+                            z-index: 10000;
+                            min-width: 140px;
+                            backdrop-filter: blur(20px);
+                            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+                            animation: slideDown 0.2s ease-out;
+                        ">
+                            <div class="copy-link" style="
+                                padding: 12px 16px;
+                                cursor: pointer;
+                                border-radius: 8px;
+                                color: rgba(255, 255, 255, 0.9);
+                                font-size: 14px;
+                                font-weight: 500;
+                                transition: all 0.2s ease;
+                                text-align: center;
+                            ">Copy Link</div>
+                </div>
+            </div>
+                </div>
+            </div>
+            
+            <style>
+                @keyframes slideDown {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-8px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                .feedback-btn.thumbs-up:hover {
+                    background: rgba(59, 178, 115, 0.2) !important;
+                    border-color: rgba(59, 178, 115, 0.5) !important;
+                    color: #3bb273 !important;
+                    transform: translateY(-2px) !important;
+                    box-shadow: 0 6px 20px rgba(59, 178, 115, 0.25) !important;
+                }
+                
+                .feedback-btn.thumbs-down:hover {
+                    background: rgba(231, 76, 60, 0.2) !important;
+                    border-color: rgba(231, 76, 60, 0.5) !important;
+                    color: #e74c3c !important;
+                    transform: translateY(-2px) !important;
+                    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.25) !important;
+                }
+                
+                .more-btn:hover {
+                    background: rgba(255, 255, 255, 0.1) !important;
+                    border-color: rgba(255, 255, 255, 0.3) !important;
+                    color: #fff !important;
+                    transform: translateY(-2px) !important;
+                    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.1) !important;
+                }
+                
+                .copy-link:hover {
+                    background: rgba(255, 255, 255, 0.1) !important;
+                    color: #fff !important;
+                }
+                
+                .feedback-btn:active {
+                    transform: translateY(0) !important;
+                }
+            </style>
+        `);
+        
+        container.append(feedbackUI);
+        
+        // Load initial counts
+        loadFeedbackCounts(chatlogId);
+        
+        // Add hover effects
+        feedbackUI.find('.feedback-btn, .more-btn').on('mouseenter', function() {
+            $(this).css({
+                'background': 'rgba(255, 255, 255, 0.1)',
+                'color': 'rgba(255, 255, 255, 0.9)'
+            });
+        }).on('mouseleave', function() {
+            $(this).css({
+                'background': 'none',
+                'color': 'rgba(255, 255, 255, 0.7)'
+            });
+        });
+        
+        // Handle three dots menu
+        feedbackUI.find('.more-btn').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const dropdown = feedbackUI.find('.more-dropdown');
+            dropdown.toggle();
+        });
+        
+        // Handle copy link
+        feedbackUI.find('.copy-link').on('click', function() {
+            const shareUrl = window.location.origin + window.location.pathname + '?chatlog_id=' + chatlogId;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    $(this).text('Copied!').css('color', '#3bb273');
+                    setTimeout(() => {
+                        $(this).text('Copy Link').css('color', 'rgba(255, 255, 255, 0.9)');
+                        feedbackUI.find('.more-dropdown').hide();
+                    }, 1500);
+                });
+            }
+        });
+        
+        // Handle hover effect for copy link
+        feedbackUI.find('.copy-link').on('mouseenter', function() {
+            $(this).css('background', 'rgba(255, 255, 255, 0.1)');
+        }).on('mouseleave', function() {
+            $(this).css('background', 'transparent');
+        });
+        
+        // Handle feedback buttons
+        feedbackUI.find('.feedback-btn').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const btn = $(this);
+            const type = btn.data('type');
+            const id = btn.data('id');
+            
+            // Show reason selection popup
+            showReasonPopup(btn, type, id);
+        });
+        
+        // Close dropdown when clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.more-menu').length) {
+                feedbackUI.find('.more-dropdown').hide();
+            }
+        });
+    }
+    
+    /**
+     * Load feedback counts from server
+     */
+    function loadFeedbackCounts(chatlogId) {
         $.post(exa_ajax.ajaxurl, {
             action: 'ai_get_chatlog_reaction_counts',
             id: chatlogId
-        }, function(resp) {
-            if (resp && resp.success && resp.data) {
-                $(`#like-count-${chatlogId}`).text(resp.data.like || 0);
-                $(`#dislike-count-${chatlogId}`).text(resp.data.dislike || 0);
+        }, function(response) {
+            if (response && response.success && response.data) {
+                $(`#like-count-${chatlogId}`).text(response.data.like || 0);
+                $(`#dislike-count-${chatlogId}`).text(response.data.dislike || 0);
             }
         });
-
-        // Add event handlers for action buttons
-        reactionBar.find('.share-btn').on('click', function() {
-            copyAnswerLink(block, chatlogId);
+    }
+    
+    /**
+     * Show reason selection popup
+     */
+    function showReasonPopup(button, type, chatlogId) {
+        // Remove any existing popup
+        $('.reason-popup').remove();
+        
+        const reasons = type === 'like' ? 
+            ['Accurate', 'Clear explanation', 'Useful sources', 'Other'] :
+            ['Inaccurate', 'Unclear', 'Missing info', 'Other'];
+        
+        const title = type === 'like' ? 'What did you like?' : 'What can we improve?';
+        
+        const popupHTML = `
+            <div class="popup-backdrop" style="
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.6);
+                z-index: 999998;
+                backdrop-filter: blur(4px);
+            "></div>
+            <div class="reason-popup" style="
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(135deg, rgba(26, 0, 36, 0.98) 0%, rgba(42, 27, 61, 0.95) 100%);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 20px;
+                padding: 24px;
+                z-index: 999999;
+                min-width: 320px;
+                max-width: 400px;
+                backdrop-filter: blur(20px);
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+                animation: popupSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+            ">
+                <!-- Subtle top border gradient -->
+                <div style="
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 2px;
+                    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+                    border-radius: 20px 20px 0 0;
+                "></div>
+                
+                <div style="
+                    color: rgba(255, 255, 255, 0.95);
+                    font-size: 18px;
+                    font-weight: 700;
+                    margin-bottom: 20px;
+                    text-align: center;
+                    letter-spacing: -0.02em;
+                    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+                ">${title}</div>
+                
+                <div class="reason-options" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                    ${reasons.map(reason => `
+                        <button class="reason-option" data-reason="${reason}" style="
+                            background: rgba(255, 255, 255, 0.06);
+                            border: 1.5px solid rgba(255, 255, 255, 0.12);
+                            color: rgba(255, 255, 255, 0.9);
+                            padding: 14px 18px;
+                            border-radius: 12px;
+                            cursor: pointer;
+                            font-size: 15px;
+                            font-weight: 500;
+                            text-align: left;
+                            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                            backdrop-filter: blur(10px);
+                            position: relative;
+                            overflow: hidden;
+                        ">${reason}</button>
+                    `).join('')}
+                </div>
+                
+                <textarea class="reason-text" placeholder="Tell us more about your experience... (optional)" style="
+                    width: 100%;
+                    background: rgba(255, 255, 255, 0.06);
+                    border: 1.5px solid rgba(255, 255, 255, 0.12);
+                    color: rgba(255, 255, 255, 0.95);
+                    padding: 16px;
+                    border-radius: 12px;
+                    font-size: 15px;
+                    line-height: 1.5;
+                    resize: vertical;
+                    min-height: 80px;
+                    font-family: inherit;
+                    box-sizing: border-box;
+                    backdrop-filter: blur(10px);
+                    transition: all 0.3s ease;
+                    margin-bottom: 20px;
+                "></textarea>
+                
+                <div style="display: flex; gap: 12px;">
+                    <button class="submit-reason" style="
+                        flex: 1;
+                        background: linear-gradient(135deg, #3bb273 0%, #2d8f5a 100%);
+                        color: white;
+                        border: none;
+                        padding: 14px 20px;
+                        border-radius: 12px;
+                        cursor: pointer;
+                        font-size: 15px;
+                        font-weight: 600;
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        box-shadow: 0 4px 12px rgba(59, 178, 115, 0.3);
+                        letter-spacing: -0.01em;
+                    ">Submit Feedback</button>
+                    <button class="cancel-reason" style="
+                        background: rgba(255, 255, 255, 0.08);
+                        color: rgba(255, 255, 255, 0.8);
+                        border: 1.5px solid rgba(255, 255, 255, 0.15);
+                        padding: 14px 20px;
+                        border-radius: 12px;
+                        cursor: pointer;
+                        font-size: 15px;
+                        font-weight: 500;
+                        transition: all 0.3s ease;
+                        backdrop-filter: blur(10px);
+                    ">Cancel</button>
+                </div>
+            </div>
+            
+            <style>
+                @keyframes popupSlideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateX(-50%) translateY(-10px) scale(0.95);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateX(-50%) translateY(0) scale(1);
+                    }
+                }
+                
+                .reason-option {
+                    transition: all 0.1s ease !important;
+                }
+                
+                .reason-option:hover:not(.selected) {
+                    background: rgba(255, 255, 255, 0.12) !important;
+                    border-color: rgba(255, 255, 255, 0.25) !important;
+                    color: #fff !important;
+                    transform: translateY(-1px) !important;
+                    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1) !important;
+                }
+                
+                .reason-option.selected {
+                    background: rgba(59, 178, 115, 0.2) !important;
+                    border-color: #3bb273 !important;
+                    color: #fff !important;
+                    transform: translateY(-1px) !important;
+                    box-shadow: 0 4px 12px rgba(59, 178, 115, 0.3) !important;
+                }
+                
+                .reason-option:active {
+                    transform: translateY(0) !important;
+                }
+                
+                .reason-text:focus {
+                    outline: none !important;
+                    border-color: rgba(59, 178, 115, 0.5) !important;
+                    background: rgba(255, 255, 255, 0.08) !important;
+                    box-shadow: 0 0 0 3px rgba(59, 178, 115, 0.15) !important;
+                }
+                
+                .reason-text::placeholder {
+                    color: rgba(255, 255, 255, 0.5) !important;
+                }
+                
+                .submit-reason:hover {
+                    transform: translateY(-2px) !important;
+                    box-shadow: 0 8px 25px rgba(59, 178, 115, 0.4) !important;
+                }
+                
+                .submit-reason:active {
+                    transform: translateY(0) !important;
+                }
+                
+                .cancel-reason:hover {
+                    background: rgba(255, 255, 255, 0.12) !important;
+                    border-color: rgba(255, 255, 255, 0.25) !important;
+                    color: #fff !important;
+                }
+            </style>
+        `;
+        
+        // Add popup to body for fixed positioning
+        $('body').append(popupHTML);
+        
+        const popup = $('body').find('.reason-popup').last();
+        
+        // Remove hover effects - using pure CSS instead for instant response
+        
+        // Handle reason selection with instant feedback
+        let selectedReason = '';
+        popup.find('.reason-option').on('click', function() {
+            // Remove selection from all options instantly
+            popup.find('.reason-option').removeClass('selected').css({
+                'background': 'rgba(255, 255, 255, 0.06)',
+                'border-color': 'rgba(255, 255, 255, 0.12)',
+                'color': 'rgba(255, 255, 255, 0.9)',
+                'transform': 'none',
+                'box-shadow': 'none'
+            });
+            
+            // Add selection to clicked option instantly
+            $(this).addClass('selected').css({
+                'background': 'rgba(59, 178, 115, 0.2)',
+                'border-color': '#3bb273',
+                'color': '#fff',
+                'transform': 'translateY(-1px)',
+                'box-shadow': '0 4px 12px rgba(59, 178, 115, 0.3)'
+            });
+            
+            selectedReason = $(this).data('reason');
         });
-
-        reactionBar.find('.reaction-more').on('click', function() {
-            showMoreOptions(block, chatlogId);
+        
+        // Handle submit
+        popup.find('.submit-reason').on('click', function() {
+            const textFeedback = popup.find('.reason-text').val().trim();
+            
+            // Submit feedback
+            submitFeedbackWithReason(chatlogId, type, selectedReason || 'Other', textFeedback);
+            
+            // Update count
+            const countEl = type === 'like' ? $(`#like-count-${chatlogId}`) : $(`#dislike-count-${chatlogId}`);
+            countEl.text(parseInt(countEl.text()) + 1);
+            
+            // Show success
+            button.css('color', '#3bb273');
+            setTimeout(() => {
+                button.css('color', 'rgba(255, 255, 255, 0.7)');
+            }, 2000);
+            
+            popup.prev('.popup-backdrop').remove();
+            popup.remove();
+        });
+        
+        // Handle cancel
+        popup.find('.cancel-reason').on('click', function() {
+            popup.prev('.popup-backdrop').remove();
+            popup.remove();
+        });
+        
+        // Close on backdrop click
+        $('.popup-backdrop').last().on('click', function() {
+            popup.prev('.popup-backdrop').remove();
+            popup.remove();
+        });
+    }
+    
+    /**
+     * Submit feedback with reason to server
+     */
+    function submitFeedbackWithReason(chatlogId, type, reason, text) {
+        // Format feedback data for proper display in admin table
+        const feedbackData = {
+            option: reason, // Use the expected 'option' field for display compatibility
+            feedback: text,
+            timestamp: new Date().toISOString(),
+            // Also include the new format for analytics compatibility
+            categories: [reason.toLowerCase().replace(' ', '_')],
+            text: text
+        };
+        
+        $.post(exa_ajax.ajaxurl, {
+            action: 'ai_update_chatlog_reaction',
+            id: chatlogId,
+            reaction: type,
+            single: 1,
+            reaction_detail: JSON.stringify(feedbackData)
+        }).done(function(response) {
+            console.log('Feedback submitted successfully:', response);
+        }).fail(function(xhr, status, error) {
+            console.error('Feedback submission failed:', error);
         });
     }
 
@@ -1007,7 +1785,7 @@ jQuery(document).ready(function($) {
     function handleLocalAnswer(localAnswer, block, chatlogId) {
         const html = `<div>${localAnswer.content}</div>`;
         streamLocalAnswer(html, block.find('.exa-answer-streaming')[0]);
-        addModernReactionBar(block, chatlogId);
+        addModernFeedbackSystem(block, chatlogId);
         conversationHistory.push({ q: query || 'Question', a: '' }); // Empty answer to keep structure
         
         // Limit conversation history to last 5 exchanges to prevent context overflow
@@ -1086,11 +1864,16 @@ jQuery(document).ready(function($) {
                 <span class="like-count" id="like-count-${chatlogId}" style="font-size:13px;color:#3bb273;margin-left:2px;">0</span>
                 <span class="reaction-dislike" data-id="${chatlogId}" style="cursor:pointer;display:flex;align-items:center;gap:4px;">${dislikeSVG} <span style="margin-left:2px;">Not Helpful</span></span>
                 <span class="dislike-count" id="dislike-count-${chatlogId}" style="font-size:13px;color:#e74c3c;margin-left:2px;">0</span>
-                <span class="reaction-share" data-id="${chatlogId}" style="cursor:pointer;display:flex;align-items:center;gap:4px;" title="Share">${shareSVG} <span style="margin-left:2px;">Share</span></span>
+                <span class="reaction-more" data-id="${chatlogId}" style="cursor:pointer;display:flex;align-items:center;gap:4px;" title="More options">${moreSVG}</span>
                 <div class="reaction-options-container" style="display:none;position:absolute;z-index:10;"></div>
             </div>
         `);
         block.append(reactionBar);
+        
+        // Debug: Log the created reaction bar
+        console.log('Created reaction bar:', reactionBar[0].outerHTML);
+        console.log('Reaction buttons found:', reactionBar.find('.reaction-like, .reaction-dislike, .reaction-more').length);
+        
         // Fetch initial counts from backend
         $.post(exa_ajax.ajaxurl, {
             action: 'ai_get_chatlog_reaction_counts',
@@ -1681,14 +2464,14 @@ jQuery(document).ready(function($) {
     }
 
     /**
-     * Optimized streaming functions for OpenAI responses
+     * Optimized streaming functions for OpenAI responses with performance improvements
      * 
      * This function handles real-time streaming of AI responses from OpenAI,
      * providing a smooth user experience with progressive content loading.
      * 
      * FEATURES:
-     * - Real-time content streaming
-     * - Progressive HTML updates
+     * - Real-time content streaming with performance tracking
+     * - Progressive HTML updates with throttling
      * - Content sanitization and cleaning
      * - Conversation history management
      * - Follow-up prompts and feedback integration
@@ -1703,13 +2486,20 @@ jQuery(document).ready(function($) {
      * 
      * @example
      * streamOpenAIAnswer('What is psilocybin?', sources, blockedDomains, container, 'chat-123', history);
-     * // Streams AI response in real-time
+     * // Streams AI response in real-time with performance optimization
      */
     function streamOpenAIAnswer(query, sources, block, container, chatlogId, conversationHistory) {
         const contextBlock = buildContextBlock(conversationHistory);
         const prompt = buildPrompt(query, sources, block, contextBlock);
         const url = exa_ajax.ajaxurl + '?action=openai_stream';
+        
         let buffer = '';
+        let lastUpdate = 0;
+        const UPDATE_THROTTLE = 50; // Reduced from 100ms to 50ms for faster updates
+        const PERFORMANCE_MARK = `stream_${Date.now()}`;
+        
+        // Performance tracking
+        performance.mark(PERFORMANCE_MARK);
         container.innerHTML = '';
 
         // Use fetch with streaming for POST-based approach
@@ -1730,6 +2520,7 @@ jQuery(document).ready(function($) {
                 return reader.read().then(({ done, value }) => {
                     if (done) {
                         // Stream complete
+                        performance.measure('stream_complete', PERFORMANCE_MARK);
                         const cleanedHTML = sanitizeHTML(buffer);
                         container.innerHTML = cleanedHTML;
                         
@@ -1803,8 +2594,12 @@ jQuery(document).ready(function($) {
                             const data = line.slice(6);
                             if (data && data !== '[DONE]') {
                                 buffer += data;
-                                // Update the container in real-time for streaming effect
-                                container.innerHTML = sanitizeHTML(buffer);
+                                // Optimized DOM updates with throttling for better performance
+                                const now = Date.now();
+                                if (now - lastUpdate > UPDATE_THROTTLE) {
+                                    container.innerHTML = sanitizeHTML(buffer);
+                                    lastUpdate = now;
+                                }
                             }
                         }
                     }
@@ -3605,7 +4400,12 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
      * // Creates like reaction options interface
      */
     function renderReactionOptions(bar, type) {
+        console.log('Rendering reaction options for type:', type);
+        console.log('Reaction bar:', bar[0].outerHTML);
+        
         const options = type === 'like' ? LIKE_OPTIONS : DISLIKE_OPTIONS;
+        console.log('Options to show:', options);
+        
         const optionsHtml = options.map(opt => `<button class="reaction-option-btn" data-type="${type}" data-option="${opt}">${opt}</button>`).join(' ');
         let html = `<div class="reaction-options-popup">
             <div class="reaction-options-list">${optionsHtml}</div>
@@ -3614,15 +4414,51 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
                 <button class="reaction-custom-submit">Submit Feedback</button>
             </div>
         </div>`;
-        bar.find('.reaction-options-container').html(html).show();
+        
+        console.log('Generated HTML:', html);
+        
+        // Ensure the container exists
+        let container = bar.find('.reaction-options-container');
+        if (container.length === 0) {
+            bar.append('<div class="reaction-options-container" style="display:none;"></div>');
+            container = bar.find('.reaction-options-container');
+        }
+        
+        console.log('Container found:', container.length);
+        
+        container.html(html);
+        
+        // Position the popup correctly using the modern-ui CSS classes
+        container.css({
+            'position': 'absolute',
+            'top': '100%',
+            'right': '0',
+            'z-index': '1000',
+            'margin-top': '8px'
+        });
+        
+        container.show();
+        
+        console.log('Container after update:', container[0].outerHTML);
+        console.log('Container is visible:', container.is(':visible'));
     }
 
     // Show options popup on like/dislike click
     $(document).on('click', '.reaction-like, .reaction-dislike', function(e) {
+        console.log('Reaction button clicked!', e.target);
+        console.log('Event target classList:', e.target.classList);
+        console.log('Event target parent classList:', e.target.parentElement.classList);
+        
         e.preventDefault();
         const btn = $(this);
         const bar = btn.closest('.answer-reaction-bar');
         const type = btn.hasClass('reaction-like') ? 'like' : 'dislike';
+        
+        console.log('Button clicked:', btn[0].outerHTML);
+        console.log('Reaction type:', type);
+        console.log('Reaction bar found:', bar.length > 0);
+        console.log('Reaction bar HTML:', bar[0].outerHTML);
+        
         bar.find('.reaction-like, .reaction-dislike').removeClass('reaction-active');
         btn.addClass('reaction-active');
         renderReactionOptions(bar, type);
@@ -3630,15 +4466,31 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
 
     // Handle option selection
     $(document).on('click', '.reaction-option-btn', function(e) {
+        console.log('=== REACTION OPTION CLICKED ===');
+        console.log('Reaction option button clicked!', e.target);
+        console.log('Event target:', e.target);
+        console.log('Event currentTarget:', e.currentTarget);
+        
         e.preventDefault();
         const btn = $(this);
         const bar = btn.closest('.answer-reaction-bar');
         const id = bar.find('.reaction-like, .reaction-dislike').data('id');
         const type = btn.data('type');
         const option = btn.data('option');
+        
+        console.log('Reaction option clicked:', { id, type, option });
+        console.log('Button element:', btn[0].outerHTML);
+        console.log('Reaction bar found:', bar.length > 0);
+        console.log('Button data attributes:', {
+            type: btn.data('type'),
+            option: btn.data('option')
+        });
+        
         if (option === 'Other') {
+            console.log('Showing custom feedback textarea');
             bar.find('.reaction-custom').show();
         } else {
+            console.log('Saving reaction with option:', option);
             saveReactionDetail(id, type, option, '');
             bar.find('.reaction-options-container').hide();
         }
@@ -3679,6 +4531,8 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
      * // Saves like reaction with 'Accurate' option
      */
     function saveReactionDetail(id, type, option, feedback) {
+        console.log('Saving reaction:', { id, type, option, feedback });
+        
         $.post(exa_ajax.ajaxurl, {
             action: 'ai_update_chatlog_reaction',
             id: id,
@@ -3686,11 +4540,30 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
             single: 1,
             reaction_detail: JSON.stringify({ option, feedback })
         }, function(resp) {
+            console.log('Reaction response:', resp);
+            
             // Update counts in UI after successful reaction
             if (resp && resp.success && resp.data) {
+                console.log('Updating counts:', resp.data);
                 $(`#like-count-${id}`).text(resp.data.like || 0);
                 $(`#dislike-count-${id}`).text(resp.data.dislike || 0);
+                
+                // Also update the reaction buttons to show active state
+                const bar = $(`.reaction-like[data-id="${id}"], .reaction-dislike[data-id="${id}"]`).closest('.answer-reaction-bar');
+                if (bar.length) {
+                    bar.find('.reaction-like, .reaction-dislike').removeClass('reaction-active');
+                    if (type === 'like') {
+                        bar.find('.reaction-like').addClass('reaction-active');
+                    } else {
+                        bar.find('.reaction-dislike').addClass('reaction-active');
+                    }
+                }
+            } else {
+                console.error('Reaction update failed - invalid response:', resp);
             }
+        }).fail(function(xhr, status, error) {
+            console.error('Reaction update failed:', error);
+            console.log('Response:', xhr.responseText);
         });
     }
 

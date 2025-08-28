@@ -1348,3 +1348,88 @@
     border-radius: 8px !important;
     transition: all 0.3s ease !important;
 }  
+
+/* CRITICAL: Popup positioning and styling */
+.answer-reaction-bar .reaction-options-container,
+.answer-reaction-bar.modern .reaction-options-container {
+    position: absolute !important;
+    top: 100% !important;
+    right: 0 !important;
+    z-index: 99999 !important;
+    margin-top: 8px !important;
+    display: none;
+    min-width: 200px;
+}
+
+/* Force popup container to be visible when shown */
+.answer-reaction-bar .reaction-options-container[style*="display: block"],
+.answer-reaction-bar.modern .reaction-options-container[style*="display: block"] {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* CRITICAL: Popup content styling - FORCE VISIBILITY */
+.reaction-options-popup {
+    background: #1a0024 !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+    min-width: 200px !important;
+    color: #fff !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 10000 !important;
+}
+
+.reaction-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.reaction-option-btn {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #fff !important;
+    padding: 10px 16px !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    text-align: left !important;
+    transition: all 0.2s ease !important;
+    width: 100% !important;
+}
+
+.reaction-option-btn:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* CRITICAL: Button styling */
+.answer-reaction-bar .reaction-like,
+.answer-reaction-bar .reaction-dislike,
+.answer-reaction-bar .reaction-more,
+.answer-reaction-bar.modern .reaction-like,
+.answer-reaction-bar.modern .reaction-dislike,
+.answer-reaction-bar.modern .reaction-more {
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    transition: all 0.2s ease !important;
+    user-select: none !important;
+    padding: 4px 8px !important;
+    border-radius: 6px !important;
+}
+
+.answer-reaction-bar .reaction-more,
+.answer-reaction-bar.modern .reaction-more {
+    position: relative !important;
+}  
