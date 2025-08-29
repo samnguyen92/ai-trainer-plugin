@@ -4611,43 +4611,35 @@ class Exa_AI_Integration {
         
         error_log('OPTIMIZATION: Grouped domains by tier: ' . print_r(array_map('count', $domain_groups), true));
         
-        // OPTIMIZATION 2: Process tiers with smart batching and limits
+        // COMPREHENSIVE SEARCH: Process ALL domains with smart batching for speed
         foreach ($domain_groups as $tier => $domains) {
-            if ($tier == 1 && !empty($domains)) {
-                // Tier 1: Process top 4 domains (excluding psychedelics.com which we already have)
-                $tier1_domains = array_filter($domains, function($domain) { return $domain !== 'psychedelics.com'; });
-                $tier1_domains = array_slice($tier1_domains, 0, 4);
-                if (!empty($tier1_domains)) {
-                    error_log("OPTIMIZATION: Tier 1 batch - searching " . count($tier1_domains) . " domains in ONE call: " . implode(', ', $tier1_domains));
-                    $tier1_results = $this->execute_tier_specific_search($conversational_prompt, $query, $tier1_domains, $tier);
-                    if (!empty($tier1_results)) {
-                        $all_results = array_merge($all_results, $tier1_results);
-                        error_log("OPTIMIZATION: Tier 1 batch returned " . count($tier1_results) . " results");
+            if (!empty($domains)) {
+                // Remove psychedelics.com from other tiers since we already searched it
+                $domains = array_filter($domains, function($domain) { return $domain !== 'psychedelics.com'; });
+                
+                if (empty($domains)) continue;
+                
+                // Smart batching: Group domains into optimal batch sizes
+                $batch_size = match($tier) {
+                    1 => 6,  // Tier 1: 6 domains per batch (high quality)
+                    2 => 8,  // Tier 2: 8 domains per batch (balanced)
+                    3 => 10, // Tier 3: 10 domains per batch (efficiency)
+                    4 => 12  // Tier 4: 12 domains per batch (maximum efficiency)
+                };
+                
+                $domain_batches = array_chunk($domains, $batch_size);
+                
+                foreach ($domain_batches as $batch_index => $domain_batch) {
+                    error_log("COMPREHENSIVE: Tier $tier batch " . ($batch_index + 1) . " - searching " . count($domain_batch) . " domains: " . implode(', ', $domain_batch));
+                    
+                    $batch_results = $this->execute_tier_specific_search($conversational_prompt, $query, $domain_batch, $tier);
+                    if (!empty($batch_results)) {
+                        $all_results = array_merge($all_results, $batch_results);
+                        error_log("COMPREHENSIVE: Tier $tier batch " . ($batch_index + 1) . " returned " . count($batch_results) . " results");
                     }
                 }
-            } elseif ($tier == 2 && !empty($domains)) {
-                // Tier 2: Process top 5 domains in ONE call
-                $tier2_domains = array_slice($domains, 0, 5);
-                error_log("OPTIMIZATION: Tier 2 batch - searching " . count($tier2_domains) . " domains in ONE call: " . implode(', ', $tier2_domains));
-                $tier2_results = $this->execute_tier_specific_search($conversational_prompt, $query, $tier2_domains, $tier);
-                if (!empty($tier2_results)) {
-                    $all_results = array_merge($all_results, $tier2_results);
-                    error_log("OPTIMIZATION: Tier 2 batch returned " . count($tier2_results) . " results");
-                }
-            } elseif ($tier == 3 && !empty($domains)) {
-                // Tier 3: Process top 4 domains in ONE call
-                $tier3_domains = array_slice($domains, 0, 4);
-                error_log("OPTIMIZATION: Tier 3 batch - searching " . count($tier3_domains) . " domains in ONE call: " . implode(', ', $tier3_domains));
-                $tier3_results = $this->execute_tier_specific_search($conversational_prompt, $query, $tier3_domains, $tier);
-                if (!empty($tier3_results)) {
-                    $all_results = array_merge($all_results, $tier3_results);
-                    error_log("OPTIMIZATION: Tier 3 batch returned " . count($tier3_results) . " results");
-                }
-            }
-            // OPTIMIZATION 3: Skip Tier 4 completely for maximum speed
-            // Tier 4 domains are lowest priority and often add 8-12 seconds
-            elseif ($tier == 4) {
-                error_log("OPTIMIZATION: Skipping Tier 4 domains (" . count($domains) . " domains) for speed - saves ~10 seconds");
+                
+                error_log("COMPREHENSIVE: Tier $tier completed - searched " . count($domains) . " domains in " . count($domain_batches) . " batches");
             }
         }
         
