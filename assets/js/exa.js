@@ -90,6 +90,9 @@ jQuery(document).ready(function($) {
     $exaQuestion.hide();
     $ticketWrapper.hide();
     $exaAnswer.hide();
+    
+    // Initialize console debugging
+    initConsoleDebugging();
 
     // Event handlers with performance optimizations
     $('#exa-submit').on('click', submitSearch);
@@ -119,13 +122,27 @@ jQuery(document).ready(function($) {
 
     let conversationHistory = [];
 
-    // Optimized submit search function with performance tracking
+    // Enhanced submit search function with comprehensive console debugging
     function submitSearch() {
         const query = $exaInput.val().trim();
         if (!query) return;
 
         // Performance tracking
         const startTime = performance.now();
+        
+        // Console debugging - Search initiation
+        console.group('🔍 PARALLEL SEARCH DEBUG - Query Started');
+        console.log('📝 Query:', query);
+        console.log('⏰ Start time:', new Date().toISOString());
+        console.log('🔄 Conversation history length:', conversationHistory.length);
+        console.log('🌐 AJAX URL:', exa_ajax.ajaxurl);
+        console.groupEnd();
+        
+        // Update debug panel
+        if (window.addDebugMessage) {
+            window.addDebugMessage(`🔍 Query started: "${query}"`, 'info');
+            window.addDebugMessage(`⏰ Start time: ${new Date().toLocaleTimeString()}`, 'info');
+        }
         
         // Show loading state immediately
         $exaLoading.show();
@@ -141,20 +158,82 @@ jQuery(document).ready(function($) {
         $psySearchAiContainer.addClass('active');
         $exaInput.val('').attr('placeholder', 'Ask follow up...');
         
-
+        // Console debugging - AJAX request
+        console.group('📡 AJAX REQUEST DEBUG');
+        console.log('📤 Sending request to:', exa_ajax.ajaxurl);
+        console.log('📋 Request data:', {
+            action: 'exa_query',
+            query: query,
+            conversation_history: conversationHistory
+        });
+        console.groupEnd();
+        
+        // Update debug panel
+        if (window.addDebugMessage) {
+            window.addDebugMessage(`📡 Sending AJAX request...`, 'info');
+        }
+        
+        // Get the correct AJAX URL
+        const ajaxUrl = (exa_ajax && exa_ajax.ajaxurl) ? exa_ajax.ajaxurl : '/wp-admin/admin-ajax.php';
+        
+        if (window.addDebugMessage) {
+            window.addDebugMessage(`🌐 Using AJAX URL: ${ajaxUrl}`, 'info');
+        }
         
         // Make AJAX request
-        $.post(exa_ajax.ajaxurl, {
+        $.post(ajaxUrl, {
             action: 'exa_query',
             query: query,
             conversation_history: JSON.stringify(conversationHistory)
         }, function(response) {
             const endTime = performance.now();
-            console.log(`Query completed in ${(endTime - startTime).toFixed(2)}ms`);
+            const totalTime = (endTime - startTime);
             
-
+            // Console debugging - Response received
+            console.group('✅ SEARCH RESPONSE DEBUG');
+            console.log('📥 Response received in:', totalTime.toFixed(2) + 'ms');
+            console.log('📊 Response success:', response.success);
+            console.log('📋 Response data:', response.data);
+            
+            if (response.success && response.data) {
+                console.log('🔍 Search results count:', response.data.search?.results?.length || 0);
+                console.log('📚 Sources count:', response.data.sources ? response.data.sources.split('\n').length : 0);
+                console.log('💬 Chat log ID:', response.data.chatlog_id);
+                console.log('🌐 Psychedelics.com included:', response.data.psychedelics_com_included);
+                console.log('📈 Psychedelics.com count:', response.data.psychedelics_com_count);
+            }
+            
+            console.log('⚡ Total query time:', totalTime.toFixed(2) + 'ms');
+            console.groupEnd();
+            
+            // Update debug panel
+            if (window.addDebugMessage) {
+                window.addDebugMessage(`✅ Response received in ${totalTime.toFixed(2)}ms`, 'info');
+                if (response.success && response.data) {
+                    window.addDebugMessage(`🔍 Results: ${response.data.search?.results?.length || 0}`, 'info');
+                    window.addDebugMessage(`📚 Sources: ${response.data.sources ? response.data.sources.split('\n').length : 0}`, 'info');
+                    window.addDebugMessage(`⚡ Total time: ${totalTime.toFixed(2)}ms`, 'info');
+                }
+            }
             
             handleSearchResponse(response, query);
+        }).fail(function(xhr, status, error) {
+            // Console debugging - AJAX failure
+            console.group('❌ AJAX FAILURE DEBUG');
+            console.error('🚨 AJAX request failed');
+            console.error('📊 Status:', status);
+            console.error('❌ Error:', error);
+            console.error('📋 Response text:', xhr.responseText);
+            console.error('🔢 HTTP status:', xhr.status);
+            console.error('⏰ Time elapsed:', (performance.now() - startTime).toFixed(2) + 'ms');
+            console.groupEnd();
+            
+            // Update debug panel
+            if (window.addDebugMessage) {
+                window.addDebugMessage(`❌ AJAX request failed: ${status}`, 'error');
+                window.addDebugMessage(`🔢 HTTP status: ${xhr.status}`, 'error');
+                window.addDebugMessage(`⏰ Time elapsed: ${(performance.now() - startTime).toFixed(2)}ms`, 'error');
+            }
         });
     }
 
@@ -182,6 +261,183 @@ jQuery(document).ready(function($) {
         const endTime = performance.now();
         const duration = endTime - startTime;
         console.log(`Performance: ${name} took ${duration.toFixed(2)}ms`);
+    }
+    
+    // Console debugging utilities
+    function initConsoleDebugging() {
+        // Add debug panel to the page
+        const debugPanel = $(`
+            <div id="console-debug-panel" style="
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                width: 300px;
+                background: #1a1a1a;
+                color: #00ff00;
+                font-family: 'Courier New', monospace;
+                font-size: 12px;
+                padding: 10px;
+                border: 2px solid #00ff00;
+                border-radius: 5px;
+                z-index: 10000;
+                max-height: 400px;
+                overflow-y: auto;
+                display: none;
+            ">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <strong>🔍 PARALLEL SEARCH DEBUG</strong>
+                    <button id="close-debug-panel" style="background: #ff0000; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer;">✕</button>
+                </div>
+                <div id="debug-content">
+                    <div>🚀 System ready</div>
+                    <div>⏰ Waiting for queries...</div>
+                </div>
+            </div>
+        `);
+        
+        $('body').append(debugPanel);
+        
+        // Add debug toggle button
+        const debugToggle = $(`
+            <button id="debug-toggle" style="
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                background: #00ff00;
+                color: #000;
+                border: none;
+                padding: 8px 12px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-weight: bold;
+                z-index: 9999;
+            ">🔍 DEBUG</button>
+        `);
+        
+        // Add test button
+        const testButton = $(`
+            <button id="test-system" style="
+                position: fixed;
+                top: 50px;
+                right: 10px;
+                background: #007cba;
+                color: white;
+                border: none;
+                padding: 8px 12px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-weight: bold;
+                z-index: 9999;
+            ">🧪 TEST</button>
+        `);
+        
+        $('body').append(debugToggle);
+        $('body').append(testButton);
+        
+        // Toggle debug panel
+        $('#debug-toggle').on('click', function() {
+            const panel = $('#console-debug-panel');
+            if (panel.is(':visible')) {
+                panel.hide();
+                $(this).text('🔍 DEBUG');
+            } else {
+                panel.show();
+                $(this).text('🔒 HIDE');
+            }
+        });
+        
+        // Close debug panel
+        $('#close-debug-panel').on('click', function() {
+            $('#console-debug-panel').hide();
+            $('#debug-toggle').text('🔍 DEBUG');
+        });
+        
+        // Test system functionality
+        $('#test-system').on('click', function() {
+            const $button = $(this);
+            $button.prop('disabled', true).text('Testing...');
+            
+            if (window.addDebugMessage) {
+                window.addDebugMessage('🧪 Testing system functionality...', 'info');
+                window.addDebugMessage('📊 Testing debug panel functionality...', 'info');
+                window.addDebugMessage('🔍 Testing console logging...', 'info');
+            }
+            
+            // Test basic functionality first
+            console.log('🧪 System test initiated');
+            console.log('📊 Debug panel working:', !!window.addDebugMessage);
+            console.log('🌐 Current URL:', window.location.href);
+            console.log('📱 User agent:', navigator.userAgent);
+            
+            // Get the correct AJAX URL for frontend
+            const ajaxUrl = (typeof ajaxurl !== 'undefined') ? ajaxurl : '/wp-admin/admin-ajax.php';
+            
+            if (window.addDebugMessage) {
+                window.addDebugMessage(`🌐 Using AJAX URL: ${ajaxUrl}`, 'info');
+                window.addDebugMessage('✅ Basic tests completed', 'info');
+            }
+            
+            // Test simple endpoint first
+            $.ajax({
+                url: ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'ai_simple_test'
+                },
+                success: function(response) {
+                    if (window.addDebugMessage) {
+                        window.addDebugMessage('✅ Simple test completed', 'info');
+                        if (response.data && response.data.system_info) {
+                            window.addDebugMessage(`📊 PHP Version: ${response.data.system_info.php_version}`, 'info');
+                            window.addDebugMessage(`🌐 WordPress: ${response.data.system_info.wordpress_version}`, 'info');
+                            window.addDebugMessage(`🔑 API Key: ${response.data.system_info.exa_api_key_value}`, 'info');
+                        }
+                        if (response.data && response.data.database_tables) {
+                            window.addDebugMessage(`📋 Tables: ${Object.values(response.data.database_tables).join(', ')}`, 'info');
+                        }
+                    }
+                    console.log('System test results:', response);
+                },
+                error: function(xhr, status, error) {
+                    if (window.addDebugMessage) {
+                        window.addDebugMessage(`❌ Test failed: ${status}`, 'error');
+                        window.addDebugMessage(`🔢 HTTP: ${xhr.status}`, 'error');
+                        if (xhr.responseText) {
+                            window.addDebugMessage(`📋 Response: ${xhr.responseText.substring(0, 100)}...`, 'error');
+                        }
+                    }
+                    console.error('System test failed:', {xhr, status, error});
+                },
+                complete: function() {
+                    $button.prop('disabled', false).text('🧪 TEST');
+                }
+            });
+        });
+        
+        // Add debug message function
+        window.addDebugMessage = function(message, type = 'info') {
+            const debugContent = $('#debug-content');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff0000' : type === 'warning' ? '#ffff00' : '#00ff00';
+            
+            const messageDiv = $(`<div style="color: ${color}; margin: 2px 0;">[${timestamp}] ${message}</div>`);
+            debugContent.append(messageDiv);
+            
+            // Keep only last 20 messages
+            if (debugContent.children().length > 20) {
+                debugContent.children().first().remove();
+            }
+            
+            // Auto-scroll to bottom
+            debugContent.scrollTop(debugContent[0].scrollHeight);
+        };
+        
+        // Initialize debug messages
+        window.addDebugMessage('🚀 Parallel search system initialized');
+        window.addDebugMessage('🔍 Console debugging enabled');
+        window.addDebugMessage('📊 Performance monitoring active');
+        
+        console.log('🔍 Console debugging panel initialized');
     }
     
 
