@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parallel Search Console Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .debug-info {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+        .button {
+            background: #007cba;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #005a87;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Parallel Search Console Debug Test</h1>
+    
+    <div class="test-section">
+        <h2>📊 What You'll See</h2>
+        <p>When you visit your WordPress site with the parallel search system, you'll see:</p>
+        <ul>
+            <li><strong>🔍 DEBUG Button</strong> - Top right corner, green button</li>
+            <li><strong>Debug Panel</strong> - Black panel with green text showing real-time info</li>
+            <li><strong>Console Logs</strong> - Detailed information in browser console (F12)</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2>🚀 How to Test</h2>
+        <ol>
+            <li><strong>Go to your WordPress site</strong> where the parallel search is installed</li>
+            <li><strong>Look for the green 🔍 DEBUG button</strong> in the top right corner</li>
+            <li><strong>Click the DEBUG button</strong> to open the debug panel</li>
+            <li><strong>Make a search query</strong> using the search box</li>
+            <li><strong>Watch the debug panel</strong> for real-time updates</li>
+            <li><strong>Open browser console (F12)</strong> for detailed logs</li>
+        </ol>
+    </div>
+    
+    <div class="test-section">
+        <h2>📱 Debug Panel Features</h2>
+        <div class="debug-info">
+            <div>🚀 System ready</div>
+            <div>🔍 Console debugging enabled</div>
+            <div>📊 Performance monitoring active</div>
+            <div>⏰ [12:34:56] Query started: "test query"</div>
+            <div>📡 [12:34:57] Sending AJAX request...</div>
+            <div>✅ [12:34:58] Response received in 1250.45ms</div>
+            <div>🔍 [12:34:58] Results: 15</div>
+            <div>📚 [12:34:58] Sources: 8</div>
+            <div>⚡ [12:34:58] Total time: 1250.45ms</div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🔧 Console Commands</h2>
+        <p>You can also manually add debug messages from the browser console:</p>
+        <div class="debug-info">
+            <div>// Add info message</div>
+            <div>addDebugMessage('Custom message', 'info')</div>
+            <div></div>
+            <div>// Add warning message</div>
+            <div>addDebugMessage('Warning message', 'warning')</div>
+            <div></div>
+            <div>// Add error message</div>
+            <div>addDebugMessage('Error message', 'error')</div>
+        </div>
+    </div>
+    
+    <div class="warning">
+        <strong>⚠️ Important:</strong> The debug panel will only appear on pages where the parallel search system is loaded. Make sure you're on a page with the search functionality.
+    </div>
+    
+    <div class="test-section">
+        <h2>🎯 Expected Results</h2>
+        <p>With proper configuration, you should see:</p>
+        <ul>
+            <li><strong>Fast response times</strong> (15-20 seconds instead of 60+)</li>
+            <li><strong>Real-time debug updates</strong> in the panel</li>
+            <li><strong>Detailed console logs</strong> showing parallel execution</li>
+            <li><strong>Performance metrics</strong> for each step</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2>🐛 Troubleshooting</h2>
+        <p>If you don't see the debug panel:</p>
+        <ol>
+            <li>Make sure you're on a page with the search functionality</li>
+            <li>Check if JavaScript is enabled</li>
+            <li>Look for any JavaScript errors in the console (F12)</li>
+            <li>Refresh the page and try again</li>
+        </ol>
+    </div>
+    
+    <script>
+        // Simulate the debug panel for demonstration
+        function simulateDebugPanel() {
+            const debugPanel = document.createElement('div');
+            debugPanel.id = 'console-debug-panel';
+            debugPanel.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                width: 300px;
+                background: #1a1a1a;
+                color: #00ff00;
+                font-family: 'Courier New', monospace;
+                font-size: 12px;
+                padding: 10px;
+                border: 2px solid #00ff00;
+                border-radius: 5px;
+                z-index: 10000;
+                max-height: 400px;
+                overflow-y: auto;
+            `;
+            
+            debugPanel.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <strong>🔍 PARALLEL SEARCH DEBUG</strong>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: #ff0000; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer;">✕</button>
+                </div>
+                <div id="debug-content">
+                    <div>🚀 System ready</div>
+                    <div>🔍 Console debugging enabled</div>
+                    <div>📊 Performance monitoring active</div>
+                    <div>⏰ [${new Date().toLocaleTimeString()}] Demo panel loaded</div>
+                </div>
+            `;
+            
+            document.body.appendChild(debugPanel);
+        }
+        
+        // Add demo button
+        const demoButton = document.createElement('button');
+        demoButton.textContent = '🔍 Show Demo Debug Panel';
+        demoButton.className = 'button';
+        demoButton.onclick = simulateDebugPanel;
+        document.querySelector('h1').appendChild(demoButton);
+    </script>
+</body>
+</html>

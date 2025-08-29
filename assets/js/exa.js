@@ -46,7 +46,7 @@ function fallbackCopyToClipboard(text) {
 
 jQuery(document).ready(function($) {
 
-    // Cache frequently used DOM elements
+    // Store frequently used DOM elements
     const $exaQuestion = $('#exa-question');
     const $ticketWrapper = $('#ticket-wrapper');
     const $exaAnswer = $('#exa-answer');
@@ -90,6 +90,9 @@ jQuery(document).ready(function($) {
     $exaQuestion.hide();
     $ticketWrapper.hide();
     $exaAnswer.hide();
+    
+    // Initialize console debugging
+    initConsoleDebugging();
 
     // Event handlers with performance optimizations
     $('#exa-submit').on('click', submitSearch);
@@ -111,25 +114,24 @@ jQuery(document).ready(function($) {
             // Pre-warm the input for faster response
             const query = $(this).val().trim();
             if (query.length > 2) {
-                // Pre-cache common queries
-                const cacheKey = `query_${query}_0`;
-                if (!getCachedResponse(cacheKey)) {
-                    // Pre-fetch embedding for faster response
-                    prewarmQuery(query);
-                }
+                // Pre-fetch embedding for faster response
+                prewarmQuery(query);
             }
         }, 300);
     });
 
     let conversationHistory = [];
 
-    // Optimized submit search function with performance tracking
+    // Enhanced submit search function with comprehensive console debugging
     function submitSearch() {
         const query = $exaInput.val().trim();
         if (!query) return;
 
         // Performance tracking
         const startTime = performance.now();
+        
+        // Console debugging - Search initiation
+        // Debug logging removed for production
         
         // Show loading state immediately
         $exaLoading.show();
@@ -145,137 +147,51 @@ jQuery(document).ready(function($) {
         $psySearchAiContainer.addClass('active');
         $exaInput.val('').attr('placeholder', 'Ask follow up...');
         
-        // Check cache first before making AJAX request
-        const cacheKey = `query_${query}_${conversationHistory.length}`;
-        const cachedResponse = getCachedResponse(cacheKey);
+        // Console debugging - AJAX request
+        // AJAX request debug logging removed for production
         
-        if (cachedResponse) {
-            console.log(`Cache hit for query: ${query}`);
-            handleSearchResponse(cachedResponse, query);
-            return;
-        }
+        // Debug panel references removed for production
+        
+        // Get the correct AJAX URL
+        const ajaxUrl = (exa_ajax && exa_ajax.ajaxurl) ? exa_ajax.ajaxurl : '/wp-admin/admin-ajax.php';
+        
+        // Debug message references removed for production
         
         // Make AJAX request
-        $.post(exa_ajax.ajaxurl, {
+        $.post(ajaxUrl, {
             action: 'exa_query',
             query: query,
             conversation_history: JSON.stringify(conversationHistory)
         }, function(response) {
             const endTime = performance.now();
-            console.log(`Query completed in ${(endTime - startTime).toFixed(2)}ms`);
+            const totalTime = (endTime - startTime);
             
-            // Cache successful responses
-            if (response.success) {
-                cacheResponse(cacheKey, response);
-            }
+            // Response debug logging removed for production
             
             handleSearchResponse(response, query);
+        }).fail(function(xhr, status, error) {
+            // Error logging simplified for production
+            console.error('Search request failed:', status, error);
         });
     }
 
-    // Cache management system
-    const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
-    const MAX_CACHE_SIZE = 50; // Maximum number of cached items
+
     
-    function getCachedResponse(key) {
-        try {
-            const cached = localStorage.getItem(`exa_cache_${key}`);
-            if (!cached) return null;
-            
-            const { data, timestamp } = JSON.parse(cached);
-            const now = Date.now();
-            
-            // Check if cache is expired
-            if (now - timestamp > CACHE_DURATION) {
-                localStorage.removeItem(`exa_cache_${key}`);
-                return null;
-            }
-            
-            return data;
-        } catch (e) {
-            console.warn('Cache read error:', e);
-            return null;
-        }
-    }
+
     
-    function cacheResponse(key, response) {
-        try {
-            const cacheData = {
-                data: response,
-                timestamp: Date.now()
-            };
-            
-            // Store in localStorage
-            localStorage.setItem(`exa_cache_${key}`, JSON.stringify(cacheData));
-            
-            // Manage cache size
-            manageCacheSize();
-            
-        } catch (e) {
-            console.warn('Cache write error:', e);
-        }
-    }
+
     
-    function manageCacheSize() {
-        try {
-            const cacheKeys = [];
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith('exa_cache_')) {
-                    cacheKeys.push(key);
-                }
-            }
-            
-            if (cacheKeys.length > MAX_CACHE_SIZE) {
-                // Sort by timestamp and remove oldest
-                cacheKeys.sort((a, b) => {
-                    const aData = JSON.parse(localStorage.getItem(a));
-                    const bData = JSON.parse(localStorage.getItem(b));
-                    return aData.timestamp - bData.timestamp;
-                });
-                
-                // Remove oldest entries
-                const toRemove = cacheKeys.slice(0, cacheKeys.length - MAX_CACHE_SIZE);
-                toRemove.forEach(key => localStorage.removeItem(key));
-            }
-        } catch (e) {
-            console.warn('Cache management error:', e);
-        }
-    }
+
     
-    // Clear cache function for debugging
-    function clearCache() {
-        try {
-            const keysToRemove = [];
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith('exa_cache_')) {
-                    keysToRemove.push(key);
-                }
-            }
-            keysToRemove.forEach(key => localStorage.removeItem(key));
-            console.log('Cache cleared');
-        } catch (e) {
-            console.warn('Cache clear error:', e);
-        }
-    }
+
     
-    // Expose clearCache globally for debugging
-    window.clearExaCache = clearCache;
+
     
     // Pre-warming function for better performance
     function prewarmQuery(query) {
         // This function pre-warms common queries for faster response
         // It's a lightweight optimization that doesn't affect the main flow
-        try {
-            // Store a lightweight cache entry for pre-warming
-            const prewarmKey = `prewarm_${query}`;
-            if (!localStorage.getItem(prewarmKey)) {
-                localStorage.setItem(prewarmKey, Date.now().toString());
-            }
-        } catch (e) {
-            // Silently fail for pre-warming
-        }
+        // Note: Caching removed as most users don't ask the same question twice
     }
     
     // Performance monitoring utilities
@@ -283,44 +199,15 @@ jQuery(document).ready(function($) {
         const endTime = performance.now();
         const duration = endTime - startTime;
         console.log(`Performance: ${name} took ${duration.toFixed(2)}ms`);
-        
-        // Store performance metrics for analysis
-        try {
-            const metrics = JSON.parse(localStorage.getItem('exa_performance_metrics') || '{}');
-            if (!metrics[name]) metrics[name] = [];
-            metrics[name].push({
-                duration: duration,
-                timestamp: Date.now()
-            });
-            
-            // Keep only last 100 metrics per type
-            if (metrics[name].length > 100) {
-                metrics[name] = metrics[name].slice(-100);
-            }
-            
-            localStorage.setItem('exa_performance_metrics', JSON.stringify(metrics));
-        } catch (e) {
-            // Silently fail for metrics
-        }
     }
     
-    // Expose performance utilities globally
-    window.getExaPerformanceMetrics = function() {
-        try {
-            return JSON.parse(localStorage.getItem('exa_performance_metrics') || '{}');
-        } catch (e) {
-            return {};
-        }
-    };
+    // Console debugging utilities
+    function initConsoleDebugging() {
+        // Console debugging disabled for production
+        console.log('🚀 Parallel search system initialized');
+    }
     
-    window.clearExaPerformanceMetrics = function() {
-        try {
-            localStorage.removeItem('exa_performance_metrics');
-            console.log('Performance metrics cleared');
-        } catch (e) {
-            console.warn('Failed to clear performance metrics:', e);
-        }
-    };
+
 
     // Handle search response
     function handleSearchResponse(response, query) {
