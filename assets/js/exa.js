@@ -961,47 +961,7 @@ jQuery(document).ready(function($) {
                         ">0</span>
                     </button>
                     
-                    <div class="more-menu" style="position: relative; margin-left: 8px;">
-                        <button class="more-btn" data-id="${chatlogId}" style="
-                            background: rgba(255, 255, 255, 0.05);
-                            border: 1.5px solid rgba(255, 255, 255, 0.15);
-                            color: rgba(255, 255, 255, 0.8);
-                            cursor: pointer;
-                            padding: 12px 16px;
-                            border-radius: 12px;
-                            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                            font-size: 16px;
-                            font-weight: 600;
-                            backdrop-filter: blur(10px);
-                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                        ">⋯</button>
-                        <div class="more-dropdown" style="
-                            display: none;
-                            position: absolute;
-                            top: calc(100% + 8px);
-                            right: 0;
-                            background: linear-gradient(135deg, rgba(42, 27, 61, 0.95) 0%, rgba(26, 0, 36, 0.98) 100%);
-                            border: 1px solid rgba(255, 255, 255, 0.2);
-                            border-radius: 12px;
-                            padding: 8px;
-                            z-index: 10000;
-                            min-width: 140px;
-                            backdrop-filter: blur(20px);
-                            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-                            animation: slideDown 0.2s ease-out;
-                        ">
-                            <div class="copy-link" style="
-                                padding: 12px 16px;
-                                cursor: pointer;
-                                border-radius: 8px;
-                                color: rgba(255, 255, 255, 0.9);
-                                font-size: 14px;
-                                font-weight: 500;
-                                transition: all 0.2s ease;
-                                text-align: center;
-                            ">Copy Link</div>
-                </div>
-            </div>
+
                 </div>
             </div>
             
@@ -1033,21 +993,81 @@ jQuery(document).ready(function($) {
                     box-shadow: 0 6px 20px rgba(231, 76, 60, 0.25) !important;
                 }
                 
-                .more-btn:hover {
-                    background: rgba(255, 255, 255, 0.1) !important;
-                    border-color: rgba(255, 255, 255, 0.3) !important;
-                    color: #fff !important;
-                    transform: translateY(-2px) !important;
-                    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.1) !important;
-                }
+
                 
-                .copy-link:hover {
-                    background: rgba(255, 255, 255, 0.1) !important;
-                    color: #fff !important;
-                }
+
                 
                 .feedback-btn:active {
                     transform: translateY(0) !important;
+                }
+                
+                /* Mobile Optimization */
+                @media (max-width: 768px) {
+                    .feedback-system {
+                        flex-direction: column !important;
+                        align-items: stretch !important;
+                        gap: 12px !important;
+                        padding: 16px 20px !important;
+                        width: 100% !important;
+                        box-sizing: border-box !important;
+                        overflow: hidden !important;
+                    }
+                    
+                    .feedback-question {
+                        font-size: 15px !important;
+                        margin-bottom: 8px !important;
+                        width: 100% !important;
+                        text-align: center !important;
+                    }
+                    
+                    .feedback-actions {
+                        gap: 8px !important;
+                        flex-wrap: nowrap !important;
+                        width: 100% !important;
+                        justify-content: center !important;
+                        box-sizing: border-box !important;
+                    }
+                    
+                    .feedback-btn {
+                        flex: 0 0 auto !important;
+                        max-width: 90px !important;
+                        min-width: 60px !important;
+                        padding: 8px 10px !important;
+                        font-size: 12px !important;
+                        text-align: center !important;
+                        box-sizing: border-box !important;
+                        overflow: hidden !important;
+                    }
+                }
+                
+                @media (max-width: 480px) {
+                    .feedback-system {
+                        padding: 12px 16px !important;
+                        gap: 10px !important;
+                    }
+                    
+                    .feedback-question {
+                        font-size: 14px !important;
+                        text-align: center !important;
+                    }
+                    
+                    .feedback-actions {
+                        flex-direction: row !important;
+                        align-items: center !important;
+                        gap: 6px !important;
+                        justify-content: space-evenly !important;
+                    }
+                    
+                    .feedback-btn {
+                        flex: 0 0 auto !important;
+                        max-width: 80px !important;
+                        min-width: 60px !important;
+                        justify-content: center !important;
+                        text-align: center !important;
+                        padding: 8px 6px !important;
+                        font-size: 11px !important;
+                        overflow: hidden !important;
+                    }
                 }
             </style>
         `);
@@ -1058,7 +1078,7 @@ jQuery(document).ready(function($) {
         loadFeedbackCounts(chatlogId);
         
         // Add hover effects
-        feedbackUI.find('.feedback-btn, .more-btn').on('mouseenter', function() {
+        feedbackUI.find('.feedback-btn').on('mouseenter', function() {
             $(this).css({
                 'background': 'rgba(255, 255, 255, 0.1)',
                 'color': 'rgba(255, 255, 255, 0.9)'
@@ -1070,34 +1090,7 @@ jQuery(document).ready(function($) {
             });
         });
         
-        // Handle three dots menu
-        feedbackUI.find('.more-btn').on('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const dropdown = feedbackUI.find('.more-dropdown');
-            dropdown.toggle();
-        });
-        
-        // Handle copy link
-        feedbackUI.find('.copy-link').on('click', function() {
-            const shareUrl = window.location.origin + window.location.pathname + '?chatlog_id=' + chatlogId;
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(shareUrl).then(() => {
-                    $(this).text('Copied!').css('color', '#3bb273');
-                    setTimeout(() => {
-                        $(this).text('Copy Link').css('color', 'rgba(255, 255, 255, 0.9)');
-                        feedbackUI.find('.more-dropdown').hide();
-                    }, 1500);
-                });
-            }
-        });
-        
-        // Handle hover effect for copy link
-        feedbackUI.find('.copy-link').on('mouseenter', function() {
-            $(this).css('background', 'rgba(255, 255, 255, 0.1)');
-        }).on('mouseleave', function() {
-            $(this).css('background', 'transparent');
-        });
+
         
         // Handle feedback buttons
         feedbackUI.find('.feedback-btn').on('click', function(e) {

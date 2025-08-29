@@ -415,7 +415,43 @@ class FeedbackSystem {
                 }
                 
                 /* Responsive design */
-                @media (max-width: 640px) {
+                @media (max-width: 768px) {
+                    .feedback-container {
+                        flex-direction: column !important;
+                        align-items: stretch !important;
+                        gap: 12px !important;
+                        padding: 16px 0 !important;
+                        width: 100% !important;
+                        box-sizing: border-box !important;
+                    }
+                    
+                    .feedback-question {
+                        font-size: 14px !important;
+                        margin-right: 0 !important;
+                        margin-bottom: 8px !important;
+                        width: 100% !important;
+                        text-align: center !important;
+                    }
+                    
+                    .feedback-buttons {
+                        gap: 8px !important;
+                        flex-wrap: nowrap !important;
+                        width: 100% !important;
+                        justify-content: center !important;
+                        box-sizing: border-box !important;
+                    }
+                    
+                    .feedback-btn {
+                        flex: 0 0 auto !important;
+                        max-width: 90px !important;
+                        min-width: 60px !important;
+                        padding: 8px 10px !important;
+                        font-size: 12px !important;
+                        text-align: center !important;
+                        box-sizing: border-box !important;
+                        overflow: hidden !important;
+                    }
+                    
                     .feedback-panel {
                         min-width: auto;
                         margin: 20px;
@@ -429,6 +465,36 @@ class FeedbackSystem {
                     
                     .feedback-actions {
                         flex-direction: column;
+                    }
+                }
+                
+                @media (max-width: 480px) {
+                    .feedback-container {
+                        padding: 12px 0 !important;
+                        gap: 10px !important;
+                    }
+                    
+                    .feedback-question {
+                        font-size: 13px !important;
+                        text-align: center !important;
+                    }
+                    
+                    .feedback-buttons {
+                        flex-direction: row !important;
+                        align-items: center !important;
+                        gap: 6px !important;
+                        justify-content: space-evenly !important;
+                    }
+                    
+                    .feedback-btn {
+                        flex: 0 0 auto !important;
+                        max-width: 80px !important;
+                        min-width: 60px !important;
+                        justify-content: center !important;
+                        text-align: center !important;
+                        padding: 8px 6px !important;
+                        font-size: 11px !important;
+                        overflow: hidden !important;
                     }
                 }
             </style>
@@ -493,41 +559,7 @@ class FeedbackSystem {
                         <span class="feedback-count negative-count" style="font-weight: 600;">0</span>
                     </button>
                     
-                    <div class="more-options" style="position: relative;">
-                        <button class="more-btn" style="
-                            background: none;
-                            border: none;
-                            color: rgba(255, 255, 255, 0.7);
-                            cursor: pointer;
-                            padding: 8px;
-                            border-radius: 8px;
-                            transition: all 0.2s ease;
-                            font-size: 18px;
-                        ">⋯</button>
-                        <div class="more-dropdown" style="
-                            display: none;
-                            position: absolute;
-                            top: 100%;
-                            right: 0;
-                            background: #2a1b3d;
-                            border: 1px solid rgba(255, 255, 255, 0.2);
-                            border-radius: 8px;
-                            padding: 8px;
-                            margin-top: 4px;
-                            z-index: 1000;
-                            min-width: 120px;
-                            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-                        ">
-                            <div class="copy-link-option" style="
-                                padding: 8px 12px;
-                                cursor: pointer;
-                                border-radius: 4px;
-                                color: rgba(255, 255, 255, 0.9);
-                                font-size: 14px;
-                                transition: background 0.2s ease;
-                            ">Copy Link</div>
-                        </div>
-                    </div>
+
                 </div>
             </div>
         `;
@@ -544,7 +576,7 @@ class FeedbackSystem {
         const container = $(`.feedback-container[data-chatlog-id="${chatlogId}"]`);
         
         // Add hover effects
-        container.find('.feedback-btn, .more-btn').on('mouseenter', function() {
+        container.find('.feedback-btn').on('mouseenter', function() {
             $(this).css({
                 'background': 'rgba(255, 255, 255, 0.1)',
                 'color': 'rgba(255, 255, 255, 0.9)'
@@ -556,25 +588,7 @@ class FeedbackSystem {
             });
         });
         
-        // Handle three dots menu
-        container.find('.more-btn').on('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const dropdown = $(this).siblings('.more-dropdown');
-            dropdown.toggle();
-        });
-        
-        // Handle copy link
-        container.find('.copy-link-option').on('click', function() {
-            const shareUrl = window.location.origin + window.location.pathname + '?chatlog_id=' + chatlogId;
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                $(this).text('Copied!').css('color', '#3bb273');
-                setTimeout(() => {
-                    $(this).text('Copy Link').css('color', 'rgba(255, 255, 255, 0.9)');
-                    $(this).closest('.more-dropdown').hide();
-                }, 1500);
-            });
-        });
+
         
         // Handle feedback buttons
         container.find('.feedback-btn').on('click', (e) => {
@@ -583,12 +597,7 @@ class FeedbackSystem {
             this.showReasonSelection(chatlogId, type, btn);
         });
         
-        // Close dropdown when clicking outside
-        $(document).on('click', function(e) {
-            if (!$(e.target).closest('.more-options').length) {
-                container.find('.more-dropdown').hide();
-            }
-        });
+
     }
     
     /**

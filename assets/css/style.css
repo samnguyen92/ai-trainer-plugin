@@ -1432,4 +1432,132 @@
 .answer-reaction-bar .reaction-more,
 .answer-reaction-bar.modern .reaction-more {
     position: relative !important;
-}  
+}
+
+/* Enhanced Mobile Optimization for Feedback System */
+@media (max-width: 768px) {
+    /* Feedback System Mobile Layout */
+    .feedback-system,
+    .feedback-container {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+        padding: 16px !important;
+        margin-top: 16px !important;
+        border-radius: 12px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+    }
+    
+    .feedback-question {
+        font-size: 14px !important;
+        margin-bottom: 8px !important;
+        margin-right: 0 !important;
+        text-align: center !important;
+        width: 100% !important;
+        line-height: 1.4 !important;
+    }
+    
+    .feedback-buttons,
+    .feedback-actions {
+        display: flex !important;
+        gap: 8px !important;
+        width: 100% !important;
+        justify-content: center !important;
+        flex-wrap: nowrap !important;
+        box-sizing: border-box !important;
+        padding: 0 4px !important;
+    }
+    
+    .feedback-btn {
+        flex: 0 0 auto !important;
+        max-width: 90px !important;
+        min-width: 70px !important;
+        padding: 10px 8px !important;
+        font-size: 12px !important;
+        border-radius: 8px !important;
+        white-space: nowrap !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+    }
+    
+    /* Ensure feedback area doesn't overflow on small screens */
+    .answer-reaction-bar.modern {
+        padding: 12px 16px !important;
+        margin-top: 16px !important;
+        border-radius: 12px !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+    }
+    
+    /* Prevent feedback container from overflowing */
+    .feedback-system,
+    .feedback-container {
+        max-width: 100% !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* Share button optimization */
+    .action-btn,
+    .modern-ui .action-btn {
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+        min-height: 36px !important;
+        width: 100% !important;
+        max-width: none !important;
+        margin-bottom: 8px !important;
+        box-sizing: border-box !important;
+    }
+}
+
+/* Very small screens - stack vertically */
+@media (max-width: 480px) {
+    .feedback-system,
+    .feedback-container {
+        padding: 12px !important;
+        gap: 10px !important;
+    }
+    
+    .feedback-question {
+        font-size: 13px !important;
+        text-align: center !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .feedback-buttons {
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 6px !important;
+        justify-content: space-evenly !important;
+    }
+    
+    .feedback-btn {
+        flex: 0 0 auto !important;
+        max-width: 80px !important;
+        min-width: 60px !important;
+        justify-content: center !important;
+        text-align: center !important;
+        padding: 8px 6px !important;
+        font-size: 11px !important;
+        overflow: hidden !important;
+    }
+    
+    .answer-reaction-bar.modern {
+        padding: 10px 12px !important;
+        margin-top: 12px !important;
+    }
+    
+    /* Share button smaller on mobile */
+    .action-btn,
+    .modern-ui .action-btn {
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+        min-height: 32px !important;
+    }
+}
