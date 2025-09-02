@@ -814,7 +814,10 @@ jQuery(document).ready(function($) {
             // Setup previous button functionality
             if (prevBtn && wrapper) {
                 prevBtn.addEventListener('click', () => {
-                    const scrollAmount = -1280; // Scroll left by 1280px
+                    // Calculate scroll amount for one card (200px card + 16px gap = 216px)
+                    const cardWidth = 200;
+                    const gap = 16;
+                    const scrollAmount = -(cardWidth + gap);
                     wrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                 });
             }
@@ -822,7 +825,10 @@ jQuery(document).ready(function($) {
             // Setup next button functionality
             if (nextBtn && wrapper) {
                 nextBtn.addEventListener('click', () => {
-                    const scrollAmount = 1280; // Scroll right by 1280px
+                    // Calculate scroll amount for one card (200px card + 16px gap = 216px)
+                    const cardWidth = 200;
+                    const gap = 16;
+                    const scrollAmount = cardWidth + gap;
                     wrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                 });
             }
