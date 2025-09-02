@@ -896,40 +896,12 @@ jQuery(document).ready(function($) {
         // Create the modern feedback container with share and new search buttons
         const feedbackContainer = $(`
             <div class="modern-feedback-wrapper" style="margin-top: 20px;">
-                <div class="action-buttons" style="display: flex; justify-content: center; gap: 12px; margin-bottom: 16px;">
-                    <button class="share-btn modern" data-id="${chatlogId}" style="
-                        display: flex;
-                        align-items: center;
-                        gap: 6px;
-                        padding: 8px 16px;
-                        border: 1.5px solid rgba(255, 255, 255, 0.2);
-                        border-radius: 10px;
-                        background: rgba(255, 255, 255, 0.05);
-                        color: rgba(255, 255, 255, 0.8);
-                        font-size: 13px;
-                        font-weight: 500;
-                        cursor: pointer;
-                        transition: all 0.2s ease;
-                        backdrop-filter: blur(10px);
-                    ">
+                <div class="action-buttons">
+                    <button class="share-btn modern" data-id="${chatlogId}">
                         ${shareSVG}
                         <span>Share</span>
                     </button>
-                    <button class="new-search-btn modern" style="
-                        display: flex;
-                        align-items: center;
-                        gap: 6px;
-                        padding: 8px 16px;
-                        border: 1.5px solid rgba(59, 178, 115, 0.3);
-                        border-radius: 10px;
-                        background: rgba(59, 178, 115, 0.1);
-                        color: #3bb273;
-                        font-size: 13px;
-                        font-weight: 500;
-                        cursor: pointer;
-                        transition: all 0.2s ease;
-                        backdrop-filter: blur(10px);
-                    ">
+                    <button class="new-search-btn modern">
                         ${newSearchSVG}
                         <span>New Search</span>
                     </button>
