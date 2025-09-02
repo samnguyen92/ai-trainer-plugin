@@ -995,11 +995,12 @@
             this.closeFeedbackPanel();
         }
     }
+}
 
-    // Initialize the feedback system when document is ready
-    $(document).ready(function() {
-        window.FeedbackSystem = new FeedbackSystem();
-        console.log('🎯 Modern Feedback System loaded and ready');
-    });
+// Initialize the feedback system when document is ready
+jQuery(document).ready(function($) {
+    window.FeedbackSystem = new FeedbackSystem();
+    console.log('🎯 Modern Feedback System loaded and ready');
+});
 
 })(jQuery);

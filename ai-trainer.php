@@ -5105,6 +5105,15 @@ Respond with only: PSYCHEDELIC or OFF_TOPIC";
                     <li>How do psychedelics affect the brain and consciousness?</li>
                     <li>What safety considerations should I know about psychedelic use?</li>
                 </ul>
+                <div class="off-topic-actions">
+                    <button class="new-search-btn" onclick="startNewSearch()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        Start New Search
+                    </button>
+                </div>
             </div>
         </div>';
     }

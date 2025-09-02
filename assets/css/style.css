@@ -1674,6 +1674,48 @@
     border: 1px solid rgba(156, 39, 176, 0.2);
 }
 
+/* Off-topic actions section */
+.off-topic-actions {
+    margin-top: 20px;
+    text-align: center;
+    padding-top: 20px;
+    border-top: 1px solid rgba(156, 39, 176, 0.2);
+}
+
+.new-search-btn {
+    background: #9c27b0;
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.new-search-btn:hover {
+    background: #7b1fa2;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(156, 39, 176, 0.3);
+}
+
+.new-search-btn:active {
+    transform: translateY(0);
+}
+
+.new-search-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+}
+
 /* Mobile responsiveness for off-topic responses */
 @media (max-width: 768px) {
     .off-topic-response {
@@ -1684,5 +1726,17 @@
     .off-topic-response .related-questions-list li {
         padding: 10px 12px;
         font-size: 14px;
+    }
+    
+    .off-topic-actions {
+        margin-top: 16px;
+        padding-top: 16px;
+    }
+    
+    .new-search-btn {
+        padding: 10px 20px;
+        font-size: 13px;
+        width: 100%;
+        max-width: 200px;
     }
 }

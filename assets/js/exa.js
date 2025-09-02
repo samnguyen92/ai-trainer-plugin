@@ -1,4 +1,17 @@
-// Global copyToClipboard function - must be defined before DOM is ready
+// Global functions - must be defined before DOM is ready
+
+// Global function for starting a new search from off-topic responses
+function startNewSearch() {
+    console.log('🔍 Starting new search - reloading page');
+    
+    // Store a flag to focus on search input after reload
+    sessionStorage.setItem('focusSearchAfterReload', 'true');
+    
+    // Reload the page to get a fresh start
+    window.location.reload();
+}
+
+// Global copyToClipboard function
 function copyToClipboard(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
@@ -98,6 +111,20 @@ jQuery(document).ready(function($) {
     // Initialize UI
     $exaQuestion.hide();
     $ticketWrapper.hide();
+    
+    // Check if we should focus on search input after reload
+    if (sessionStorage.getItem('focusSearchAfterReload') === 'true') {
+        sessionStorage.removeItem('focusSearchAfterReload');
+        
+        // Focus on search input and scroll to it
+        setTimeout(function() {
+            $exaInput.focus();
+            $('html, body').animate({
+                scrollTop: $exaInput.offset().top - 100
+            }, 500);
+            console.log('🎯 Focused on search input after reload');
+        }, 500);
+    }
     $exaAnswer.hide();
     
     // Initialize console debugging
@@ -234,6 +261,9 @@ jQuery(document).ready(function($) {
             // Trigger search with the suggested query
             $('#exa-form').trigger('submit');
         });
+        
+        // Ensure the new search button is properly bound
+        // (The onclick attribute in HTML will handle the click)
         
         $exaAnswer.append(offTopicBlock);
         $ticketWrapper.show();
