@@ -2751,6 +2751,13 @@ jQuery(document).ready(function($) {
                 listItems.forEach(li => {
                     li.style.color = '#3bb273';
                 });
+                
+                // Also style the anchor tags directly
+                const links = whereToLearnMore.querySelectorAll('a');
+                links.forEach(link => {
+                    link.style.color = '#3bb273';
+                    link.style.textDecoration = 'none';
+                });
             }
             
             if (relatedQuestions) {
@@ -3567,6 +3574,11 @@ RESPONSE FORMAT:
 - Include exactly 5 related questions at the end
 - For step-by-step guidance, use numbered lists with clear safety warnings
 - Use 4-digit years (1960s not 196s)
+- If you include a "Where to Learn More" section, format it as: <h3>Where to Learn More</h3><div class="section-where-to-learn-more"><ul><li><a href="URL" target="_blank" style="color: #3bb273; text-decoration: none;">Title</a></li><li><a href="URL" target="_blank" style="color: #3bb273; text-decoration: none;">Title</a></li></ul></div>
+- Each list item must be on its own line with proper <li> tags
+- Ensure each <li> element is properly closed and separated
+- Use a single <ul> container for all list items in "Where to Learn More"
+- Format each source as: <li><a href="URL" target="_blank">Source Name</a></li>
 
 If sources are insufficient, respond with:
 <h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>
@@ -3584,6 +3596,15 @@ ${body.glance}
 </ul>
 
 ${body.extra || ''}
+
+<h3>Where to Learn More</h3>
+<div class="section-where-to-learn-more">
+<ul>
+<li><a href="#" target="_blank" style="color: #3bb273; text-decoration: none;">[Include relevant source from trusted sources]</a></li>
+<li><a href="#" target="_blank" style="color: #3bb273; text-decoration: none;">[Include relevant source from trusted sources]</a></li>
+<li><a href="#" target="_blank" style="color: #3bb273; text-decoration: none;">[Include relevant source from trusted sources]</a></li>
+</ul>
+</div>
 
 <h3>Related Questions</h3>
 <div class="section-related-questions">

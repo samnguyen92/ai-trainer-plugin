@@ -203,6 +203,19 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->safeLoad();
 
+// Add custom KSES configuration to allow style attributes on anchor tags
+add_filter('wp_kses_allowed_html', function($allowed_tags, $context) {
+    if ($context === 'post') {
+        // Add style attribute to anchor tags
+        if (isset($allowed_tags['a'])) {
+            $allowed_tags['a']['style'] = true;
+        } else {
+            $allowed_tags['a'] = ['style' => true];
+        }
+    }
+    return $allowed_tags;
+}, 10, 2);
+
 // Define API keys from environment variables with fallbacks
 define('EXA_API_KEY', isset($_ENV['EXA_API_KEY']) ? $_ENV['EXA_API_KEY'] : '');
 define('OPENAI_API_KEY', isset($_ENV['OPENAI_API_KEY']) ? $_ENV['OPENAI_API_KEY'] : '');
@@ -5788,7 +5801,7 @@ function ai_trainer_filter_allowed_tags($html) {
         'ul' => [],
         'ol' => [],
         'li' => [],
-        'a' => ['href', 'target'],
+        'a' => ['href', 'target', 'style'],
         'strong' => [],
         'em' => [],
         'br' => [],

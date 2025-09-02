@@ -1297,6 +1297,22 @@
     text-decoration: none !important;
 }
 
+/* More specific targeting for "Where to Learn More" links */
+.section-where-to-learn-more ul li a,
+.section-where-to-learn-more li a {
+    color: #3bb273 !important;
+    text-decoration: none !important;
+}
+
+/* Ensure all links in "Where to Learn More" are green regardless of structure */
+.section-where-to-learn-more a,
+.section-where-to-learn-more ul a,
+.section-where-to-learn-more li a,
+.section-where-to-learn-more div a {
+    color: #3bb273 !important;
+    text-decoration: none !important;
+}
+
 .section-where-to-learn-more a:hover,
 .section-related-questions a:hover {
     color: #4ddb8a !important;
@@ -1338,6 +1354,8 @@
 .section-where-to-learn-more a {
     position: relative !important;
     transition: all 0.2s ease !important;
+    color: #3bb273 !important;
+    text-decoration: none !important;
 }
 
 .section-where-to-learn-more a:hover {
