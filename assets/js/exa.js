@@ -89,6 +89,7 @@ jQuery(document).ready(function($) {
         ampersandFix: /&amp;/g,
         brokenSentences: /(\w+)\s+in\s+the\s+s\s+and\s+(\d{4}s)/g,  // Fix "in the s and 1990s"
         missingSpaces: /(\w+)([A-Z][a-z]+)/g,  // Fix missing spaces between words
+        fixBoldFormatting: /<strong>([^<]*)<\/strong>/g,  // Fix bold formatting issues
         javascript: /^javascript:/i,
         // New patterns for better HTML fixing
         unclosedTags: /<([a-zA-Z][a-zA-Z0-9]*)([^>]*?)(?<!\/)>/g,
@@ -1859,12 +1860,15 @@ jQuery(document).ready(function($) {
     }
 
     /**
-     * Optimized HTML sanitization
+     * Optimized HTML sanitization with HTML Tidy API integration
      * 
      * This function cleans and sanitizes HTML content for safe display,
-     * removing potentially harmful elements while preserving formatting.
+     * using a hybrid approach that combines local processing with
+     * professional HTML Tidy API for complex malformed content.
      * 
      * FEATURES:
+     * - Local sanitization for simple cases (fast)
+     * - HTML Tidy API for complex malformed HTML (professional)
      * - Script and style tag removal
      * - List structure fixing
      * - Table structure optimization
@@ -1873,15 +1877,15 @@ jQuery(document).ready(function($) {
      * - Year truncation fixing
      * 
      * @param {string} html - Raw HTML content to sanitize
-     * @returns {string} Sanitized and cleaned HTML content
+     * @returns {Promise<string>} Sanitized and cleaned HTML content
      * 
      * @example
-     * const cleanHtml = sanitizeHTML(rawHtmlContent);
+     * const cleanHtml = await sanitizeHTML(rawHtmlContent);
      * // Returns safe HTML for display
      */
-    function sanitizeHTML(html) {
-        // Redirect to unified sanitization method to prevent conflicts
-        return unifiedSanitizeHTML(html);
+    async function sanitizeHTML(html) {
+        // Use enhanced sanitization with HTML Tidy API fallback
+        return await enhancedSanitizeHTML(html);
     }
 
     /**
@@ -1983,59 +1987,277 @@ jQuery(document).ready(function($) {
     }
 
     /**
-     * Enhanced HTML sanitization with comprehensive fixing
+     * HTML escaper for safe text output
      * 
-     * @deprecated Use unifiedSanitizeHTML instead
-     * This function provides comprehensive HTML cleaning and fixing:
-     * - Fixes unclosed tags systematically
-     * - Removes orphaned closing tags
-     * - Validates HTML structure
-     * - Applies multiple layers of cleaning
+     * This function escapes HTML special characters to prevent XSS attacks
+     * and ensure safe display of user-generated content.
+     * 
+     * @param {string} s - String to escape
+     * @returns {string} HTML-escaped string
+     * 
+     * @example
+     * const safe = escapeHtml('<script>alert("xss")</script>');
+     * // Returns '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
+     */
+    function escapeHtml(s) {
+        return String(s || '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    /**
+     * Call HTML Tidy API for professional HTML cleaning
+     * 
+     * This function calls the server-side HTML Tidy API when local sanitization
+     * encounters complex HTML issues that are difficult to fix client-side.
+     * 
+     * @param {string} html - Raw HTML content to clean
+     * @returns {Promise<string>} Cleaned HTML content
+     */
+    async function cleanWithTidyAPI(html) {
+        try {
+            console.log('Calling HTML Tidy API for complex HTML cleaning...');
+            
+            const response = await fetch(ajaxurl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    action: 'ai_clean_html',
+                    html: html,
+                    nonce: ai_trainer_ajax.nonce
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                console.log('HTML Tidy API cleaning results:', data.data.improvements);
+                return data.data.cleaned_html;
+            } else {
+                console.warn('HTML Tidy API failed:', data.data.message);
+                return html; // Return original if API fails
+            }
+        } catch (error) {
+            console.error('HTML Tidy API error:', error);
+            return html; // Return original if API fails
+        }
+    }
+
+    /**
+     * Enhanced HTML sanitization with HTML Tidy API fallback
+     * 
+     * This function provides a hybrid approach that uses local sanitization
+     * for simple cases and the HTML Tidy API for complex malformed HTML.
      * 
      * @param {string} html - Raw HTML content to sanitize
-     * @returns {string} Enhanced sanitized HTML content
+     * @returns {Promise<string>} Cleaned HTML content
      */
-    function enhancedSanitizeHTML(html) {
+    async function enhancedSanitizeHTML(html) {
         if (!html || typeof html !== 'string') {
             return '';
         }
 
         try {
-            // Step 1: Pre-process and fix obvious issues
+            // First try local sanitization
+            let cleaned = unifiedSanitizeHTML(html);
+            
+            // Check if there are still significant issues
+            const issues = validateHTMLStructure(cleaned);
+            const hasComplexIssues = issues.length > 2 || 
+                                   cleaned.includes('<h<') || 
+                                   cleaned.includes('<a <a') ||
+                                   cleaned.match(/<([a-zA-Z][a-zA-Z0-9]*)\s+<([a-zA-Z][a-zA-Z0-9]*)/);
+            
+            if (hasComplexIssues) {
+                console.log('Complex HTML issues detected, using HTML Tidy API fallback');
+                cleaned = await cleanWithTidyAPI(html);
+                
+                // Validate the API result
+                const apiIssues = validateHTMLStructure(cleaned);
+                if (apiIssues.length > 3) {
+                    console.warn('HTML Tidy API still has issues, using fallback sanitization');
+                    return fallbackSanitize(html);
+                }
+            }
+            
+            return cleaned;
+        } catch (error) {
+            console.warn('Enhanced sanitization failed, using HTML Tidy API:', error);
+            return await cleanWithTidyAPI(html);
+        }
+    }
+
+    /**
+     * Standardized optional blocks + custom sections injector
+     * 
+     * This function renders standardized sections (Additional, Practical, Sources)
+     * along with custom HTML sections for AI prompt templates.
+     * 
+     * @param {Object} options - Section configuration options
+     * @param {Array} options.sections - Custom HTML sections to include
+     * @param {boolean} options.includeAdditional - Whether to include additional context
+     * @param {boolean} options.includePractical - Whether to include practical advice
+     * @param {boolean} options.includeSources - Whether to include sources section
+     * @returns {string} Combined HTML for all sections
+     * 
+     * @example
+     * const sections = renderSections({
+     *   sections: [{html: '<h3>Custom Section</h3>'}],
+     *   includeAdditional: true,
+     *   includeSources: true
+     * });
+     */
+    function renderSections({ sections = [], includeAdditional = true, includePractical = true, includeSources = true }) {
+        const custom = sections.map(s => s && s.html ? s.html : '').join('\n');
+      
+        const additional = includeAdditional ? `
+    <h3>Additional Context or Considerations</h3>
+    <p><!-- Nuance, cultural framing, study limitations, variability by dose/context. --></p>` : '';
+      
+        const practical = includePractical ? `
+    <h3>Practical Advice</h3>
+    <ul>
+      <li><!-- Preparation or planning tips appropriate to this template. --></li>
+      <li><!-- Questions to ask yourself or a clinician. --></li>
+      <li><!-- Tools, checklists, or trackers to use. --></li>
+    </ul>` : '';
+      
+        const sources = includeSources ? `
+    <h3>Where to Learn More</h3>
+    <div class="section-where-to-learn-more">
+      <ul>
+        <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Primary literature (PubMed, clinical trials). --></a></li>
+        <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Harm reduction orgs (DanceSafe, Fireside). --></a></li>
+        <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Trusted education (Psychedelics.com, MAPS, Erowid). --></a></li>
+      </ul>
+    </div>` : '';
+      
+        return `${custom}${additional}${practical}${sources}`;
+    }
+      
+    /**
+     * Optional Safety Snapshot, injected only when addSafety=true
+     * 
+     * This function provides a standardized safety information section
+     * that can be included in AI prompt templates when safety information
+     * is relevant to the query.
+     * 
+     * @returns {string} HTML for safety tips section
+     * 
+     * @example
+     * const safetyHtml = safetySnapshot();
+     * // Returns HTML with medication, mental health, physical health, and set & setting tips
+     */
+    function safetySnapshot() {
+        return `
+    <h3>Safety Tips</h3>
+    <ul>
+      <li><strong>Medications:</strong> <!-- Note any risky drug interactions (e.g., SSRIs, MAOIs, lithium). --></li>
+      <li><strong>Mental health:</strong> <!-- Note mental health precautions (e.g., risk of psychosis or severe anxiety). --></li>
+      <li><strong>Physical health:</strong> <!-- Note physical health precautions (e.g., heart or neurological risks). --></li>
+      <li><strong>Set &amp; Setting:</strong> <!-- Mindset and environment can influence experiences. --></li>
+    </ul>`;
+    }
+
+    /**
+     * Unified HTML sanitization combining all approaches
+     * 
+     * This is the single method that replaces all other sanitization methods.
+     * It combines structure repair, DOMParser processing, and regex cleanup
+     * in the correct order to prevent conflicts.
+     * 
+     * @param {string} html - Raw HTML content to sanitize
+     * @returns {string} Clean, validated HTML content
+     */
+    function unifiedSanitizeHTML(html) {
+        if (!html || typeof html !== 'string') {
+            return '';
+        }
+
+        try {
+            // Log initial HTML issues for debugging
+            logHTMLIssues(html, 'pre-unified-sanitization');
+
+            // STEP 1: Pre-process and fix obvious structural issues
             let processed = html
                 .replace(REGEX_PATTERNS.doubleSpaces, ' ')
                 .replace(REGEX_PATTERNS.lineBreaks, '\n')
                 .replace(REGEX_PATTERNS.emptyParagraphs, '')
                 .trim();
 
-            // Step 2: Fix unclosed tags
+            // STEP 2: Fix malformed tags that can't be parsed
             processed = fixUnclosedTags(processed);
-
-            // Step 3: Remove orphaned closing tags
             processed = removeOrphanedClosingTags(processed);
 
-            // Step 4: Parse with DOMParser
+            // STEP 3: Use DOMParser for structure validation and cleaning
             const parser = new DOMParser();
             const doc = parser.parseFromString('<div>' + processed + '</div>', 'text/html');
 
-            // Step 5: Remove unsafe elements
+            // STEP 4: Remove unsafe elements
             doc.querySelectorAll('script, style, iframe, object, embed').forEach(el => el.remove());
 
-            // Step 6: Fix structure issues
+            // STEP 5: Fix structure issues
             fixListStructure(doc);
             fixTableStructure(doc);
             fixParagraphStructure(doc);
             
-            // Step 7: Clean and validate
+            // STEP 6: Validate and clean nodes
             validateAndCleanNodes(doc.body.firstChild);
 
-            // Step 8: Apply final fixes
+            // STEP 7: Extract clean HTML
             let safe = doc.body.firstChild.innerHTML;
-            safe = applyFinalFixes(safe);
+
+            // STEP 8: Apply regex fixes in dependency order (most critical change)
+            safe = safe
+                .replace(REGEX_PATTERNS.whitespace, '><')                    // First: clean whitespace
+                .replace(REGEX_PATTERNS.htmlEntities, '')                    // Then: remove entities
+                .replace(REGEX_PATTERNS.hrefFix, '<a href="$1">')           // Then: fix href attributes
+                .replace(REGEX_PATTERNS.linkText, '</a> $1')                // Then: fix link text spacing
+                .replace(REGEX_PATTERNS.emptyLi, '')                        // Then: remove empty list items
+                .replace(REGEX_PATTERNS.consecutiveUl, '')                  // Then: merge consecutive lists
+                .replace(REGEX_PATTERNS.consecutiveOl, '')                  // Then: merge consecutive ordered lists
+                .replace(REGEX_PATTERNS.ampersandFix, '&')                  // Then: fix double-encoded ampersands
+                .replace(REGEX_PATTERNS.brokenSentences, '$1 in the 1980s and $2')  // Then: fix broken decade references
+                .replace(REGEX_PATTERNS.missingSpaces, '$1 $2')             // Finally: add missing spaces between words
+                .trim();
+
+            // STEP 9: Truncate if needed (only for display, not for chatlog storage)
+            if (safe.length > MAX_LENGTH) {
+                safe = truncateHTML(safe);
+            }
+
+            // STEP 10: Apply special styling
+            safe = applyWhereToLearnMoreStyling(safe);
+
+            // STEP 11: Fix truncated years that commonly get cut off
+            safe = fixTruncatedYears(safe);
+
+            // STEP 12: Fix specific common AI errors
+            safe = safe
+                .replace(/\b(li|ul|ol|div|span)\b(?![^<]*>)/g, '')  // Remove stray tag names not in tags
+                .replace(/<li>\s*<\/li>/g, '')                       // Remove empty list items
+                .replace(/(<\/[^>]+>)\s*\1/g, '$1')                 // Remove duplicate closing tags
+                .replace(/^[^<]*?(<[^>]+>)/g, '$1')                 // Remove text before first tag
+                .replace(/(<\/[^>]+>)[^<]*?$/g, '$1');              // Remove text after last tag
+
+            // STEP 13: Final validation check
+            const finalIssues = validateHTMLStructure(safe);
+            if (finalIssues.length > 3) {
+                console.warn('Unified sanitization produced issues, using fallback:', finalIssues);
+                return fallbackSanitize(html);
+            }
+
+            // Log final HTML issues
+            logHTMLIssues(safe, 'post-unified-sanitization');
 
             return safe;
         } catch (e) {
-            console.warn('Enhanced sanitize error:', e, 'Original HTML:', html);
+            console.warn('Unified sanitization error:', e, 'Original HTML:', html.substring(0, 200));
             return fallbackSanitize(html);
         }
     }
@@ -2123,6 +2345,38 @@ jQuery(document).ready(function($) {
                     p.parentNode.insertBefore(child, p.nextSibling);
                 }
             });
+        });
+    }
+
+    /**
+     * Fix list structure
+     * 
+     * @param {Document} doc - DOM document to process
+     */
+    function fixListStructure(doc) {
+        doc.querySelectorAll('li').forEach(li => {
+            // Ensure li elements are inside ul or ol
+            if (li.parentNode && !['UL', 'OL'].includes(li.parentNode.tagName)) {
+                const ul = document.createElement('ul');
+                li.parentNode.insertBefore(ul, li);
+                ul.appendChild(li);
+            }
+        });
+    }
+
+    /**
+     * Fix table structure
+     * 
+     * @param {Document} doc - DOM document to process
+     */
+    function fixTableStructure(doc) {
+        doc.querySelectorAll('tr').forEach(tr => {
+            // Ensure tr elements are inside table, tbody, thead, or tfoot
+            if (tr.parentNode && !['TABLE', 'TBODY', 'THEAD', 'TFOOT'].includes(tr.parentNode.tagName)) {
+                const tbody = document.createElement('tbody');
+                tr.parentNode.insertBefore(tbody, tr);
+                tbody.appendChild(tr);
+            }
         });
     }
 
@@ -2305,7 +2559,7 @@ jQuery(document).ready(function($) {
      * 
      * @returns {Object} Test results
      */
-    function testEnhancedSanitization() {
+    async function testEnhancedSanitization() {
         const testCases = [
             {
                 name: 'Unclosed tags',
@@ -2344,8 +2598,8 @@ jQuery(document).ready(function($) {
             }
         ];
 
-        const results = testCases.map(testCase => {
-            const sanitized = sanitizeHTML(testCase.input);
+        const results = await Promise.all(testCases.map(async testCase => {
+            const sanitized = await sanitizeHTML(testCase.input);
             const issues = validateHTMLStructure(sanitized);
             return {
                 test: testCase.name,
@@ -2354,7 +2608,7 @@ jQuery(document).ready(function($) {
                 issues: issues,
                 passed: issues.length === 0
             };
-        });
+        }));
 
         console.log('Enhanced HTML Sanitization Test Results:', results);
         return results;
@@ -2362,6 +2616,49 @@ jQuery(document).ready(function($) {
 
     // Expose test function globally for debugging
     window.testEnhancedSanitization = testEnhancedSanitization;
+
+    /**
+     * Optimized local answer streaming
+     * 
+     * This function provides a streaming effect for local knowledge base answers,
+     * creating a progressive loading animation similar to AI streaming.
+     * 
+     * FEATURES:
+     * - Progressive content display
+     * - Smooth streaming animation
+     * - Related questions clickability setup
+     * - Styling application after completion
+     * 
+     * @param {string} html - HTML content to stream
+     * @param {Element} container - DOM container for streaming content
+     * @returns {void}
+     * 
+     * @example
+     * streamLocalAnswer(answerHtml, document.querySelector('.streaming-container'));
+     * // Streams local answer with progressive loading effect
+     */
+    function streamLocalAnswer(html, container) {
+        container.innerHTML = '';
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        const nodes = Array.from(temp.childNodes);
+        let i = 0;
+
+        function streamStep() {
+            if (i < nodes.length) {
+                container.appendChild(nodes[i].cloneNode(true));
+                i++;
+                setTimeout(streamStep, 180);
+            } else {
+                // Make related questions clickable after streaming is complete
+                makeRelatedQuestionsClickable(container);
+                
+                // Apply styling to "Where to Learn More" section
+                styleWhereToLearnMoreInDOM(container);
+            }
+        }
+        streamStep();
+    }
 
     /**
      * Apply green color to specific sections only
@@ -2408,6 +2705,55 @@ jQuery(document).ready(function($) {
         } catch (e) {
             console.warn('Styling error:', e);
             return html; // Return original if styling fails
+        }
+    }
+
+    /**
+     * Fix bold formatting inconsistencies
+     * 
+     * This function specifically addresses issues with bold text formatting
+     * that can occur during HTML processing, ensuring consistent display.
+     * 
+     * FIXES APPLIED:
+     * - Fixes broken bold tags
+     * - Ensures proper bold tag nesting
+     * - Removes duplicate bold tags
+     * - Fixes orphaned bold tags
+     * 
+     * @param {string} html - HTML content with potential bold formatting issues
+     * @returns {string} HTML with fixed bold formatting
+     * 
+     * @example
+     * const fixedHtml = fixBoldFormatting(htmlContent);
+     * // Returns HTML with corrected bold formatting
+     */
+    function fixBoldFormatting(html) {
+        if (!html || typeof html !== 'string') {
+            return html;
+        }
+
+        try {
+            let fixed = html;
+            
+            // Fix broken bold tags
+            fixed = fixed.replace(/<strong>([^<]*)<\/strong>/g, '<strong>$1</strong>');
+            
+            // Remove duplicate bold tags
+            fixed = fixed.replace(/<strong><strong>/g, '<strong>');
+            fixed = fixed.replace(/<\/strong><\/strong>/g, '</strong>');
+            
+            // Fix orphaned bold tags
+            fixed = fixed.replace(/<strong>(?!.*<\/strong>)/g, '');
+            fixed = fixed.replace(/<\/strong>(?![^<]*<strong>)/g, '');
+            
+            // Ensure proper spacing around bold tags
+            fixed = fixed.replace(/(\w)<strong>/g, '$1 <strong>');
+            fixed = fixed.replace(/<\/strong>(\w)/g, '</strong> $1');
+            
+            return fixed;
+        } catch (e) {
+            console.warn('Bold formatting fix error:', e);
+            return html;
         }
     }
 
@@ -3754,12 +4100,12 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         {
           html: `
   <h3>Emergency Syndromes</h3>
-          <table border="1" cellpadding="6" cellspacing="0">
-            <thead><tr><th>Syndrome</th><th>Key Signs</th><th>Notes</th></tr></thead>
-            <tbody>
-              <tr><td><!-- Serotonin syndrome --></td><td><!-- clonus, hyperreflexia, agitation --></td><td><!-- triggers/combos --></td></tr>
-            </tbody>
-          </table>`
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead><tr><th>Syndrome</th><th>Key Signs</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><!-- Serotonin syndrome --></td><td><!-- clonus, hyperreflexia, agitation --></td><td><!-- triggers/combos --></td></tr>
+    </tbody>
+  </table>`
         },
       ],
     }),
@@ -3777,20 +4123,20 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         {
           html: `
   <h3>Myth vs Fact</h3>
-          <table border="1" cellpadding="6" cellspacing="0">
-            <thead><tr><th>Myth</th><th>Evidence Check</th><th>Conclusion</th></tr></thead>
-            <tbody>
-              <tr><td><!-- e.g., LSD stays in spine --></td><td><!-- what sources say --></td><td><!-- plain-language verdict --></td></tr>
-            </tbody>
-          </table>`
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead><tr><th>Myth</th><th>Evidence Check</th><th>Conclusion</th></tr></thead>
+    <tbody>
+      <tr><td><!-- e.g., LSD stays in spine --></td><td><!-- what sources say --></td><td><!-- plain-language verdict --></td></tr>
+    </tbody>
+  </table>`
         },
         {
           html: `
   <h3>Related Terms</h3>
-          <ul>
-            <li><!-- Nearby concept 1: distinction --></li>
-            <li><!-- Nearby concept 2: distinction --></li>
-          </ul>`
+  <ul>
+    <li><!-- Nearby concept 1: distinction --></li>
+    <li><!-- Nearby concept 2: distinction --></li>
+  </ul>`
         },
       ],
     }),
@@ -3844,10 +4190,10 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         {
           html: `
   <h3>Recovery Timeline</h3>
-          <ul>
-            <li><!-- 0–24h: fatigue, mood variability, sleep changes. --></li>
-            <li><!-- 24–72h: normalization; hydration/nutrition notes. --></li>
-          </ul>`
+  <ul>
+    <li><!-- 0–24h: fatigue, mood variability, sleep changes. --></li>
+    <li><!-- 24–72h: normalization; hydration/nutrition notes. --></li>
+  </ul>`
         },
         {
           html: `
@@ -4558,159 +4904,186 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
   }
   
   /**
-   * Standardized optional blocks + custom sections injector
+   * Call HTML Tidy API for professional HTML cleaning
    * 
-   * This function renders standardized sections (Additional, Practical, Sources)
-   * along with custom HTML sections for AI prompt templates.
+   * This function calls the server-side HTML Tidy API when local sanitization
+   * encounters complex HTML issues that are difficult to fix client-side.
    * 
-   * @param {Object} options - Section configuration options
-   * @param {Array} options.sections - Custom HTML sections to include
-   * @param {boolean} options.includeAdditional - Whether to include additional context
-   * @param {boolean} options.includePractical - Whether to include practical advice
-   * @param {boolean} options.includeSources - Whether to include sources section
-   * @returns {string} Combined HTML for all sections
-   * 
-   * @example
-   * const sections = renderSections({
-   *   sections: [{html: '<h3>Custom Section</h3>'}],
-   *   includeAdditional: true,
-   *   includeSources: true
-   * });
+   * @param {string} html - Raw HTML content to clean
+   * @returns {Promise<string>} Cleaned HTML content
    */
-  function renderSections({ sections = [], includeAdditional = true, includePractical = true, includeSources = true }) {
-    const custom = sections.map(s => s && s.html ? s.html : '').join('\n');
-  
-    const additional = includeAdditional ? `
-  <h3>Additional Context or Considerations</h3>
-  <p><!-- Nuance, cultural framing, study limitations, variability by dose/context. --></p>` : '';
-  
-    const practical = includePractical ? `
-  <h3>Practical Advice</h3>
-  <ul>
-    <li><!-- Preparation or planning tips appropriate to this template. --></li>
-    <li><!-- Questions to ask yourself or a clinician. --></li>
-    <li><!-- Tools, checklists, or trackers to use. --></li>
-  </ul>` : '';
-  
-    const sources = includeSources ? `
-  <h3>Where to Learn More</h3>
-  <div class="section-where-to-learn-more">
-    <ul>
-      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Primary literature (PubMed, clinical trials). --></a></li>
-      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Harm reduction orgs (DanceSafe, Fireside). --></a></li>
-      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Trusted education (Psychedelics.com, MAPS, Erowid). --></a></li>
-    </ul>
-  </div>` : '';
-  
-    return `${custom}${additional}${practical}${sources}`;
+  async function cleanWithTidyAPI(html) {
+      try {
+          console.log('Calling HTML Tidy API for complex HTML cleaning...');
+          
+          const response = await fetch(ajaxurl, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: new URLSearchParams({
+                  action: 'ai_clean_html',
+                  html: html,
+                  nonce: ai_trainer_ajax.nonce
+              })
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+              console.log('HTML Tidy API cleaning results:', data.data.improvements);
+              return data.data.cleaned_html;
+          } else {
+              console.warn('HTML Tidy API failed:', data.data.message);
+              return html; // Return original if API fails
+          }
+      } catch (error) {
+          console.error('HTML Tidy API error:', error);
+          return html; // Return original if API fails
+      }
   }
-  
+
   /**
-   * Optional Safety Snapshot, injected only when addSafety=true
+   * Enhanced HTML sanitization with HTML Tidy API fallback
    * 
-   * This function provides a standardized safety information section
-   * that can be included in AI prompt templates when safety information
-   * is relevant to the query.
+   * This function provides a hybrid approach that uses local sanitization
+   * for simple cases and the HTML Tidy API for complex malformed HTML.
    * 
-   * @returns {string} HTML for safety tips section
-   * 
-   * @example
-   * const safetyHtml = safetySnapshot();
-   * // Returns HTML with medication, mental health, physical health, and set & setting tips
+   * @param {string} html - Raw HTML content to sanitize
+   * @returns {Promise<string>} Cleaned HTML content
    */
-  function safetySnapshot() {
-    return `
-  <h3>Safety Tips</h3>
-  <ul>
-    <li><strong>Medications:</strong> <!-- Note any risky drug interactions (e.g., SSRIs, MAOIs, lithium). --></li>
-    <li><strong>Mental health:</strong> <!-- Note mental health precautions (e.g., risk of psychosis or severe anxiety). --></li>
-    <li><strong>Physical health:</strong> <!-- Note physical health precautions (e.g., heart or neurological risks). --></li>
-    <li><strong>Set &amp; Setting:</strong> <!-- Mindset and environment can influence experiences. --></li>
-  </ul>`;
+  async function enhancedSanitizeHTML(html) {
+      if (!html || typeof html !== 'string') {
+          return '';
+      }
+
+      try {
+          // First try local sanitization
+          let cleaned = unifiedSanitizeHTML(html);
+          
+          // Check if there are still significant issues
+          const issues = validateHTMLStructure(cleaned);
+          const hasComplexIssues = issues.length > 2 || 
+                                 cleaned.includes('<h<') || 
+                                 cleaned.includes('<a <a') ||
+                                 cleaned.match(/<([a-zA-Z][a-zA-Z0-9]*)\s+<([a-zA-Z][a-zA-Z0-9]*)/);
+          
+          if (hasComplexIssues) {
+              console.log('Complex HTML issues detected, using HTML Tidy API fallback');
+              cleaned = await cleanWithTidyAPI(html);
+              
+              // Validate the API result
+              const apiIssues = validateHTMLStructure(cleaned);
+              if (apiIssues.length > 3) {
+                  console.warn('HTML Tidy API still has issues, using fallback sanitization');
+                  return fallbackSanitize(html);
+              }
+          }
+          
+          return cleaned;
+      } catch (error) {
+          console.warn('Enhanced sanitization failed, using HTML Tidy API:', error);
+          return await cleanWithTidyAPI(html);
+      }
   }
-  
+
   /**
-   * HTML escaper for safe text output
+   * Unified HTML sanitization combining all approaches
    * 
-   * This function escapes HTML special characters to prevent XSS attacks
-   * and ensure safe display of user-generated content.
+   * This is the single method that replaces all other sanitization methods.
+   * It combines structure repair, DOMParser processing, and regex cleanup
+   * in the correct order to prevent conflicts.
    * 
-   * @param {string} s - String to escape
-   * @returns {string} HTML-escaped string
-   * 
-   * @example
-   * const safe = escapeHtml('<script>alert("xss")</script>');
-   * // Returns '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
+   * @param {string} html - Raw HTML content to sanitize
+   * @returns {string} Clean, validated HTML content
    */
-  function escapeHtml(s) {
-    return String(s || '')
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;');
+  function unifiedSanitizeHTML(html) {
+      if (!html || typeof html !== 'string') {
+          return '';
+      }
+
+      try {
+          // Log initial HTML issues for debugging
+          logHTMLIssues(html, 'pre-unified-sanitization');
+
+          // STEP 1: Pre-process and fix obvious structural issues
+          let processed = html
+              .replace(REGEX_PATTERNS.doubleSpaces, ' ')
+              .replace(REGEX_PATTERNS.lineBreaks, '\n')
+              .replace(REGEX_PATTERNS.emptyParagraphs, '')
+              .trim();
+
+          // STEP 2: Fix malformed tags that can't be parsed
+          processed = fixUnclosedTags(processed);
+          processed = removeOrphanedClosingTags(processed);
+
+          // STEP 3: Use DOMParser for structure validation and cleaning
+          const parser = new DOMParser();
+          const doc = parser.parseFromString('<div>' + processed + '</div>', 'text/html');
+
+          // STEP 4: Remove unsafe elements
+          doc.querySelectorAll('script, style, iframe, object, embed').forEach(el => el.remove());
+
+          // STEP 5: Fix structure issues
+          fixListStructure(doc);
+          fixTableStructure(doc);
+          fixParagraphStructure(doc);
+          
+          // STEP 6: Validate and clean nodes
+          validateAndCleanNodes(doc.body.firstChild);
+
+          // STEP 7: Extract clean HTML
+          let safe = doc.body.firstChild.innerHTML;
+
+          // STEP 8: Apply regex fixes in dependency order (most critical change)
+          safe = safe
+              .replace(REGEX_PATTERNS.whitespace, '><')                    // First: clean whitespace
+              .replace(REGEX_PATTERNS.htmlEntities, '')                    // Then: remove entities
+              .replace(REGEX_PATTERNS.hrefFix, '<a href="$1">')           // Then: fix href attributes
+              .replace(REGEX_PATTERNS.linkText, '</a> $1')                // Then: fix link text spacing
+              .replace(REGEX_PATTERNS.emptyLi, '')                        // Then: remove empty list items
+              .replace(REGEX_PATTERNS.consecutiveUl, '')                  // Then: merge consecutive lists
+              .replace(REGEX_PATTERNS.consecutiveOl, '')                  // Then: merge consecutive ordered lists
+              .replace(REGEX_PATTERNS.ampersandFix, '&')                  // Then: fix double-encoded ampersands
+              .replace(REGEX_PATTERNS.brokenSentences, '$1 in the 1980s and $2')  // Then: fix broken decade references
+              .replace(REGEX_PATTERNS.missingSpaces, '$1 $2')             // Finally: add missing spaces between words
+              .trim();
+
+          // STEP 9: Truncate if needed (only for display, not for chatlog storage)
+          if (safe.length > MAX_LENGTH) {
+              safe = truncateHTML(safe);
+          }
+
+          // STEP 10: Apply special styling
+          safe = applyWhereToLearnMoreStyling(safe);
+
+          // STEP 11: Fix truncated years that commonly get cut off
+          safe = fixTruncatedYears(safe);
+
+          // STEP 12: Fix specific common AI errors
+          safe = safe
+              .replace(/\b(li|ul|ol|div|span)\b(?![^<]*>)/g, '')  // Remove stray tag names not in tags
+              .replace(/<li>\s*<\/li>/g, '')                       // Remove empty list items
+              .replace(/(<\/[^>]+>)\s*\1/g, '$1')                 // Remove duplicate closing tags
+              .replace(/^[^<]*?(<[^>]+>)/g, '$1')                 // Remove text before first tag
+              .replace(/(<\/[^>]+>)[^<]*?$/g, '$1');              // Remove text after last tag
+
+          // STEP 13: Final validation check
+          const finalIssues = validateHTMLStructure(safe);
+          if (finalIssues.length > 3) {
+              console.warn('Unified sanitization produced issues, using fallback:', finalIssues);
+              return fallbackSanitize(html);
+          }
+
+          // Log final HTML issues
+          logHTMLIssues(safe, 'post-unified-sanitization');
+
+          return safe;
+      } catch (e) {
+          console.warn('Unified sanitization error:', e, 'Original HTML:', html.substring(0, 200));
+          return fallbackSanitize(html);
+      }
   }
-  
-  /* Optional export for testing (Node/CommonJS) */
-  if (typeof module !== 'undefined') {
-    module.exports = { buildPrompt, detectType };
-  }
-
-    // Scroll while streaming
-    // This function scrolls the answer block into view when the answer is being streamed
-    // function scrollToAnswer(container) {
-    //     const block = container.closest('.answer-block');
-    //     if (block) {
-    //         if (!block.querySelector('.scroll-spacer')) {
-    //             const spacer = document.createElement('div');
-    //             spacer.className = 'scroll-spacer';
-    //             spacer.style.height = '30px';
-    //             block.appendChild(spacer);
-    //         }
-    //         block.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    //     }
-    // }
-
-    /**
-     * Optimized local answer streaming
-     * 
-     * This function provides a streaming effect for local knowledge base answers,
-     * creating a progressive loading animation similar to AI streaming.
-     * 
-     * FEATURES:
-     * - Progressive content display
-     * - Smooth streaming animation
-     * - Related questions clickability setup
-     * - Styling application after completion
-     * 
-     * @param {string} html - HTML content to stream
-     * @param {Element} container - DOM container for streaming content
-     * @returns {void}
-     * 
-     * @example
-     * streamLocalAnswer(answerHtml, document.querySelector('.streaming-container'));
-     * // Streams local answer with progressive loading effect
-     */
-    function streamLocalAnswer(html, container) {
-        container.innerHTML = '';
-        const temp = document.createElement('div');
-        temp.innerHTML = html;
-        const nodes = Array.from(temp.childNodes);
-        let i = 0;
-
-        function streamStep() {
-            if (i < nodes.length) {
-                container.appendChild(nodes[i].cloneNode(true));
-                i++;
-                setTimeout(streamStep, 180);
-            } else {
-                // Make related questions clickable after streaming is complete
-                makeRelatedQuestionsClickable(container);
-                
-                // Apply styling to "Where to Learn More" section
-                styleWhereToLearnMoreInDOM(container);
-            }
-        }
-        streamStep();
-    }
 
     /**
      * Sanitize HTML for chatlog storage (no truncation)
@@ -4726,20 +5099,20 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
      * - No content truncation
      * 
      * @param {string} html - Raw HTML content to sanitize
-     * @returns {string} Sanitized HTML content
+     * @returns {Promise<string>} Sanitized HTML content
      * 
      * @example
-     * const cleanHtml = sanitizeHTMLForChatlog(rawAnswerHtml);
+     * const cleanHtml = await sanitizeHTMLForChatlog(rawAnswerHtml);
      * // Returns sanitized HTML safe for chatlog storage
      */
-    function sanitizeHTMLForChatlog(html) {
+    async function sanitizeHTMLForChatlog(html) {
         if (!html || typeof html !== 'string') {
             return '';
         }
 
         try {
             // Use enhanced sanitization but without truncation
-            let safe = enhancedSanitizeHTML(html);
+            let safe = await enhancedSanitizeHTML(html);
 
             // Apply additional custom fixes
             safe = safe
@@ -4757,13 +5130,13 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     }
 
     // Global function for saving streaming answer
-    window.saveStreamingAnswerToChatlog = function(chatlogId, answer) {
+    window.saveStreamingAnswerToChatlog = async function(chatlogId, answer) {
         const ajaxUrl = (typeof exa_ajax !== 'undefined' && exa_ajax.ajaxurl) ? 
             exa_ajax.ajaxurl : 
             (typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php');
         
         // Sanitize for chatlog storage (no truncation)
-        const sanitizedAnswer = sanitizeHTMLForChatlog(answer);
+        const sanitizedAnswer = await sanitizeHTMLForChatlog(answer);
         
         $.post(ajaxUrl, {
             action: 'ai_update_chatlog_answer_by_id',
@@ -5086,162 +5459,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         }
         
         if (!$relatedQuestionsList.length) return;
-        
-        const $questionItems = $relatedQuestionsList.find('li');
-        
-        $questionItems.each(function(index) {
-            const questionText = $(this).text().trim();
-            
-            if (questionText && questionText !== '<!-- Q1 -->' && questionText !== '<!-- Q2 -->' && 
-                questionText !== '<!-- Q3 -->' && questionText !== '<!-- Q4 -->' && questionText !== '<!-- Q5 -->') {
-                
-                // Create clickable link
-                const $link = $('<a>', {
-                    href: '#',
-                    text: questionText,
-                    css: {
-                        color: '#3bb273',
-                        textDecoration: 'none',
-                        cursor: 'pointer',
-                        transition: 'color 0.2s'
-                    },
-                    title: 'Click to ask this follow-up question'
-                });
-                
-                // Add hover effect
-                $link.on('mouseenter', function() {
-                    $(this).css('color', '#4ddb8a');
-                }).on('mouseleave', function() {
-                    $(this).css('color', '#3bb273');
-                });
-                
-                // Add click handler
-                $link.on('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    // Find the input field and populate it with the question
-                    const $inputField = $('#exa-input, .exa-input, input[placeholder*="follow up"]');
-                    
-                    if ($inputField.length) {
-                        $inputField.val(questionText);
-                        $inputField.focus();
-                        
-                        // Auto-submit the question
-                        submitSearch();
-                    }
-                });
-                
-                // Replace the list item content with the clickable link
-                $(this).html('').append($link);
-            }
-        });
     }
-
-    // Add a container for options popup to each reaction bar on page load
-    $(document).ready(function() {
-        $('.answer-reaction-bar').each(function() {
-            if ($(this).find('.reaction-options-container').length === 0) {
-                $(this).append('<div class="reaction-options-container" style="display:none;"></div>');
-            }
-        });
-    });
-
-    // Share  link
-    $(document).on('click', '.reaction-share', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const btn = $(this);
-        const id = btn.data('id');
-        
-        const answerBlock = btn.closest('.answer-block');
-        const chatlogQuestion = answerBlock.find('.chatlog-question').text();
-        
-        let questionTitle = chatlogQuestion || '';
-        
-        // Additional fallback: look for any h1 or h2 elements in the answer block
-        if (!questionTitle) {
-            const anyHeading = answerBlock.find('h1, h2').first().text();
-            if (anyHeading) {
-                questionTitle = anyHeading;
-            }
-        }
-        
-        if (!questionTitle) {
-            questionTitle = $exaInput.val() || '';
-        }
-        
-        const shareUrl = window.location.origin + window.location.pathname + 
-            '?chatlog_id=' + id + '&title=' + encodeURIComponent(questionTitle);
-
-        function showCopiedNotice() {
-            let notice = btn.siblings('.share-notice');
-            if (notice.length === 0) {
-                notice = $('<span class="share-notice" style="margin-left:8px;color:green;font-size:15px;">Link copied, paste to share</span>');
-                btn.after(notice);
-            }
-            notice.show();
-            setTimeout(() => notice.fadeOut(300), 1500);
-        }
-
-        // Try modern clipboard API first
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                showCopiedNotice();
-                btn.addClass('share-copied');
-                setTimeout(() => btn.removeClass('share-copied'), 1500);
-            }).catch(err => {
-                fallbackCopy();
-            });
-        } else {
-            fallbackCopy();
-        }
-        
-        function fallbackCopy() {
-            try {
-                const tempInput = $('<textarea>');
-                tempInput.css({
-                    position: 'fixed',
-                    top: '-9999px',
-                    left: '-9999px',
-                    opacity: 0,
-                    zIndex: -1
-                });
-                $('body').append(tempInput);
-                tempInput.val(shareUrl).select();
-                const success = document.execCommand('copy');
-                tempInput.remove();
-                
-                if (success) {
-                    showCopiedNotice();
-                    btn.addClass('share-copied');
-                    setTimeout(() => btn.removeClass('share-copied'), 1500);
-                } else {
-                    alert('Copy failed. Please manually copy this URL: ' + shareUrl);
-                }
-            } catch (err) {
-                alert('Copy failed. Please manually copy this URL: ' + shareUrl);
-            }
-        }
-    });
-
-    // Initialize page with URL parameters
-    $(function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const chatlogId = urlParams.get('chatlog_id');
-        const chatlogTitle = urlParams.get('title');
-        
-        if (chatlogId) {
-            const block = $("#answer-" + chatlogId);
-            
-            if (block.length) {
-                $('html, body').animate({ scrollTop: block.offset().top - 100 }, 600);
-            } else {
-                loadChatlogById(chatlogId, chatlogTitle);
-            }
-        }
-    });
 
 
     /**

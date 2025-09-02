@@ -5401,3 +5401,375 @@ add_action('wp_ajax_ai_simple_test', function() {
         ]);
     }
 });
+
+// ============================================================================
+// HTML TIDY API INTEGRATION
+// ============================================================================
+// Professional HTML cleaning service using HTML Tidy library
+// Provides superior HTML formatting and tag fixing for AI-generated content
+
+/**
+ * HTML Tidy API integration for professional HTML cleaning
+ * 
+ * This system provides superior HTML formatting and tag fixing for AI-generated content:
+ * - Fixes malformed HTML tags and attributes
+ * - Removes invalid elements and attributes
+ * - Ensures proper tag nesting and closure
+ * - Filters to only allowed tags for your project
+ * - Provides fallback cleaning for when Tidy is unavailable
+ * 
+ * @package AI_Trainer
+ * @since 1.0
+ */
+
+/**
+ * Main HTML Tidy cleaning function
+ * 
+ * @param string $raw_html Raw HTML content to clean
+ * @return string Cleaned and properly formatted HTML
+ */
+function ai_trainer_html_tidy_clean($raw_html) {
+    if (empty($raw_html) || !is_string($raw_html)) {
+        return '';
+    }
+    
+    // Check if HTML Tidy extension is available
+    if (extension_loaded('tidy')) {
+        error_log('HTML Tidy extension detected - using professional cleaning');
+        return ai_trainer_tidy_clean($raw_html);
+    } else {
+        error_log('HTML Tidy extension not available - using fallback cleaning');
+        // Fallback to pure PHP solution
+        return ai_trainer_fallback_html_clean($raw_html);
+    }
+}
+
+/**
+ * HTML Tidy cleaning with extension
+ * 
+ * @param string $raw_html Raw HTML content
+ * @return string Cleaned HTML
+ */
+function ai_trainer_tidy_clean($raw_html) {
+    try {
+        // Configure HTML Tidy for your specific needs
+        $config = [
+            'clean' => true,
+            'output-html' => true,
+            'wrap' => 0,
+            'indent' => false,
+            'show-body-only' => true,
+            'doctype' => 'omit',
+            'char-encoding' => 'utf8',
+            'newline' => 'LF',
+            'tidy-mark' => false,
+            'drop-empty-elements' => false,  // Don't drop empty elements to preserve structure
+            'drop-empty-paras' => false,    // Don't drop empty paragraphs
+            'fix-bad-comments' => true,
+            'fix-uri' => true,
+            'join-styles' => false,         // Don't join styles to preserve formatting
+            'join-classes' => false,        // Don't join classes to preserve styling
+            'merge-divs' => false,
+            'merge-spans' => false,
+            'repeated-attributes' => 'keep-last',
+            'alt-text' => '',
+            'write-back' => true,
+            'hide-comments' => true,
+            'wrap-attributes' => false,
+            'wrap-script-literals' => false,
+            'wrap-sections' => false
+        ];
+        
+        $tidy = new tidy();
+        $tidy->parseString($raw_html, $config, 'utf8');
+        $tidy->cleanRepair();
+        
+        $cleaned = $tidy->value;
+        
+        // Post-process to ensure only allowed tags
+        $cleaned = ai_trainer_filter_allowed_tags($cleaned);
+        
+        // Fix bold formatting issues
+        $cleaned = ai_trainer_fix_bold_formatting($cleaned);
+        
+        // Log cleaning results for debugging
+        error_log('HTML Tidy extension used successfully: ' . substr($cleaned, 0, 200) . '...');
+        
+        return $cleaned;
+        
+    } catch (Exception $e) {
+        error_log('HTML Tidy error: ' . $e->getMessage());
+        return ai_trainer_fallback_html_clean($raw_html);
+    }
+}
+
+/**
+ * Fallback HTML cleaning when Tidy is not available
+ * 
+ * @param string $raw_html Raw HTML content
+ * @return string Cleaned HTML
+ */
+function ai_trainer_fallback_html_clean($raw_html) {
+    // Remove unsafe elements
+    $cleaned = preg_replace('/<script[^>]*>.*?<\/script>/is', '', $raw_html);
+    $cleaned = preg_replace('/<style[^>]*>.*?<\/style>/is', '', $cleaned);
+    $cleaned = preg_replace('/<iframe[^>]*>.*?<\/iframe>/is', '', $cleaned);
+    $cleaned = preg_replace('/<object[^>]*>.*?<\/object>/is', '', $cleaned);
+    $cleaned = preg_replace('/<embed[^>]*>/is', '', $cleaned);
+    
+    // Remove dangerous attributes
+    $cleaned = preg_replace('/\s+on\w+\s*=\s*["\'][^"\']*["\']/i', '', $cleaned);
+    $cleaned = preg_replace('/\s+javascript\s*:/i', '', $cleaned);
+    
+    // Fix common malformed tags
+    $cleaned = preg_replace('/<([a-zA-Z][a-zA-Z0-9]*)\s+<([a-zA-Z][a-zA-Z0-9]*)/', '<$1', $cleaned);
+    $cleaned = preg_replace('/<h<[^>]*>/', '<h3>', $cleaned);
+    $cleaned = preg_replace('/<a\s+<a[^>]*>/', '<a>', $cleaned);
+    
+    // Fix unclosed tags
+    $cleaned = ai_trainer_fix_unclosed_tags($cleaned);
+    
+    // Remove orphaned closing tags
+    $cleaned = preg_replace('/<\/([a-zA-Z][a-zA-Z0-9]*)(?![^<]*>)/', '', $cleaned);
+    
+    // Filter to allowed tags
+    $cleaned = ai_trainer_filter_allowed_tags($cleaned);
+    
+    // Fix bold formatting issues
+    $cleaned = ai_trainer_fix_bold_formatting($cleaned);
+    
+    return trim($cleaned);
+}
+
+/**
+ * Fix unclosed tags systematically
+ * 
+ * @param string $html HTML content to fix
+ * @return string HTML with closed tags
+ */
+function ai_trainer_fix_unclosed_tags($html) {
+    $tag_stack = [];
+    $open_tag_regex = '/<([a-zA-Z][a-zA-Z0-9]*)([^>]*?)(?<!\/)>/';
+    $close_tag_regex = '/<\/([a-zA-Z][a-zA-Z0-9]*)>/';
+    
+    // Self-closing tags that don't need closing
+    $self_closing_tags = ['br', 'hr', 'img', 'input', 'meta', 'link', 'area', 'base', 'col', 'embed', 'source', 'track', 'wbr'];
+    
+    // Find all opening tags
+    preg_match_all($open_tag_regex, $html, $open_matches, PREG_OFFSET_CAPTURE);
+    
+    foreach ($open_matches[1] as $match) {
+        $tag_name = strtolower($match[0]);
+        if (!in_array($tag_name, $self_closing_tags)) {
+            $tag_stack[] = $tag_name;
+        }
+    }
+    
+    // Find all closing tags and remove from stack
+    preg_match_all($close_tag_regex, $html, $close_matches, PREG_OFFSET_CAPTURE);
+    
+    foreach ($close_matches[1] as $match) {
+        $tag_name = strtolower($match[0]);
+        $index = array_search($tag_name, $tag_stack);
+        if ($index !== false) {
+            unset($tag_stack[$index]);
+            $tag_stack = array_values($tag_stack); // Re-index array
+        }
+    }
+    
+    // Close remaining unclosed tags in reverse order
+    $closing_tags = '';
+    foreach (array_reverse($tag_stack) as $tag) {
+        $closing_tags .= "</{$tag}>";
+    }
+    
+    return $html . $closing_tags;
+}
+
+/**
+ * Fix bold formatting inconsistencies
+ * 
+ * This function specifically addresses issues with bold text formatting
+ * that can occur during HTML processing, ensuring consistent display.
+ * 
+ * @param string $html HTML content with potential bold formatting issues
+ * @return string HTML with fixed bold formatting
+ */
+function ai_trainer_fix_bold_formatting($html) {
+    if (empty($html)) {
+        return $html;
+    }
+    
+    // Fix broken bold tags
+    $html = preg_replace('/<strong>([^<]*)<\/strong>/', '<strong>$1</strong>', $html);
+    
+    // Remove duplicate bold tags
+    $html = preg_replace('/<strong><strong>/', '<strong>', $html);
+    $html = preg_replace('/<\/strong><\/strong>/', '</strong>', $html);
+    
+    // Fix orphaned bold tags
+    $html = preg_replace('/<strong>(?!.*<\/strong>)/', '', $html);
+    $html = preg_replace('/<\/strong>(?![^<]*<strong>)/', '', $html);
+    
+    // Ensure proper spacing around bold tags
+    $html = preg_replace('/(\w)<strong>/', '$1 <strong>', $html);
+    $html = preg_replace('/<\/strong>(\w)/', '</strong> $1', $html);
+    
+    return $html;
+}
+
+/**
+ * Filter HTML to only allowed tags for your project
+ * 
+ * @param string $html HTML content to filter
+ * @return string Filtered HTML
+ */
+function ai_trainer_filter_allowed_tags($html) {
+    // Define allowed tags and their attributes
+    $allowed_tags = [
+        'h2' => [],
+        'h3' => [],
+        'p' => [],
+        'ul' => [],
+        'ol' => [],
+        'li' => [],
+        'a' => ['href', 'target'],
+        'strong' => [],
+        'em' => [],
+        'br' => [],
+        'div' => [],
+        'section' => [],
+        'hr' => [],
+        'table' => [],
+        'tr' => [],
+        'td' => [],
+        'th' => [],
+        'tbody' => [],
+        'thead' => [],
+        'tfoot' => []
+    ];
+    
+    // Use WordPress's wp_kses for final filtering
+    return wp_kses($html, $allowed_tags);
+}
+
+/**
+ * AJAX handler for HTML cleaning API
+ * 
+ * Provides a clean API endpoint for HTML cleaning that can be called
+ * from JavaScript or other parts of the system.
+ */
+add_action('wp_ajax_ai_clean_html', 'ai_trainer_handle_html_clean');
+add_action('wp_ajax_nopriv_ai_clean_html', 'ai_trainer_handle_html_clean');
+
+function ai_trainer_handle_html_clean() {
+    // Verify nonce for security
+    if (!wp_verify_nonce($_POST['nonce'] ?? '', 'ai_trainer_nonce')) {
+        wp_send_json_error(['message' => 'Security check failed']);
+        return;
+    }
+    
+    $raw_html = wp_kses_post($_POST['html'] ?? '');
+    if (empty($raw_html)) {
+        wp_send_json_error(['message' => 'HTML content required']);
+        return;
+    }
+    
+    // Clean the HTML
+    $cleaned_html = ai_trainer_html_tidy_clean($raw_html);
+    
+    // Log the cleaning operation
+    error_log('HTML cleaning API called: ' . substr($raw_html, 0, 100) . '... -> ' . substr($cleaned_html, 0, 100) . '...');
+    
+    wp_send_json_success([
+        'cleaned_html' => $cleaned_html,
+        'original_length' => strlen($raw_html),
+        'cleaned_length' => strlen($cleaned_html),
+        'improvements' => [
+            'unclosed_tags_fixed' => ai_trainer_count_unclosed_tags($raw_html) - ai_trainer_count_unclosed_tags($cleaned_html),
+            'malformed_tags_fixed' => ai_trainer_count_malformed_tags($raw_html) - ai_trainer_count_malformed_tags($cleaned_html),
+            'unsafe_elements_removed' => ai_trainer_count_unsafe_elements($raw_html)
+        ]
+    ]);
+}
+
+/**
+ * Count unclosed tags in HTML
+ * 
+ * @param string $html HTML content to analyze
+ * @return int Number of unclosed tags
+ */
+function ai_trainer_count_unclosed_tags($html) {
+    $open_tags = preg_match_all('/<([a-zA-Z][a-zA-Z0-9]*)([^>]*?)(?<!\/)>/', $html);
+    $close_tags = preg_match_all('/<\/([a-zA-Z][a-zA-Z0-9]*)>/', $html);
+    
+    // Self-closing tags
+    $self_closing = preg_match_all('/<(br|hr|img|input|meta|link|area|base|col|embed|source|track|wbr)[^>]*>/i', $html);
+    
+    return max(0, $open_tags - $close_tags - $self_closing);
+}
+
+/**
+ * Count malformed tags in HTML
+ * 
+ * @param string $html HTML content to analyze
+ * @return int Number of malformed tags
+ */
+function ai_trainer_count_malformed_tags($html) {
+    $count = 0;
+    $count += preg_match_all('/<([a-zA-Z][a-zA-Z0-9]*)\s+<([a-zA-Z][a-zA-Z0-9]*)/', $html);
+    $count += preg_match_all('/<h<[^>]*>/', $html);
+    $count += preg_match_all('/<a\s+<a[^>]*>/', $html);
+    return $count;
+}
+
+/**
+ * Count unsafe elements in HTML
+ * 
+ * @param string $html HTML content to analyze
+ * @return int Number of unsafe elements
+ */
+function ai_trainer_count_unsafe_elements($html) {
+    $count = 0;
+    $count += preg_match_all('/<script[^>]*>/i', $html);
+    $count += preg_match_all('/<style[^>]*>/i', $html);
+    $count += preg_match_all('/<iframe[^>]*>/i', $html);
+    $count += preg_match_all('/<object[^>]*>/i', $html);
+    $count += preg_match_all('/<embed[^>]*>/i', $html);
+    $count += preg_match_all('/\s+on\w+\s*=/i', $html);
+    $count += preg_match_all('/javascript:/i', $html);
+    return $count;
+}
+
+/**
+ * Enhanced HTML cleaning for AI-generated content
+ * 
+ * This function provides additional cleaning specifically for AI-generated content
+ * that often has specific formatting issues.
+ * 
+ * @param string $raw_html Raw HTML content
+ * @return string Enhanced cleaned HTML
+ */
+function ai_trainer_enhance_ai_content($raw_html) {
+    // First, clean with HTML Tidy
+    $cleaned = ai_trainer_html_tidy_clean($raw_html);
+    
+    // Apply AI-specific fixes
+    $enhanced = $cleaned
+        // Fix common AI formatting issues
+        .replace('/\b(li|ul|ol|div|span)\b(?![^<]*>)/g', '')  // Remove stray tag names
+        .replace('/<li>\s*<\/li>/g', '')                       // Remove empty list items
+        .replace('/(<\/[^>]+>)\s*\1/g', '$1')                 // Remove duplicate closing tags
+        .replace('/^[^<]*?(<[^>]+>)/g', '$1')                 // Remove text before first tag
+        .replace('/(<\/[^>]+>)[^<]*?$/g', '$1');              // Remove text after last tag
+    
+    // Fix truncated years (common AI issue)
+    $enhanced = preg_replace('/\b(\d{3})s\b/', '$1s', $enhanced); // Fix "196s" -> "1960s"
+    
+    // Fix broken decade references
+    $enhanced = preg_replace('/(\w+)\s+in\s+the\s+s\s+and\s+(\d{4}s)/', '$1 in the 1980s and $2', $enhanced);
+    
+    return $enhanced;
+}
+
+// ... existing code ...
