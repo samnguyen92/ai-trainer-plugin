@@ -1,5 +1,60 @@
 // Global functions - must be defined before DOM is ready
 
+// Global function for populating the ticket form with user query
+function populateTicketForm(userQuery) {
+    console.log('Populating ticket form with query:', userQuery);
+    
+    // Construct the message as specified
+    const ticketMessage = `I attempted to ask: "${userQuery}"
+The system responded that this was outside its scope.
+I believe this is a relevant question and would like the team to review it for inclusion.
+Thank you for your support.`;
+    
+    // Find the FluentForm question field
+    // Try multiple selectors to find the question field
+    const questionField = document.querySelector('input[name="question"], input[name="your_question"], textarea[name="question"], textarea[name="your_question"], .fluentform input[placeholder*="Question"], .fluentform textarea[placeholder*="Question"]');
+    
+    if (questionField) {
+        console.log('Found question field:', questionField);
+        questionField.value = ticketMessage;
+        
+        // Trigger input event to update any listeners
+        questionField.dispatchEvent(new Event('input', { bubbles: true }));
+        questionField.dispatchEvent(new Event('change', { bubbles: true }));
+        
+        // Scroll to the ticket form
+        const ticketWrapper = document.getElementById('ticket-wrapper');
+        if (ticketWrapper) {
+            ticketWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        // Log success (no user notification since it's automatic)
+        console.log('Ticket form automatically populated with user query');
+    } else {
+        console.log('Question field not found, trying alternative approach');
+        
+        // Alternative approach: try to find any textarea or input in the form
+        const formFields = document.querySelectorAll('.fluentform textarea, .fluentform input[type="text"]');
+        if (formFields.length > 0) {
+            // Use the last textarea or input (likely the question field)
+            const lastField = formFields[formFields.length - 1];
+            lastField.value = ticketMessage;
+            lastField.dispatchEvent(new Event('input', { bubbles: true }));
+            lastField.dispatchEvent(new Event('change', { bubbles: true }));
+            
+            // Scroll to the ticket form
+            const ticketWrapper = document.getElementById('ticket-wrapper');
+            if (ticketWrapper) {
+                ticketWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            
+            console.log('Ticket form automatically populated with user query (alternative method)');
+        } else {
+            console.error('No form fields found - ticket form could not be automatically populated');
+        }
+    }
+}
+
 // Global function for starting a new search from off-topic responses
 function startNewSearch() {
     console.log('🔍 Starting new search - reloading page');
@@ -270,6 +325,11 @@ jQuery(document).ready(function($) {
         
         $exaAnswer.append(offTopicBlock);
         $ticketWrapper.show();
+        
+        // Automatically populate the ticket form with the user's query
+        setTimeout(() => {
+            populateTicketForm(query);
+        }, 500); // Small delay to ensure the form is rendered
         
         // Log performance
         if (data.performance) {

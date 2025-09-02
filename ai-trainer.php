@@ -5003,6 +5003,9 @@ Respond with exactly one word: DRUG_RELATED or OFF_TOPIC";
      * @return string HTML formatted response for off-topic queries
      */
     private function get_off_topic_response() {
+        // Get the user's original query from the current request
+        $user_query = isset($_POST['query']) ? sanitize_text_field($_POST['query']) : '';
+        
         return '
         <div class="off-topic-response" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 16px; padding: clamp(16px, 3vw, 32px); margin: 20px 0; color: white; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); max-width: min(100%, 800px); margin-left: auto; margin-right: auto; overflow: hidden;">
             <h2 style="text-align: center; margin-bottom: clamp(16px, 3vw, 24px); font-size: clamp(18px, 4vw, 28px); color: white; line-height: 1.3;">🔬 Psybrary Scope Notice</h2>
@@ -5102,6 +5105,13 @@ Respond with exactly one word: DRUG_RELATED or OFF_TOPIC";
                         <p style="margin: 0; font-size: 13px; line-height: 1.3; color: white;">What should I do to prepare for my first mushroom trip?</p>
                         <div style="position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #a855f7;">→</div>
                     </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <p style="font-size: 14px; color: #a1a1aa; margin-top: 8px; line-height: 1.4; background: rgba(139, 92, 246, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(139, 92, 246, 0.2);">
+                        💡 <strong>Do you think the Psybrary should have answered this?</strong><br>
+                        Your question is already in the ticket form—just review and submit.
+                    </p>
                 </div>
                 
                 <div style="text-align: center;">
