@@ -251,8 +251,6 @@ jQuery(document).ready(function($) {
         
         // Add special styling for off-topic responses
         offTopicBlock.css({
-            'border-left': '4px solid #ff9800',
-            'background-color': '#fff3e0',
             'padding': '20px',
             'border-radius': '8px',
             'margin': '20px 0'
