@@ -5004,43 +5004,43 @@ Respond with exactly one word: DRUG_RELATED or OFF_TOPIC";
      */
     private function get_off_topic_response() {
         return '
-        <div class="off-topic-response" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 16px; padding: 16px; margin: 20px 0; color: white; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); max-width: 100%; overflow: hidden;">
-            <h2 style="text-align: center; margin-bottom: 20px; font-size: 20px; color: white; line-height: 1.3;">🔬 Psybrary Scope Notice</h2>
-            <p style="font-size: 15px; margin-bottom: 16px; text-align: center; line-height: 1.4;">It looks like your question may be outside The Psybrary\'s expertise.</p>
+        <div class="off-topic-response" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 16px; padding: clamp(16px, 3vw, 32px); margin: 20px 0; color: white; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); max-width: min(100%, 800px); margin-left: auto; margin-right: auto; overflow: hidden;">
+            <h2 style="text-align: center; margin-bottom: clamp(16px, 3vw, 24px); font-size: clamp(18px, 4vw, 28px); color: white; line-height: 1.3;">🔬 Psybrary Scope Notice</h2>
+            <p style="font-size: clamp(14px, 2.5vw, 18px); margin-bottom: clamp(12px, 2.5vw, 20px); text-align: center; line-height: 1.4;">It looks like your question may be outside The Psybrary\'s expertise.</p>
             
-            <div style="background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.1);">
-                <p style="font-size: 15px; margin-bottom: 16px; text-align: center; line-height: 1.4;">The Psybrary is a specialized knowledge base focused on <strong style="color: #a855f7;">psychedelics, substances, and related research</strong>.</p>
+            <div style="background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: clamp(16px, 3vw, 24px); margin-bottom: clamp(16px, 3vw, 24px); border: 1px solid rgba(255, 255, 255, 0.1);">
+                <p style="font-size: clamp(14px, 2.5vw, 18px); margin-bottom: clamp(12px, 2.5vw, 20px); text-align: center; line-height: 1.4;">The Psybrary is a specialized knowledge base focused on <strong style="color: #a855f7;">psychedelics, substances, and related research</strong>.</p>
                 
-                <p style="font-size: 15px; margin-bottom: 16px; font-weight: 500; text-align: center; line-height: 1.4;">For other reliable info, you might try:</p>
+                <p style="font-size: clamp(14px, 2.5vw, 18px); margin-bottom: clamp(12px, 2.5vw, 20px); font-weight: 500; text-align: center; line-height: 1.4;">For other reliable info, you might try:</p>
                 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px;">
-                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center;">
-                        <h4 style="color: #a855f7; margin: 0 0 6px 0; font-size: 13px; font-weight: 600;">General knowledge</h4>
-                        <div style="font-size: 12px; display: flex; flex-direction: column; gap: 4px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: clamp(8px, 1.5vw, 16px);">
+                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: clamp(10px, 2vw, 16px); text-align: center;">
+                        <h4 style="color: #a855f7; margin: 0 0 clamp(4px, 1vw, 8px) 0; font-size: clamp(12px, 2vw, 16px); font-weight: 600;">General knowledge</h4>
+                        <div style="font-size: clamp(11px, 1.8vw, 14px); display: flex; flex-direction: column; gap: clamp(3px, 0.8vw, 6px);">
                             <a href="https://www.google.com" target="_blank" style="color: #60a5fa; text-decoration: none;">Google</a>
                             <a href="https://www.wikipedia.org" target="_blank" style="color: #60a5fa; text-decoration: none;">Wikipedia</a>
                         </div>
                     </div>
                     
-                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center;">
-                        <h4 style="color: #a855f7; margin: 0 0 6px 0; font-size: 13px; font-weight: 600;">Health & medicine</h4>
-                        <div style="font-size: 12px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: clamp(10px, 2vw, 16px); text-align: center;">
+                        <h4 style="color: #a855f7; margin: 0 0 clamp(4px, 1vw, 8px) 0; font-size: clamp(12px, 2vw, 16px); font-weight: 600;">Health & medicine</h4>
+                        <div style="font-size: clamp(11px, 1.8vw, 14px); display: flex; flex-direction: column; gap: clamp(3px, 0.8vw, 6px);">
                             <a href="https://www.mayoclinic.org" target="_blank" style="color: #60a5fa; text-decoration: none;">Mayo Clinic</a>
                             <a href="https://medlineplus.gov" target="_blank" style="color: #60a5fa; text-decoration: none;">MedlinePlus</a>
                         </div>
                     </div>
                     
-                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center;">
-                        <h4 style="color: #a855f7; margin: 0 0 6px 0; font-size: 13px; font-weight: 600;">Academic research</h4>
-                        <div style="font-size: 12px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: clamp(10px, 2vw, 16px); text-align: center;">
+                        <h4 style="color: #a855f7; margin: 0 0 clamp(4px, 1vw, 8px) 0; font-size: clamp(12px, 2vw, 16px); font-weight: 600;">Academic research</h4>
+                        <div style="font-size: clamp(11px, 1.8vw, 14px); display: flex; flex-direction: column; gap: clamp(3px, 0.8vw, 6px);">
                             <a href="https://scholar.google.com" target="_blank" style="color: #60a5fa; text-decoration: none;">Google Scholar</a>
                             <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank" style="color: #60a5fa; text-decoration: none;">PubMed</a>
                         </div>
                     </div>
                     
-                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center;">
-                        <h4 style="color: #a855f7; margin: 0 0 6px 0; font-size: 13px; font-weight: 600;">Tech support</h4>
-                        <div style="font-size: 12px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: clamp(10px, 2vw, 16px); text-align: center;">
+                        <h4 style="color: #a855f7; margin: 0 0 clamp(4px, 1vw, 8px) 0; font-size: clamp(12px, 2vw, 16px); font-weight: 600;">Tech support</h4>
+                        <div style="font-size: clamp(11px, 1.8vw, 14px); display: flex; flex-direction: column; gap: clamp(3px, 0.8vw, 6px);">
                             <a href="https://stackoverflow.com" target="_blank" style="color: #60a5fa; text-decoration: none;">Stack Overflow</a>
                         </div>
                     </div>
