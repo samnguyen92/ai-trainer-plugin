@@ -1987,3 +1987,267 @@
         max-width: 200px;
     }
 }
+
+/* Enhanced Content Formatting - Improved Aesthetics */
+
+/* Base content styling */
+.exa-answer-streaming {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: #ffffff;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Enhanced heading hierarchy */
+.exa-answer-streaming h1 {
+    font-size: 2.2em;
+    font-weight: 700;
+    margin: 1.5em 0 0.8em 0;
+    color: #ffffff;
+    border-bottom: 2px solid rgba(59, 178, 115, 0.3);
+    padding-bottom: 0.5em;
+}
+
+.exa-answer-streaming h2 {
+    font-size: 1.8em;
+    font-weight: 600;
+    margin: 1.3em 0 0.6em 0;
+    color: #ffffff;
+    border-left: 4px solid #3bb273;
+    padding-left: 0.8em;
+}
+
+.exa-answer-streaming h3 {
+    font-size: 1.4em;
+    font-weight: 600;
+    margin: 1.1em 0 0.5em 0;
+    color: #ffffff;
+}
+
+.exa-answer-streaming h4 {
+    font-size: 1.2em;
+    font-weight: 500;
+    margin: 1em 0 0.4em 0;
+    color: #ffffff;
+}
+
+.exa-answer-streaming h5 {
+    font-size: 1.1em;
+    font-weight: 500;
+    margin: 0.9em 0 0.3em 0;
+    color: #ffffff;
+}
+
+.exa-answer-streaming h6 {
+    font-size: 1em;
+    font-weight: 500;
+    margin: 0.8em 0 0.3em 0;
+    color: #ffffff;
+}
+
+/* Enhanced paragraph styling */
+.exa-answer-streaming p {
+    margin: 0.8em 0;
+    line-height: 1.7;
+    text-align: justify;
+    hyphens: auto;
+}
+
+/* Enhanced list styling */
+.exa-answer-streaming ul,
+.exa-answer-streaming ol {
+    margin: 1em 0;
+    padding-left: 2em;
+}
+
+.exa-answer-streaming li {
+    margin: 0.5em 0;
+    line-height: 1.6;
+}
+
+.exa-answer-streaming ul li {
+    list-style-type: disc;
+    list-style-color: #3bb273;
+}
+
+.exa-answer-streaming ol li {
+    list-style-type: decimal;
+    list-style-color: #3bb273;
+}
+
+/* Enhanced link styling */
+.exa-answer-streaming a {
+    color: #3bb273;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.exa-answer-streaming a:hover {
+    color: #4cdb8c;
+    border-bottom-color: #4cdb8c;
+}
+
+/* Enhanced strong and emphasis */
+.exa-answer-streaming strong {
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.exa-answer-streaming em {
+    font-style: italic;
+    color: #e0e0e0;
+}
+
+/* Enhanced table styling */
+.exa-answer-streaming table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5em 0;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.exa-answer-streaming th {
+    background: rgba(59, 178, 115, 0.2);
+    color: #ffffff;
+    font-weight: 600;
+    padding: 12px;
+    text-align: left;
+    border-bottom: 2px solid rgba(59, 178, 115, 0.3);
+}
+
+.exa-answer-streaming td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+}
+
+.exa-answer-streaming tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Enhanced blockquote styling */
+.exa-answer-streaming blockquote {
+    margin: 1.5em 0;
+    padding: 1em 1.5em;
+    background: rgba(59, 178, 115, 0.1);
+    border-left: 4px solid #3bb273;
+    border-radius: 0 8px 8px 0;
+    font-style: italic;
+    color: #e0e0e0;
+}
+
+/* Enhanced code styling */
+.exa-answer-streaming code {
+    background: rgba(0, 0, 0, 0.3);
+    color: #3bb273;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+}
+
+/* Enhanced pre styling */
+.exa-answer-streaming pre {
+    background: rgba(0, 0, 0, 0.4);
+    color: #ffffff;
+    padding: 1em;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1em 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Enhanced hr styling */
+.exa-answer-streaming hr {
+    border: none;
+    border-top: 2px solid rgba(59, 178, 115, 0.3);
+    margin: 2em 0;
+}
+
+/* Enhanced section styling */
+.exa-answer-streaming .section {
+    margin: 2em 0;
+    padding: 1.5em;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Enhanced key information styling */
+.exa-answer-streaming .key-info {
+    background: rgba(59, 178, 115, 0.1);
+    border: 1px solid rgba(59, 178, 115, 0.3);
+    border-radius: 8px;
+    padding: 1em;
+    margin: 1em 0;
+}
+
+/* Enhanced safety tips styling */
+.exa-answer-streaming .safety-tips {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 8px;
+    padding: 1em;
+    margin: 1em 0;
+}
+
+/* Enhanced warning styling */
+.exa-answer-streaming .warning {
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: 8px;
+    padding: 1em;
+    margin: 1em 0;
+}
+
+/* Enhanced responsive design */
+@media (max-width: 768px) {
+    .exa-answer-streaming h1 { font-size: 1.8em; }
+    .exa-answer-streaming h2 { font-size: 1.5em; }
+    .exa-answer-streaming h3 { font-size: 1.3em; }
+    .exa-answer-streaming h4 { font-size: 1.1em; }
+    .exa-answer-streaming h5 { font-size: 1em; }
+    .exa-answer-streaming h6 { font-size: 0.95em; }
+    
+    .exa-answer-streaming ul,
+    .exa-answer-streaming ol {
+        padding-left: 1.5em;
+    }
+    
+    .exa-answer-streaming table {
+        font-size: 0.9em;
+    }
+    
+    .exa-answer-streaming th,
+    .exa-answer-streaming td {
+        padding: 8px;
+    }
+}
+
+/* Enhanced print styles */
+@media print {
+    .exa-answer-streaming {
+        color: #000000;
+        background: #ffffff;
+    }
+    
+    .exa-answer-streaming h1,
+    .exa-answer-streaming h2,
+    .exa-answer-streaming h3,
+    .exa-answer-streaming h4,
+    .exa-answer-streaming h5,
+    .exa-answer-streaming h6 {
+        color: #000000;
+        border-color: #000000;
+    }
+    
+    .exa-answer-streaming a {
+        color: #000000;
+        text-decoration: underline;
+    }
+}

@@ -2489,7 +2489,7 @@ Generate ONLY the HTML content, nothing else. Each tag must be complete and prop
         $memory_start = memory_get_usage();
         
         try {
-            error_log('DEBUG: handle_exa_ajax started for query: ' . ($_POST['query'] ?? 'none'));
+            error_log('DEBUG: handle_exa_ajax started for query: ' . ($_POST['query'] ?? 'none') . ' at ' . date('Y-m-d H:i:s'));
             
             // Basic validation
             if (empty($_POST['query'])) {
@@ -2507,7 +2507,11 @@ Generate ONLY the HTML content, nothing else. Each tag must be complete and prop
             error_log('DEBUG: Conversation history: ' . print_r($conversation_history, true));
             
             // OFF-TOPIC DETECTION: Check if query is related to drugs/substances
-            if (!$this->is_psychedelic_related_query($query)) {
+            error_log('DEBUG: About to check if query is psychedelic-related: ' . $query);
+            $is_psychedelic = $this->is_psychedelic_related_query($query);
+            error_log('DEBUG: is_psychedelic_related_query returned: ' . ($is_psychedelic ? 'TRUE' : 'FALSE'));
+            
+            if (!$is_psychedelic) {
                 error_log('DEBUG: Off-topic query detected: ' . $query);
                 
                 // Log the off-topic query for analytics
@@ -4708,6 +4712,10 @@ Generate ONLY the HTML content, nothing else. Each tag must be complete and prop
         
         // Debug logging for off-topic detection
         error_log('DEBUG: OpenAI-powered off-topic detection for query: ' . $query_lower);
+                error_log('DEBUG: Query contains peyote: ' . (strpos($query_lower, 'peyote') !== false ? 'YES' : 'NO'));
+        error_log('DEBUG: Query contains LSD: ' . (strpos($query_lower, 'lsd') !== false ? 'YES' : 'NO'));
+        error_log('DEBUG: Query contains psychedelic: ' . (strpos($query_lower, 'psychedelic') !== false ? 'YES' : 'NO'));
+        error_log('DEBUG: Query contains synthetic: ' . (strpos($query_lower, 'synthetic') !== false ? 'YES' : 'NO'));
         
         // Step 1: Quick check for nonsensical or malicious queries (keep this simple check)
         if ($this->is_nonsensical_query($query_lower) !== false) {
@@ -4715,7 +4723,19 @@ Generate ONLY the HTML content, nothing else. Each tag must be complete and prop
             return false;
         }
         
-        // Step 2: Use OpenAI to classify the query intent
+        // Step 2: Quick check for obvious psychedelic terms before calling OpenAI
+        $psychedelic_terms = ['peyote', 'lsd', 'psilocybin', 'mdma', 'dmt', 'ayahuasca', 'mescaline', 'mushroom', 'psychedelic', 'hallucinogen', 'entheogen'];
+        error_log('DEBUG: Checking for psychedelic terms in query: ' . $query_lower);
+        foreach ($psychedelic_terms as $term) {
+            $found = strpos($query_lower, $term) !== false;
+            error_log('DEBUG: Checking term "' . $term . '": ' . ($found ? 'FOUND' : 'not found'));
+            if ($found) {
+                error_log('DEBUG: Found psychedelic term "' . $term . '" in query, classifying as DRUG_RELATED');
+                return true;
+            }
+        }
+        
+        // Step 3: Use OpenAI to classify the query intent
         return $this->openai_classify_query_intent($query);
     }
 
@@ -4740,7 +4760,7 @@ Generate ONLY the HTML content, nothing else. Each tag must be complete and prop
 Classify this user query as either DRUG_RELATED or OFF_TOPIC:
 
 DRUG_RELATED queries are about:
-- Psychedelic substances (psilocybin, LSD, MDMA, DMT, ayahuasca, mescaline, etc.)
+- Psychedelic substances (psilocybin, LSD, MDMA, DMT, ayahuasca, mescaline, peyote, psilocybe mushrooms, magic mushrooms, etc.)
 - Stimulants (cocaine, amphetamines, methamphetamine, caffeine, etc.)
 - Depressants (alcohol, benzodiazepines, barbiturates, opioids, etc.)
 - Cannabis and cannabinoids (THC, CBD, marijuana, hemp, etc.)
@@ -4772,6 +4792,8 @@ OFF_TOPIC queries are about:
 - Any other non-drug/substance topics
 
 Query: \"$query\"
+
+Important: If the query mentions ANY psychedelic substances (including peyote, LSD, psilocybin, etc.) or compares different drugs/substances, it should be classified as DRUG_RELATED.
 
 Respond with exactly one word: DRUG_RELATED or OFF_TOPIC";
 
@@ -4874,7 +4896,7 @@ Respond with exactly one word: DRUG_RELATED or OFF_TOPIC";
             '/\bif\s*\(|\bfor\s*\(|\bwhile\s*\(/', // Control structures
             '/\bvar\s+|\blet\s+|\bconst\s+/', // Variable declarations
             '/\bclass\s+|\bdef\s+/',         // Class/function definitions
-            '/\bimport\s+|\bfrom\s+/',       // Import statements
+            '/\bimport\s+[a-zA-Z][a-zA-Z0-9_]*\s*;?$|\bfrom\s+[a-zA-Z][a-zA-Z0-9_.]*\s+import\s+[a-zA-Z]|\bimport\s*\([^)]+\)/',       // Import statements (very specific)
             '/\breturn\s+|\bprint\s*\(/',    // Common code keywords
             '/\$[a-zA-Z_]/',                 // PHP variables
             '/\<\?php|\?\>/',                // PHP tags
@@ -4929,9 +4951,9 @@ Respond with exactly one word: DRUG_RELATED or OFF_TOPIC";
             '/\btoken\s+limit|\bcontext\s+window/', // Technical AI terms
             '/\btemperature\s*=|\btop_p\s*=/', // AI parameters
             '/\bmax_tokens\s*=|\bstop\s+sequence/', // Generation parameters  
-            '/\bmodel\s+weights|\bfine.?tun/', // Model manipulation
+            // '/\bmodel\s+weights|\bfine.?tun/', // Model manipulation - disabled due to regex error
             '/\bprompt\s+engineering|\bchain\s+of\s+thought/', // Advanced prompting
-            '/\bfew.?shot\s+learning|\bzero.?shot/', // Learning techniques
+            // '/\bfew.?shot\s+learning|\bzero.?shot/', // Learning techniques - disabled due to regex error
             
             // Common hacking terms
             '/\bexploit\s+|\bpayload\s+|\bshellcode/', // Exploit terms

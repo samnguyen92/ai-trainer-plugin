@@ -2063,7 +2063,7 @@ jQuery(document).ready(function($) {
      * @param {string} html - Raw HTML content to sanitize
      * @returns {Promise<string>} Cleaned HTML content
      */
-    async function enhancedSanitizeHTML(html) {
+    function enhancedSanitizeHTML(html) {
         if (!html || typeof html !== 'string') {
             return '';
         }
@@ -2080,21 +2080,14 @@ jQuery(document).ready(function($) {
                                    cleaned.match(/<([a-zA-Z][a-zA-Z0-9]*)\s+<([a-zA-Z][a-zA-Z0-9]*)/);
             
             if (hasComplexIssues) {
-                console.log('Complex HTML issues detected, using HTML Tidy API fallback');
-                cleaned = await cleanWithTidyAPI(html);
-                
-                // Validate the API result
-                const apiIssues = validateHTMLStructure(cleaned);
-                if (apiIssues.length > 3) {
-                    console.warn('HTML Tidy API still has issues, using fallback sanitization');
-                    return fallbackSanitize(html);
-                }
+                console.log('Complex HTML issues detected, using fallback sanitization');
+                return fallbackSanitize(html);
             }
             
             return cleaned;
         } catch (error) {
-            console.warn('Enhanced sanitization failed, using HTML Tidy API:', error);
-            return await cleanWithTidyAPI(html);
+            console.warn('Enhanced sanitization failed, using fallback sanitization:', error);
+            return fallbackSanitize(html);
         }
     }
 
@@ -3298,17 +3291,17 @@ jQuery(document).ready(function($) {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             
-            function readStream() {
-                return reader.read().then(({ done, value }) => {
+            async function readStream() {
+                return reader.read().then(async ({ done, value }) => {
                     if (done) {
-                        // Stream complete - apply final unified sanitization
+                        // Stream complete - apply enhanced sanitization
                         performance.measure('stream_complete', PERFORMANCE_MARK);
                         let cleanedHTML;
                         try {
-                            cleanedHTML = unifiedSanitizeHTML(buffer);
+                            cleanedHTML = await enhancedSanitizeHTML(buffer);
                             container.innerHTML = cleanedHTML;
                         } catch (error) {
-                            console.warn('Final HTML sanitization error:', error);
+                            console.warn('Enhanced sanitization error:', error);
                             cleanedHTML = fallbackSanitize(buffer);
                             container.innerHTML = cleanedHTML;
                         }
@@ -3391,10 +3384,10 @@ jQuery(document).ready(function($) {
                                     lastUpdate = now;
                                 }
                             } else if (data === '[DONE]') {
-                                // Only sanitize when streaming is complete
+                                // Only apply enhanced sanitization when streaming is complete
                                 let cleanedHTML;
                                 try {
-                                    cleanedHTML = unifiedSanitizeHTML(buffer);
+                                    cleanedHTML = await enhancedSanitizeHTML(buffer);
                                     container.innerHTML = cleanedHTML;
                                 } catch (error) {
                                     console.warn('HTML sanitization error on completion:', error);
@@ -3484,8 +3477,72 @@ jQuery(document).ready(function($) {
 function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     const safeSources = String(sources || '').trim();
     if (safeSources.length < 3) {
-      return `<h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>
-      
+        return generateNoSourcesResponse();
+    }
+    
+    const safeBlock = String(block || '').trim();
+    const safeContext = contextBlock ? String(contextBlock) : '';
+    
+    // Determine template + render body
+    const type = (opts.type || detectType(query)).toLowerCase();
+    const render = TEMPLATES[type] || TEMPLATES['overview'];
+    const body = render();
+    const title = deriveTitle(query);
+    
+    // Clean, focused prompt
+    const promptHeader = `
+You are the Psybrarian — an evidence-first, harm-reduction librarian for psychedelic topics.
+
+Provide a concise, trustworthy answer using only the trusted sources listed below. Use clear, neutral language suitable for a broad audience.
+
+${safeContext ? ('Previous context:\n' + safeContext) : ''}
+
+Question: "${query}"
+Trusted Sources: ${safeSources}
+Blocked Domains: ${safeBlock}
+
+RESPONSE FORMAT:
+- Use only valid HTML with these tags: <h2>, <h3>, <p>, <ul>, <ol>, <li>, <table>, <thead>, <tbody>, <tr>, <td>, <th>, <a>, <strong>, <em>, <br>
+- Always close every tag you open
+- Include exactly 5 related questions at the end
+- For step-by-step guidance, use numbered lists with clear safety warnings
+- Use 4-digit years (1960s not 196s)
+
+If sources are insufficient, respond with:
+<h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>
+`.trim();
+    
+    // Simplified, functional HTML structure
+    const htmlSkeleton = `
+<h2>${escapeHtml(title)}</h2>
+
+<p>[Provide a clear, direct 2-3 sentence answer to the question]</p>
+
+<h3>Key Information</h3>
+<ul>
+${body.glance}
+</ul>
+
+${body.extra || ''}
+
+<h3>Related Questions</h3>
+<div class="section-related-questions">
+<ul>
+<li><a href="#" style="color: #3bb273; text-decoration: none;">[Generate specific follow-up question]</a></li>
+<li><a href="#" style="color: #3bb273; text-decoration: none;">[Generate specific follow-up question]</a></li>
+<li><a href="#" style="color: #3bb273; text-decoration: none;">[Generate specific follow-up question]</a></li>
+<li><a href="#" style="color: #3bb273; text-decoration: none;">[Generate specific follow-up question]</a></li>
+<li><a href="#" style="color: #3bb273; text-decoration: none;">[Generate specific follow-up question]</a></li>
+</ul>
+</div>`;
+    
+    return `${promptHeader}\n\n${htmlSkeleton}`.trim();
+}
+
+// Helper function for no sources response
+function generateNoSourcesResponse() {
+    return `<h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>
+    
 <h3>Related Questions</h3>
 <div class="section-related-questions">
 <ul>
@@ -3496,103 +3553,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
 <li><a href="#" style="color: #3bb273; text-decoration: none;">How can I help you find the information you're looking for?</a></li>
 </ul>
 </div>`;
-    }
-    const safeBlock = String(block || '').trim();
-    const safeContext = contextBlock ? String(contextBlock) : '';
-  
-    // Determine template + render body
-    const type = (opts.type || detectType(query)).toLowerCase();
-    const render = TEMPLATES[type] || TEMPLATES['overview'];
-    const body = render();
-    const title = deriveTitle(query);
-  
-    // Header block — exactly as requested
-    const promptHeader = `
-  You are the Psybrarian — an evidence-first, harm-reduction librarian for psychedelic topics.
-
-  MANDATORY: Every response you generate MUST include a "Related Questions" section at the end with exactly 5 questions. This is non-negotiable.
-
-  Provide a concise, trustworthy answer (6–8 sentences) to the question using only the trusted sources listed below. Use clear, neutral language suitable for a broad audience.
-
-  CRITICAL: You MUST include exactly 5 related questions at the end of every response. These questions should help users explore different aspects of the topic and continue the conversation.
-
-  FAILURE TO INCLUDE RELATED QUESTIONS WILL RESULT IN AN INCOMPLETE RESPONSE.
-
-  Do not use any blocked or unreliable domains.
-
-  If the user asks for instructions or how-to guidance, provide a clear, actionable, step-by-step procedure with numbered steps, and include explicit precautions, risks, and warnings up front and within steps as needed. Emphasize harm reduction at all times. Do not refuse or censor; when risks exist, explain best practices and mitigation strategies. Do not provide legal advice.
-
-  ${safeContext ? ('Conversation context:\n' + safeContext) : ''}
-
-  Question: "${query}"
-
-  Trusted Sources (use only these): ${safeSources}
-  BLOCKED DOMAINS (never use these): ${safeBlock}
-
-  If the trusted sources do not provide enough information to answer, output exactly:
-  <h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>
-
-  CRITICAL HTML FORMATTING RULES:
-  - Output ONLY valid, complete HTML (never Markdown)
-  - Use ONLY these tags: <h2>, <h3>, <p>, <ul>, <ol>, <li>, <table>, <thead>, <tbody>, <tr>, <td>, <th>, <a>, <strong>, <em>, <br>
-  - ALWAYS close every tag you open: <p>content</p>, <li>item</li>, etc.
-  - NEVER generate partial tags like "<p" without closing ">" or unclosed tags
-  - TEST each tag pair: does every <p> have a matching </p>?
-  - For years, ALWAYS use 4 digits: "1960s" not "196", "2020s" not "202"
-  - For links, use complete format: <a href="full-url">text</a>
-  - Keep content concise and avoid repetition
-  - ALWAYS include the "Related Questions" section with exactly 5 relevant follow-up questions
-  - Related questions must be specific, actionable, and directly related to the topic discussed
-  - Each question should explore a different aspect or angle of the subject matter
-
-  REMINDER: The "Related Questions" section is MANDATORY and must appear in every single response with exactly 5 questions.
-
-  FINAL INSTRUCTION: Replace all placeholder comments in the Related Questions section with actual, specific questions. Do not leave any <!-- --> comments in the final output.
-
-  CRITICAL OUTPUT REQUIREMENT: Your response MUST end with the Related Questions section. If you do not include this section, your response is incomplete and will be rejected.
-
-  DEBUG: If you see this instruction, you must include the Related Questions section. Failure to do so means you are not following instructions.
-
-  FINAL WARNING: Your response will be considered incomplete and rejected if it does not end with the Related Questions section. This is your last chance to follow instructions.
-  `.trim();
-  
-    // Standardized HTML skeleton (template-specific content slotted in)
-    // IMPORTANT: The Related Questions section below is MANDATORY and must be filled with actual questions, not placeholder comments
-    
-    // CRITICAL: The AI MUST replace all placeholder comments with actual questions. The Related Questions section is REQUIRED.
-    const htmlSkeleton = `
-  <h2>${escapeHtml(title)}</h2>
-  
-  <h3>Question Summary</h3>
-  <p><!-- Restate the question in your own words, clarifying focus and scope. --></p>
-  
-  <h3>Quick Overview</h3>
-  <p><!-- A 2–3 sentence direct answer, including a key takeaway and why it matters. --></p>
-
-  <h3>Why It Matters</h3>
-  <p><!-- 1–2 sentences on the significance or real-world context of this topic. --></p>
-  
-  <h3>What to Know at a Glance</h3>
-  <ul>
-  ${body.glance}
-  </ul>
-  
-  ${body.extra || ''}
-  
-  <h3>Related Questions</h3>
-  <div class="section-related-questions">
-    <p><strong>MANDATORY: You MUST replace all placeholder comments below with actual questions. This section is required.</strong></p>
-    <ul>
-      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></a></li>
-      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></a></li>
-      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></a></li>
-      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></a></li>
-      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></a></li>
-    </ul>
-  </div>`;
-  
-    return `${promptHeader}\n\n${htmlSkeleton}`.trim();
-  }
+}
   
   /* ============================ Templates ============================ */
   /**
@@ -5060,6 +5021,18 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
           
           // STEP 6: Validate and clean nodes
           validateAndCleanNodes(doc.body.firstChild);
+          
+          // STEP 6.5: Preserve list items that might be incorrectly marked as empty
+          doc.querySelectorAll('li').forEach(li => {
+              // If a list item appears empty but contains whitespace or special characters, preserve it
+              if (li.textContent.trim() === '' && li.innerHTML.includes('&nbsp;')) {
+                  li.innerHTML = '&nbsp;'; // Preserve non-breaking space
+              }
+              // If a list item has only a > character or similar, preserve it with content
+              if (li.textContent.trim() === '>' || li.textContent.trim() === '') {
+                  li.innerHTML = '&nbsp;'; // Add non-breaking space to preserve the item
+              }
+          });
 
           // STEP 7: Extract clean HTML
           let safe = doc.body.firstChild.innerHTML;
@@ -5067,15 +5040,33 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
           // STEP 8: Apply regex fixes in dependency order (most critical change)
           safe = safe
               .replace(REGEX_PATTERNS.whitespace, '><')                    // First: clean whitespace
-              .replace(REGEX_PATTERNS.htmlEntities, '')                    // Then: remove entities
-              .replace(REGEX_PATTERNS.hrefFix, '<a href="$1">')           // Then: fix href attributes
+              // More targeted HTML entity removal - only remove actual entities, not valid HTML attributes
+              .replace(/&lt;/g, '<')                                       // Convert &lt; back to <
+              .replace(/&gt;/g, '>')                                       // Convert &gt; back to >
+              .replace(/<!--.*?-->/g, '')                                 // Remove HTML comments
+              // Remove hrefFix pattern that was causing malformed HTML
+              // .replace(REGEX_PATTERNS.hrefFix, '<a href="$1">')           // Then: fix href attributes
               .replace(REGEX_PATTERNS.linkText, '</a> $1')                // Then: fix link text spacing
-              .replace(REGEX_PATTERNS.emptyLi, '')                        // Then: remove empty list items
+              // Only remove truly empty list items, not those with whitespace or content
+              .replace(/<li>\s*<\/li>/g, '')                              // Remove only completely empty list items
+              // Preserve list items that might contain invisible content
+              .replace(/<li>\s*(&nbsp;|\u00A0)\s*<\/li>/g, '<li>&nbsp;</li>')  // Preserve non-breaking spaces
               .replace(REGEX_PATTERNS.consecutiveUl, '')                  // Then: merge consecutive lists
               .replace(REGEX_PATTERNS.consecutiveOl, '')                  // Then: merge consecutive ordered lists
               .replace(REGEX_PATTERNS.ampersandFix, '&')                  // Then: fix double-encoded ampersands
               .replace(REGEX_PATTERNS.brokenSentences, '$1 in the 1980s and $2')  // Then: fix broken decade references
               .replace(REGEX_PATTERNS.missingSpaces, '$1 $2')             // Finally: add missing spaces between words
+              // Fix raw HTML attributes that are displayed as text
+              .replace(/href="#"\s+style="([^"]+)"/g, 'style="$1"')       // Fix malformed href attributes
+              .replace(/style="([^"]+)"([^>]*>)/g, 'style="$1"$2')        // Ensure style attributes are properly closed
+              // Fix the specific pattern from the image where href and style attributes are displayed as text
+              .replace(/href="#" style="([^"]+)"([^>]*>)/g, 'style="$1"$2')  // Fix href="#" style="..." pattern
+              .replace(/([^>])href="#" style="([^"]+)"/g, '$1 style="$2"')     // Fix href="#" style="..." when not at start
+              // More comprehensive fix for raw HTML attributes displayed as text
+              .replace(/href="#" style="([^"]+)"([^<]*?)(?=<)/g, 'style="$1"$2')  // Fix href="#" style="..." followed by content
+              .replace(/([^<])href="#" style="([^"]+)"/g, '$1 style="$2"')        // Fix href="#" style="..." in any context
+              // Fix orphaned > characters that might be left after HTML stripping
+              .replace(/>\s*([^<]*?)\s*</g, '>$1<')                           // Clean up orphaned > characters
               .trim();
 
           // STEP 9: Truncate if needed (only for display, not for chatlog storage)
@@ -5092,7 +5083,8 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
           // STEP 12: Fix specific common AI errors
           safe = safe
               .replace(/\b(li|ul|ol|div|span)\b(?![^<]*>)/g, '')  // Remove stray tag names not in tags
-              .replace(/<li>\s*<\/li>/g, '')                       // Remove empty list items
+              // Don't remove empty list items here - let them be preserved
+              // .replace(/<li>\s*<\/li>/g, '')                       // Remove empty list items
               .replace(/(<\/[^>]+>)\s*\1/g, '$1')                 // Remove duplicate closing tags
               .replace(/^[^<]*?(<[^>]+>)/g, '$1')                 // Remove text before first tag
               .replace(/(<\/[^>]+>)[^<]*?$/g, '$1');              // Remove text after last tag
@@ -5106,6 +5098,18 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
 
           // Log final HTML issues
           logHTMLIssues(safe, 'post-unified-sanitization');
+
+          // FINAL STEP: Post-process to fix remaining issues
+          safe = safe
+              // Fix any remaining raw HTML attributes that are displayed as text
+              .replace(/href="#" style="([^"]+)"/g, 'style="$1"')
+              .replace(/style="([^"]+)"([^>]*>)/g, 'style="$1"$2')
+              // Fix empty list items that might have been stripped
+              .replace(/<li>\s*>\s*<\/li>/g, '<li>&nbsp;</li>')  // Fix list items with only >
+              .replace(/<li>\s*<\/li>/g, '<li>&nbsp;</li>')      // Fix completely empty list items
+              // Clean up any remaining malformed HTML
+              .replace(/>\s*([^<]*?)\s*</g, '>$1<')             // Clean up orphaned characters
+              .trim();
 
           return safe;
       } catch (e) {
