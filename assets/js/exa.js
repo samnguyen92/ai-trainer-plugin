@@ -1,4 +1,17 @@
-// Global copyToClipboard function - must be defined before DOM is ready
+// Global functions - must be defined before DOM is ready
+
+// Global function for starting a new search from off-topic responses
+function startNewSearch() {
+    console.log('🔍 Starting new search - reloading page');
+    
+    // Store a flag to focus on search input after reload
+    sessionStorage.setItem('focusSearchAfterReload', 'true');
+    
+    // Reload the page to get a fresh start
+    window.location.reload();
+}
+
+// Global copyToClipboard function
 function copyToClipboard(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
@@ -73,7 +86,19 @@ jQuery(document).ready(function($) {
         consecutiveOl: /<\/ol>\s*<ol>/g,
         whitespace: />\s+</g,
         htmlEntities: /(&lt;|&gt;|<>)|<!--.*?-->/gi,
-        javascript: /^javascript:/i
+        ampersandFix: /&amp;/g,
+        brokenSentences: /(\w+)\s+in\s+the\s+s\s+and\s+(\d{4}s)/g,  // Fix "in the s and 1990s"
+        missingSpaces: /(\w+)([A-Z][a-z]+)/g,  // Fix missing spaces between words
+        javascript: /^javascript:/i,
+        // New patterns for better HTML fixing
+        unclosedTags: /<([a-zA-Z][a-zA-Z0-9]*)([^>]*?)(?<!\/)>/g,
+        orphanedClosingTags: /<\/([a-zA-Z][a-zA-Z0-9]*)(?![^<]*>)/g,
+        malformedAttributes: /<([a-zA-Z][a-zA-Z0-9]*)\s+([^>]*?)(?<!\/)>/g,
+        doubleSpaces: /\s{2,}/g,
+        lineBreaks: /\n\s*\n/g,
+        emptyParagraphs: /<p>\s*<\/p>/g,
+        brokenLists: /<li[^>]*>\s*(?!.*<\/li>)/g,
+        unclosedQuotes: /([^"]*)"([^"]*)$/g
     };
 
     // Constants
@@ -89,6 +114,20 @@ jQuery(document).ready(function($) {
     // Initialize UI
     $exaQuestion.hide();
     $ticketWrapper.hide();
+    
+    // Check if we should focus on search input after reload
+    if (sessionStorage.getItem('focusSearchAfterReload') === 'true') {
+        sessionStorage.removeItem('focusSearchAfterReload');
+        
+        // Focus on search input and scroll to it
+        setTimeout(function() {
+            $exaInput.focus();
+            $('html, body').animate({
+                scrollTop: $exaInput.offset().top - 100
+            }, 500);
+            console.log('🎯 Focused on search input after reload');
+        }, 500);
+    }
     $exaAnswer.hide();
     
     // Initialize console debugging
@@ -187,6 +226,57 @@ jQuery(document).ready(function($) {
     
 
     
+    /**
+     * Handle off-topic response display
+     * 
+     * @param {Object} data - Response data containing off-topic message
+     * @param {string} query - Original user query
+     */
+    function handleOffTopicResponse(data, query) {
+        console.log('🚫 Off-topic query detected:', query);
+        
+        // Create a special off-topic answer block
+        const questionID = 'off-topic-' + Date.now();
+        const offTopicBlock = $(`
+            <div class="exa-answer-block off-topic-block" id="${questionID}">
+                <div class="exa-question-display">
+                    <h3>🔍 "${query}"</h3>
+                </div>
+                <div class="exa-answer-content off-topic-response">
+                    ${data.answer}
+                </div>
+            </div>
+        `);
+        
+        // Add special styling for off-topic responses
+        offTopicBlock.css({
+            'border-left': '4px solid #ff9800',
+            'background-color': '#fff3e0',
+            'padding': '20px',
+            'border-radius': '8px',
+            'margin': '20px 0'
+        });
+        
+        // Add click handlers for suggested questions
+        offTopicBlock.find('.related-questions-list li').on('click', function() {
+            const suggestedQuery = $(this).text();
+            $exaInput.val(suggestedQuery);
+            // Trigger search with the suggested query
+            $('#exa-form').trigger('submit');
+        });
+        
+        // Ensure the new search button is properly bound
+        // (The onclick attribute in HTML will handle the click)
+        
+        $exaAnswer.append(offTopicBlock);
+        $ticketWrapper.show();
+        
+        // Log performance
+        if (data.performance) {
+            console.log(`⚡ Off-topic detection completed in ${data.performance.total_time.toFixed(2)}ms`);
+        }
+    }
+
     // Pre-warming function for better performance
     function prewarmQuery(query) {
         // This function pre-warms common queries for faster response
@@ -223,6 +313,12 @@ jQuery(document).ready(function($) {
             }
 
             const data = response.data || {};
+            
+            // Handle off-topic responses
+            if (data.is_off_topic) {
+                handleOffTopicResponse(data, query);
+                return;
+            }
             const sources = data.sources || '';
             const blockedDomains = data.block_domains || '';
             const results = (data.search && data.search.results) ? data.search.results : [];
@@ -800,7 +896,7 @@ jQuery(document).ready(function($) {
         // Create the modern feedback container with share button
         const feedbackContainer = $(`
             <div class="modern-feedback-wrapper" style="margin-top: 20px;">
-                <div class="action-buttons" style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+                <div class="action-buttons" style="display: flex; justify-content: center; margin-bottom: 16px;">
                     <button class="share-btn modern" data-id="${chatlogId}" style="
                         display: flex;
                         align-items: center;
@@ -826,14 +922,9 @@ jQuery(document).ready(function($) {
         // Append to the answer block
         block.append(feedbackContainer);
         
-        // Initialize the modern feedback system for this block
-        if (window.FeedbackSystem) {
-            window.FeedbackSystem.createFeedbackUI(chatlogId, feedbackContainer);
-        } else {
-            console.warn('FeedbackSystem not loaded, falling back to basic feedback');
-            // Fallback to basic feedback if the new system isn't loaded
-            addBasicFeedback(feedbackContainer, chatlogId);
-        }
+        // Use simple feedback system (complex system disabled)
+        console.log('Using simple feedback system');
+        addBasicFeedback(feedbackContainer, chatlogId);
         
         // Add share button functionality
         feedbackContainer.find('.share-btn').on('click', function(e) {
@@ -1789,56 +1880,488 @@ jQuery(document).ready(function($) {
      * // Returns safe HTML for display
      */
     function sanitizeHTML(html) {
+        // Redirect to unified sanitization method to prevent conflicts
+        return unifiedSanitizeHTML(html);
+    }
+
+    /**
+     * Unified HTML sanitization combining all approaches
+     * 
+     * This is the single method that replaces all other sanitization methods.
+     * It combines structure repair, DOMParser processing, and regex cleanup
+     * in the correct order to prevent conflicts.
+     * 
+     * @param {string} html - Raw HTML content to sanitize
+     * @returns {string} Clean, validated HTML content
+     */
+    function unifiedSanitizeHTML(html) {
         if (!html || typeof html !== 'string') {
             return '';
         }
 
         try {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString('<div>' + html + '</div>', 'text/html');
+            // Log initial HTML issues for debugging
+            logHTMLIssues(html, 'pre-unified-sanitization');
 
-            // Remove only script and style tags
-            doc.querySelectorAll('script, style').forEach(el => el.remove());
-
-            // Fix list structure
-            fixListStructure(doc);
-
-            // Fix table structure
-            fixTableStructure(doc);
-
-            // Apply basic node cleaning for table-related tags
-            cleanTableNodes(doc.body.firstChild);
-
-            // Simple approach: just get innerHTML without complex node cleaning
-            let safe = doc.body.firstChild.innerHTML;
-
-            // Apply basic regex fixes only
-            safe = safe
-                .replace(REGEX_PATTERNS.hrefFix, '<a href="$1">')
-                .replace(REGEX_PATTERNS.linkText, '</a> $1')
-                .replace(REGEX_PATTERNS.emptyLi, '')
-                .replace(REGEX_PATTERNS.consecutiveUl, '')
-                .replace(REGEX_PATTERNS.consecutiveOl, '')
-                .replace(REGEX_PATTERNS.whitespace, '><')
+            // STEP 1: Pre-process and fix obvious structural issues
+            let processed = html
+                .replace(REGEX_PATTERNS.doubleSpaces, ' ')
+                .replace(REGEX_PATTERNS.lineBreaks, '\n')
+                .replace(REGEX_PATTERNS.emptyParagraphs, '')
                 .trim();
 
-            // Truncate if needed (only for display, not for chatlog storage)
+            // STEP 2: Fix malformed tags that can't be parsed
+            processed = fixUnclosedTags(processed);
+            processed = removeOrphanedClosingTags(processed);
+
+            // STEP 3: Use DOMParser for structure validation and cleaning
+            const parser = new DOMParser();
+            const doc = parser.parseFromString('<div>' + processed + '</div>', 'text/html');
+
+            // STEP 4: Remove unsafe elements
+            doc.querySelectorAll('script, style, iframe, object, embed').forEach(el => el.remove());
+
+            // STEP 5: Fix structure issues
+            fixListStructure(doc);
+            fixTableStructure(doc);
+            fixParagraphStructure(doc);
+            
+            // STEP 6: Validate and clean nodes
+            validateAndCleanNodes(doc.body.firstChild);
+
+            // STEP 7: Extract clean HTML
+            let safe = doc.body.firstChild.innerHTML;
+
+            // STEP 8: Apply regex fixes in dependency order (most critical change)
+            safe = safe
+                .replace(REGEX_PATTERNS.whitespace, '><')                    // First: clean whitespace
+                .replace(REGEX_PATTERNS.htmlEntities, '')                    // Then: remove entities
+                .replace(REGEX_PATTERNS.hrefFix, '<a href="$1">')           // Then: fix href attributes
+                .replace(REGEX_PATTERNS.linkText, '</a> $1')                // Then: fix link text spacing
+                .replace(REGEX_PATTERNS.emptyLi, '')                        // Then: remove empty list items
+                .replace(REGEX_PATTERNS.consecutiveUl, '')                  // Then: merge consecutive lists
+                .replace(REGEX_PATTERNS.consecutiveOl, '')                  // Then: merge consecutive ordered lists
+                .replace(REGEX_PATTERNS.ampersandFix, '&')                  // Then: fix double-encoded ampersands
+                .replace(REGEX_PATTERNS.brokenSentences, '$1 in the 1980s and $2')  // Then: fix broken decade references
+                .replace(REGEX_PATTERNS.missingSpaces, '$1 $2')             // Finally: add missing spaces between words
+                .trim();
+
+            // STEP 9: Truncate if needed (only for display, not for chatlog storage)
             if (safe.length > MAX_LENGTH) {
                 safe = truncateHTML(safe);
             }
 
-            // Apply green color to "Where to Learn More" section
+            // STEP 10: Apply special styling
             safe = applyWhereToLearnMoreStyling(safe);
 
-            // Fix truncated years that commonly get cut off
+            // STEP 11: Fix truncated years that commonly get cut off
             safe = fixTruncatedYears(safe);
+
+            // STEP 12: Fix specific common AI errors
+            safe = safe
+                .replace(/\b(li|ul|ol|div|span)\b(?![^<]*>)/g, '')  // Remove stray tag names not in tags
+                .replace(/<li>\s*<\/li>/g, '')                       // Remove empty list items
+                .replace(/(<\/[^>]+>)\s*\1/g, '$1')                 // Remove duplicate closing tags
+                .replace(/^[^<]*?(<[^>]+>)/g, '$1')                 // Remove text before first tag
+                .replace(/(<\/[^>]+>)[^<]*?$/g, '$1');              // Remove text after last tag
+
+            // STEP 13: Final validation check
+            const finalIssues = validateHTMLStructure(safe);
+            if (finalIssues.length > 3) {
+                console.warn('Unified sanitization produced issues, using fallback:', finalIssues);
+                return fallbackSanitize(html);
+            }
+
+            // Log final HTML issues
+            logHTMLIssues(safe, 'post-unified-sanitization');
 
             return safe;
         } catch (e) {
-            console.warn('Sanitize error:', e, 'Original HTML:', html);
-            return html; // Return original if parsing fails
+            console.warn('Unified sanitization error:', e, 'Original HTML:', html.substring(0, 200));
+            return fallbackSanitize(html);
         }
     }
+
+    /**
+     * Enhanced HTML sanitization with comprehensive fixing
+     * 
+     * @deprecated Use unifiedSanitizeHTML instead
+     * This function provides comprehensive HTML cleaning and fixing:
+     * - Fixes unclosed tags systematically
+     * - Removes orphaned closing tags
+     * - Validates HTML structure
+     * - Applies multiple layers of cleaning
+     * 
+     * @param {string} html - Raw HTML content to sanitize
+     * @returns {string} Enhanced sanitized HTML content
+     */
+    function enhancedSanitizeHTML(html) {
+        if (!html || typeof html !== 'string') {
+            return '';
+        }
+
+        try {
+            // Step 1: Pre-process and fix obvious issues
+            let processed = html
+                .replace(REGEX_PATTERNS.doubleSpaces, ' ')
+                .replace(REGEX_PATTERNS.lineBreaks, '\n')
+                .replace(REGEX_PATTERNS.emptyParagraphs, '')
+                .trim();
+
+            // Step 2: Fix unclosed tags
+            processed = fixUnclosedTags(processed);
+
+            // Step 3: Remove orphaned closing tags
+            processed = removeOrphanedClosingTags(processed);
+
+            // Step 4: Parse with DOMParser
+            const parser = new DOMParser();
+            const doc = parser.parseFromString('<div>' + processed + '</div>', 'text/html');
+
+            // Step 5: Remove unsafe elements
+            doc.querySelectorAll('script, style, iframe, object, embed').forEach(el => el.remove());
+
+            // Step 6: Fix structure issues
+            fixListStructure(doc);
+            fixTableStructure(doc);
+            fixParagraphStructure(doc);
+            
+            // Step 7: Clean and validate
+            validateAndCleanNodes(doc.body.firstChild);
+
+            // Step 8: Apply final fixes
+            let safe = doc.body.firstChild.innerHTML;
+            safe = applyFinalFixes(safe);
+
+            return safe;
+        } catch (e) {
+            console.warn('Enhanced sanitize error:', e, 'Original HTML:', html);
+            return fallbackSanitize(html);
+        }
+    }
+
+    /**
+     * Fix unclosed tags systematically
+     * 
+     * @param {string} html - HTML content to fix
+     * @returns {string} HTML with closed tags
+     */
+    function fixUnclosedTags(html) {
+        // First, fix malformed tags that can't be parsed properly
+        let result = html
+            // Fix malformed heading tags like <h< div="">
+            .replace(/<h<[^>]*>/g, '<h3>')
+            // Fix double opening tags
+            .replace(/<([a-zA-Z][a-zA-Z0-9]*)\s+<([a-zA-Z][a-zA-Z0-9]*)/g, '<$1')
+            // Fix malformed anchor tags
+            .replace(/<a\s+<a[^>]*>/g, '<a>');
+        
+        const tagStack = [];
+        const openTagRegex = /<([a-zA-Z][a-zA-Z0-9]*)([^>]*?)(?<!\/)>/g;
+        const closeTagRegex = /<\/([a-zA-Z][a-zA-Z0-9]*)>/g;
+        
+        let match;
+        
+        // Reset regex state
+        openTagRegex.lastIndex = 0;
+        closeTagRegex.lastIndex = 0;
+        
+        // Find all opening tags
+        while ((match = openTagRegex.exec(result)) !== null) {
+            const tagName = match[1].toLowerCase();
+            if (!['br', 'hr', 'img', 'input', 'meta', 'link'].includes(tagName)) {
+                tagStack.push(tagName);
+            }
+        }
+        
+        // Reset regex state
+        closeTagRegex.lastIndex = 0;
+        
+        // Find all closing tags and remove from stack
+        while ((match = closeTagRegex.exec(result)) !== null) {
+            const tagName = match[1].toLowerCase();
+            const index = tagStack.lastIndexOf(tagName);
+            if (index !== -1) {
+                tagStack.splice(index, 1);
+            }
+        }
+        
+        // Close remaining unclosed tags in reverse order
+        while (tagStack.length > 0) {
+            const tag = tagStack.pop();
+            result += `</${tag}>`;
+        }
+        
+        return result;
+    }
+
+    /**
+     * Remove orphaned closing tags
+     * 
+     * @param {string} html - HTML content to clean
+     * @returns {string} HTML without orphaned closing tags
+     */
+    function removeOrphanedClosingTags(html) {
+        return html.replace(/<\/([a-zA-Z][a-zA-Z0-9]*)(?![^<]*>)/g, '');
+    }
+
+    /**
+     * Fix paragraph structure
+     * 
+     * @param {Document} doc - DOM document to process
+     */
+    function fixParagraphStructure(doc) {
+        doc.querySelectorAll('p').forEach(p => {
+            // Remove empty paragraphs
+            if (!p.textContent.trim() && !p.querySelector('img, br')) {
+                p.remove();
+            }
+            
+            // Fix paragraphs with invalid children
+            Array.from(p.children).forEach(child => {
+                if (['div', 'section', 'article', 'header', 'footer'].includes(child.tagName.toLowerCase())) {
+                    p.parentNode.insertBefore(child, p.nextSibling);
+                }
+            });
+        });
+    }
+
+    /**
+     * Validate and clean nodes
+     * 
+     * @param {Node} node - DOM node to validate
+     */
+    function validateAndCleanNodes(node) {
+        if (!node || node.nodeType !== Node.ELEMENT_NODE) {
+            return;
+        }
+
+        // Process children first
+        const childNodes = Array.from(node.childNodes);
+        childNodes.forEach(child => validateAndCleanNodes(child));
+
+        // Check for invalid tag combinations
+        if (node.tagName === 'LI' && node.parentNode && !['UL', 'OL'].includes(node.parentNode.tagName)) {
+            // Move LI outside of invalid parent
+            const ul = document.createElement('ul');
+            node.parentNode.insertBefore(ul, node);
+            ul.appendChild(node);
+        }
+
+        // Remove invalid attributes
+        const invalidAttrs = ['onclick', 'onload', 'onerror', 'javascript:'];
+        invalidAttrs.forEach(attr => {
+            if (node.hasAttribute(attr)) {
+                node.removeAttribute(attr);
+            }
+        });
+    }
+
+    /**
+     * Apply final fixes to HTML
+     * 
+     * @param {string} html - HTML content to fix
+     * @returns {string} Final cleaned HTML
+     */
+    function applyFinalFixes(html) {
+        return html
+            .replace(REGEX_PATTERNS.whitespace, '><')
+            .replace(REGEX_PATTERNS.htmlEntities, '')
+            .replace(REGEX_PATTERNS.ampersandFix, '&')  // Fix double-encoded ampersands
+            .replace(REGEX_PATTERNS.brokenSentences, '$1 in the 1980s and $2')  // Fix broken decade references
+            .replace(REGEX_PATTERNS.missingSpaces, '$1 $2')  // Add missing spaces between words
+            .replace(/<([a-zA-Z][a-zA-Z0-9]*)\s+>/g, '<$1>') // Remove empty attributes
+            .replace(/\s+>/g, '>') // Clean up trailing spaces
+            // Fix malformed anchor tags
+            .replace(/<a\s+<a[^>]*>/g, '<a>') // Fix double <a tags
+            .replace(/<a\s+([^>]*?)>\s*<\/a>/g, '') // Remove empty anchor tags
+            .replace(/<a\s+([^>]*?)>\s*([^<]*?)<\/a>/g, (match, attrs, content) => {
+                // Only keep anchor tags with valid href
+                if (attrs.includes('href=')) {
+                    return `<a ${attrs}>${content}</a>`;
+                }
+                return content; // Remove anchor tags without href
+            })
+            // Fix malformed heading tags (like <h< div="">)
+            .replace(/<h<[^>]*>/g, '<h3>')
+            .replace(/<h([1-6])\s+([^>]*?)>\s*<\/h\1>/g, '<h$1 $2></h$1>')
+            // Fix malformed div tags
+            .replace(/<div\s+([^>]*?)>\s*<\/div>/g, '<div $1></div>')
+            // Fix unclosed list items
+            .replace(/<li([^>]*?)>(?!.*<\/li>)/g, '<li$1></li>')
+            // Fix other common malformations
+            .replace(/<([a-zA-Z][a-zA-Z0-9]*)\s+<([a-zA-Z][a-zA-Z0-9]*)/g, '<$1') // Fix double opening tags
+            .replace(/<\/([a-zA-Z][a-zA-Z0-9]*)\s+<\/([a-zA-Z][a-zA-Z0-9]*)/g, '</$1') // Fix double closing tags
+            // Fix unclosed tags by adding closing tags
+            .replace(/<p([^>]*?)>(?!.*<\/p>)/g, '<p$1></p>')
+            .replace(/<h([1-6])([^>]*?)>(?!.*<\/h\1>)/g, '<h$1$2></h$1>')
+            .replace(/<div([^>]*?)>(?!.*<\/div>)/g, '<div$1></div>')
+            .trim();
+    }
+
+    /**
+     * Fallback sanitization for when parsing fails
+     * 
+     * @param {string} html - HTML content to sanitize
+     * @returns {string} Basic sanitized HTML
+     */
+    function fallbackSanitize(html) {
+        return html
+            .replace(/<script[^>]*>.*?<\/script>/gi, '')
+            .replace(/<style[^>]*>.*?<\/style>/gi, '')
+            .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '')
+            .replace(/javascript:/gi, '')
+            .replace(/on\w+\s*=/gi, '')
+            .trim();
+    }
+
+    /**
+     * Validate HTML structure and log issues
+     * 
+     * @param {string} html - HTML content to validate
+     * @param {string} context - Context for logging
+     */
+    function validateHTMLStructure(html) {
+        const issues = [];
+        
+        // Check for unclosed tags
+        const openTags = html.match(/<([a-zA-Z][a-zA-Z0-9]*)(?![^>]*\/>)/g) || [];
+        const closeTags = html.match(/<\/([a-zA-Z][a-zA-Z0-9]*)>/g) || [];
+        
+        const tagCounts = {};
+        
+        openTags.forEach(tag => {
+            const tagName = tag.replace(/[<>]/g, '');
+            tagCounts[tagName] = (tagCounts[tagName] || 0) + 1;
+        });
+        
+        closeTags.forEach(tag => {
+            const tagName = tag.replace(/[<>/]/g, '');
+            tagCounts[tagName] = (tagCounts[tagName] || 0) - 1;
+        });
+        
+        Object.entries(tagCounts).forEach(([tag, count]) => {
+            if (count > 0) {
+                issues.push(`Unclosed <${tag}> tag`);
+            } else if (count < 0) {
+                issues.push(`Orphaned </${tag}> tag`);
+            }
+        });
+        
+        // Check for malformed tags
+        const malformedTags = html.match(/<([a-zA-Z][a-zA-Z0-9]*)\s+<([a-zA-Z][a-zA-Z0-9]*)/g) || [];
+        if (malformedTags.length > 0) {
+            issues.push(`Malformed tags detected: ${malformedTags.join(', ')}`);
+        }
+        
+        // Check for specific malformed patterns we've seen
+        if (html.includes('<h<')) {
+            issues.push('Malformed heading tag detected');
+        }
+        
+        if (html.includes('<a <a')) {
+            issues.push('Double anchor tag detected');
+        }
+        
+        // Check for empty anchor tags without href
+        const emptyAnchors = html.match(/<a\s+[^>]*>\s*<\/a>/g) || [];
+        if (emptyAnchors.length > 0) {
+            issues.push(`Empty anchor tags detected: ${emptyAnchors.length} found`);
+        }
+        
+        // Check for unclosed list items
+        const unclosedLi = html.match(/<li[^>]*>(?!.*<\/li>)/g) || [];
+        if (unclosedLi.length > 0) {
+            issues.push(`Unclosed <li> tag`);
+        }
+        
+        return issues;
+    }
+
+    /**
+     * Log HTML issues for debugging
+     * 
+     * @param {string} html - HTML content to check
+     * @param {string} context - Context for logging
+     */
+    function logHTMLIssues(html, context) {
+        const issues = validateHTMLStructure(html);
+        if (issues.length > 0) {
+            // Only show HTML issues in development mode or when explicitly debugging
+            // Reduce console noise in production while still tracking issues
+            console.debug(`HTML issues in ${context}:`, issues);
+            // Only show problematic HTML if there are serious issues (more than 3 problems)
+            if (issues.length > 3) {
+                console.debug('Problematic HTML:', html.substring(0, 200) + '...');
+            }
+        }
+    }
+
+    /**
+     * Test function to verify enhanced HTML sanitization
+     * 
+     * This function tests the enhanced HTML sanitization with common
+     * malformed HTML examples to ensure the system is working correctly.
+     * 
+     * @returns {Object} Test results
+     */
+    function testEnhancedSanitization() {
+        const testCases = [
+            {
+                name: 'Unclosed tags',
+                input: '<p>This is a paragraph<p>Another paragraph</p>',
+                expected: 'Should close unclosed p tag'
+            },
+            {
+                name: 'Orphaned closing tags',
+                input: '<p>Content</p></div><p>More content</p>',
+                expected: 'Should remove orphaned div closing tag'
+            },
+            {
+                name: 'Malformed attributes',
+                input: '<a href="http://example.com" >Link</a>',
+                expected: 'Should clean up malformed attributes'
+            },
+            {
+                name: 'Script injection',
+                input: '<p>Content</p><script>alert("xss")</script><p>More content</p>',
+                expected: 'Should remove script tags'
+            },
+            {
+                name: 'Double opening tags',
+                input: '<p><p>Content</p>',
+                expected: 'Should fix double opening tags'
+            },
+            {
+                name: 'Empty anchor tags',
+                input: '<a href="http://example.com"></a><p>Content</p>',
+                expected: 'Should remove empty anchor tags'
+            },
+            {
+                name: 'Malformed anchor tags',
+                input: '<a <a href="http://example.com">Link</a>',
+                expected: 'Should fix malformed anchor tags'
+            }
+        ];
+
+        const results = testCases.map(testCase => {
+            const sanitized = sanitizeHTML(testCase.input);
+            const issues = validateHTMLStructure(sanitized);
+            return {
+                test: testCase.name,
+                input: testCase.input,
+                output: sanitized,
+                issues: issues,
+                passed: issues.length === 0
+            };
+        });
+
+        console.log('Enhanced HTML Sanitization Test Results:', results);
+        return results;
+    }
+
+    // Expose test function globally for debugging
+    window.testEnhancedSanitization = testEnhancedSanitization;
 
     /**
      * Apply green color to specific sections only
@@ -2307,6 +2830,9 @@ jQuery(document).ready(function($) {
             .replace(REGEX_PATTERNS.consecutiveOl, '')
             .replace(REGEX_PATTERNS.whitespace, '><')
             .replace(REGEX_PATTERNS.htmlEntities, '')
+            .replace(REGEX_PATTERNS.ampersandFix, '&')  // Fix double-encoded ampersands
+            .replace(REGEX_PATTERNS.brokenSentences, '$1 in the 1980s and $2')  // Fix broken decade references
+            .replace(REGEX_PATTERNS.missingSpaces, '$1 $2')  // Add missing spaces between words
             .trim();
     }
 
@@ -2400,10 +2926,17 @@ jQuery(document).ready(function($) {
             function readStream() {
                 return reader.read().then(({ done, value }) => {
                     if (done) {
-                        // Stream complete
+                        // Stream complete - apply final unified sanitization
                         performance.measure('stream_complete', PERFORMANCE_MARK);
-                        const cleanedHTML = sanitizeHTML(buffer);
-                        container.innerHTML = cleanedHTML;
+                        let cleanedHTML;
+                        try {
+                            cleanedHTML = unifiedSanitizeHTML(buffer);
+                            container.innerHTML = cleanedHTML;
+                        } catch (error) {
+                            console.warn('Final HTML sanitization error:', error);
+                            cleanedHTML = fallbackSanitize(buffer);
+                            container.innerHTML = cleanedHTML;
+                        }
                         
                         // Make related questions clickable after content is loaded
                         makeRelatedQuestionsClickable(container);
@@ -2475,11 +3008,24 @@ jQuery(document).ready(function($) {
                             const data = line.slice(6);
                             if (data && data !== '[DONE]') {
                                 buffer += data;
-                                // Optimized DOM updates with throttling for better performance
+                                // Show raw buffer during streaming - sanitize only when complete
                                 const now = Date.now();
                                 if (now - lastUpdate > UPDATE_THROTTLE) {
-                                    container.innerHTML = sanitizeHTML(buffer);
+                                    // Display raw buffer without sanitization to avoid partial HTML corruption
+                                    container.innerHTML = buffer;
                                     lastUpdate = now;
+                                }
+                            } else if (data === '[DONE]') {
+                                // Only sanitize when streaming is complete
+                                let cleanedHTML;
+                                try {
+                                    cleanedHTML = unifiedSanitizeHTML(buffer);
+                                    container.innerHTML = cleanedHTML;
+                                } catch (error) {
+                                    console.warn('HTML sanitization error on completion:', error);
+                                    // Fallback to basic sanitization
+                                    cleanedHTML = fallbackSanitize(buffer);
+                                    container.innerHTML = cleanedHTML;
                                 }
                             }
                         }
@@ -2611,19 +3157,18 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
   If the trusted sources do not provide enough information to answer, output exactly:
   <h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>
 
-  Formatting rules:
-  - Output valid HTML only (no Markdown).
-  - Prefer <h2>, <h3>, <p>, <ul>, <ol>, <li>, <table>, <thead>, <tbody>, <tr>, <td>, <th>, <a>.
-  - Keep it concise and avoid repetition.
-  - ALWAYS include the "Related Questions" section with exactly 5 relevant follow-up questions.
-  - Related questions must be specific, actionable, and directly related to the topic discussed.
-  - Each question should explore a different aspect or angle of the subject matter.
-  
-  CRITICAL: When mentioning years, always use the complete 4-digit format:
-  - Use "1960s" not "196" for the 1960s decade
-  - Use "2020s" not "202" for the 2020s decade
-  - Use "1897" not "189" for specific years
-  - Use "c. 150 BCE" for ancient dates
+  CRITICAL HTML FORMATTING RULES:
+  - Output ONLY valid, complete HTML (never Markdown)
+  - Use ONLY these tags: <h2>, <h3>, <p>, <ul>, <ol>, <li>, <table>, <thead>, <tbody>, <tr>, <td>, <th>, <a>, <strong>, <em>, <br>
+  - ALWAYS close every tag you open: <p>content</p>, <li>item</li>, etc.
+  - NEVER generate partial tags like "<p" without closing ">" or unclosed tags
+  - TEST each tag pair: does every <p> have a matching </p>?
+  - For years, ALWAYS use 4 digits: "1960s" not "196", "2020s" not "202"
+  - For links, use complete format: <a href="full-url">text</a>
+  - Keep content concise and avoid repetition
+  - ALWAYS include the "Related Questions" section with exactly 5 relevant follow-up questions
+  - Related questions must be specific, actionable, and directly related to the topic discussed
+  - Each question should explore a different aspect or angle of the subject matter
 
   REMINDER: The "Related Questions" section is MANDATORY and must appear in every single response with exactly 5 questions.
 
@@ -4193,25 +4738,10 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         }
 
         try {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString('<div>' + html + '</div>', 'text/html');
+            // Use enhanced sanitization but without truncation
+            let safe = enhancedSanitizeHTML(html);
 
-            // Remove only script and style tags
-            doc.querySelectorAll('script, style').forEach(el => el.remove());
-
-            // Fix list structure
-            fixListStructure(doc);
-
-            // Fix table structure
-            fixTableStructure(doc);
-
-            // Apply basic node cleaning for table-related tags
-            cleanTableNodes(doc.body.firstChild);
-
-            // Simple approach: just get innerHTML without complex node cleaning
-            let safe = doc.body.firstChild.innerHTML;
-
-            // Apply basic regex fixes only
+            // Apply additional custom fixes
             safe = safe
                 .replace(/href="([^"]+)"\s?>\s?/g, '<a href="$1">')
                 .replace(/<\/a>(\w)/g, '</a> $1')
@@ -4222,7 +4752,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
 
             return safe;
         } catch (e) {
-            return html; // Return original if parsing fails
+            return fallbackSanitize(html);
         }
     }
 

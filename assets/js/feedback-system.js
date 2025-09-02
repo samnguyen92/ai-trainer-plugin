@@ -17,9 +17,11 @@
  * @author Psychedelic
  */
 
-class FeedbackSystem {
-    constructor($) {
-        this.$ = $ || jQuery; // Ensure we have jQuery reference
+(function($) {
+    'use strict';
+
+    class FeedbackSystem {
+        constructor() {
         this.config = {
             // Feedback categories with enhanced options
             categories: {
@@ -69,11 +71,13 @@ class FeedbackSystem {
     }
     
     /**
-     * Bind event listeners
+     * Bind event listeners - DISABLED to prevent conflicts with simple feedback
      */
     bindEvents() {
+        // Complex feedback system disabled - using simple thumbs up/down instead
+        /*
         // Handle feedback button clicks  
-        this.$(document).on('click', '.feedback-btn', this.handleFeedbackClick.bind(this));
+        $(document).on('click', '.feedback-btn', this.handleFeedbackClick.bind(this));
         
         // Handle category selection
         $(document).on('click', '.feedback-category-btn', this.handleCategoryClick.bind(this));
@@ -86,6 +90,7 @@ class FeedbackSystem {
         
         // Handle escape key
         $(document).on('keydown', this.handleKeydown.bind(this));
+        */
     }
     
     /**
@@ -854,6 +859,17 @@ class FeedbackSystem {
     }
     
     /**
+     * Handle feedback button clicks
+     */
+    handleFeedbackClick(e) {
+        const btn = $(e.currentTarget);
+        const type = btn.data('type');
+        const chatlogId = btn.closest('.feedback-container').data('chatlog-id');
+        
+        this.showFeedbackPanel(chatlogId, type);
+    }
+    
+    /**
      * Handle category selection
      */
     handleCategoryClick(e) {
@@ -995,8 +1011,12 @@ class FeedbackSystem {
     }
 }
 
-// Initialize the feedback system when document is ready
+// Initialize the feedback system when document is ready - DISABLED
+/*
 jQuery(document).ready(function($) {
     window.FeedbackSystem = new FeedbackSystem();
     console.log('🎯 Modern Feedback System loaded and ready');
 });
+*/
+
+})(jQuery);
