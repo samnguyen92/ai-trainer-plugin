@@ -73,7 +73,16 @@ jQuery(document).ready(function($) {
         consecutiveOl: /<\/ol>\s*<ol>/g,
         whitespace: />\s+</g,
         htmlEntities: /(&lt;|&gt;|<>)|<!--.*?-->/gi,
-        javascript: /^javascript:/i
+        javascript: /^javascript:/i,
+        // New patterns for better HTML fixing
+        unclosedTags: /<([a-zA-Z][a-zA-Z0-9]*)([^>]*?)(?<!\/)>/g,
+        orphanedClosingTags: /<\/([a-zA-Z][a-zA-Z0-9]*)(?![^<]*>)/g,
+        malformedAttributes: /<([a-zA-Z][a-zA-Z0-9]*)\s+([^>]*?)(?<!\/)>/g,
+        doubleSpaces: /\s{2,}/g,
+        lineBreaks: /\n\s*\n/g,
+        emptyParagraphs: /<p>\s*<\/p>/g,
+        brokenLists: /<li[^>]*>\s*(?!.*<\/li>)/g,
+        unclosedQuotes: /([^"]*)"([^"]*)$/g
     };
 
     // Constants
@@ -1793,26 +1802,14 @@ jQuery(document).ready(function($) {
             return '';
         }
 
+        // Log HTML issues for debugging
+        logHTMLIssues(html, 'pre-sanitization');
+
         try {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString('<div>' + html + '</div>', 'text/html');
+            // Use enhanced sanitization
+            let safe = enhancedSanitizeHTML(html);
 
-            // Remove only script and style tags
-            doc.querySelectorAll('script, style').forEach(el => el.remove());
-
-            // Fix list structure
-            fixListStructure(doc);
-
-            // Fix table structure
-            fixTableStructure(doc);
-
-            // Apply basic node cleaning for table-related tags
-            cleanTableNodes(doc.body.firstChild);
-
-            // Simple approach: just get innerHTML without complex node cleaning
-            let safe = doc.body.firstChild.innerHTML;
-
-            // Apply basic regex fixes only
+            // Apply additional custom fixes
             safe = safe
                 .replace(REGEX_PATTERNS.hrefFix, '<a href="$1">')
                 .replace(REGEX_PATTERNS.linkText, '</a> $1')
@@ -1833,12 +1830,387 @@ jQuery(document).ready(function($) {
             // Fix truncated years that commonly get cut off
             safe = fixTruncatedYears(safe);
 
+            // Log final HTML issues
+            logHTMLIssues(safe, 'post-sanitization');
+
             return safe;
         } catch (e) {
             console.warn('Sanitize error:', e, 'Original HTML:', html);
-            return html; // Return original if parsing fails
+            return fallbackSanitize(html);
         }
     }
+
+    /**
+     * Enhanced HTML sanitization with comprehensive fixing
+     * 
+     * This function provides comprehensive HTML cleaning and fixing:
+     * - Fixes unclosed tags systematically
+     * - Removes orphaned closing tags
+     * - Validates HTML structure
+     * - Applies multiple layers of cleaning
+     * 
+     * @param {string} html - Raw HTML content to sanitize
+     * @returns {string} Enhanced sanitized HTML content
+     */
+    function enhancedSanitizeHTML(html) {
+        if (!html || typeof html !== 'string') {
+            return '';
+        }
+
+        try {
+            // Step 1: Pre-process and fix obvious issues
+            let processed = html
+                .replace(REGEX_PATTERNS.doubleSpaces, ' ')
+                .replace(REGEX_PATTERNS.lineBreaks, '\n')
+                .replace(REGEX_PATTERNS.emptyParagraphs, '')
+                .trim();
+
+            // Step 2: Fix unclosed tags
+            processed = fixUnclosedTags(processed);
+
+            // Step 3: Remove orphaned closing tags
+            processed = removeOrphanedClosingTags(processed);
+
+            // Step 4: Parse with DOMParser
+            const parser = new DOMParser();
+            const doc = parser.parseFromString('<div>' + processed + '</div>', 'text/html');
+
+            // Step 5: Remove unsafe elements
+            doc.querySelectorAll('script, style, iframe, object, embed').forEach(el => el.remove());
+
+            // Step 6: Fix structure issues
+            fixListStructure(doc);
+            fixTableStructure(doc);
+            fixParagraphStructure(doc);
+            
+            // Step 7: Clean and validate
+            validateAndCleanNodes(doc.body.firstChild);
+
+            // Step 8: Apply final fixes
+            let safe = doc.body.firstChild.innerHTML;
+            safe = applyFinalFixes(safe);
+
+            return safe;
+        } catch (e) {
+            console.warn('Enhanced sanitize error:', e, 'Original HTML:', html);
+            return fallbackSanitize(html);
+        }
+    }
+
+    /**
+     * Fix unclosed tags systematically
+     * 
+     * @param {string} html - HTML content to fix
+     * @returns {string} HTML with closed tags
+     */
+    function fixUnclosedTags(html) {
+        // First, fix malformed tags that can't be parsed properly
+        let result = html
+            // Fix malformed heading tags like <h< div="">
+            .replace(/<h<[^>]*>/g, '<h3>')
+            // Fix double opening tags
+            .replace(/<([a-zA-Z][a-zA-Z0-9]*)\s+<([a-zA-Z][a-zA-Z0-9]*)/g, '<$1')
+            // Fix malformed anchor tags
+            .replace(/<a\s+<a[^>]*>/g, '<a>');
+        
+        const tagStack = [];
+        const openTagRegex = /<([a-zA-Z][a-zA-Z0-9]*)([^>]*?)(?<!\/)>/g;
+        const closeTagRegex = /<\/([a-zA-Z][a-zA-Z0-9]*)>/g;
+        
+        let match;
+        
+        // Reset regex state
+        openTagRegex.lastIndex = 0;
+        closeTagRegex.lastIndex = 0;
+        
+        // Find all opening tags
+        while ((match = openTagRegex.exec(result)) !== null) {
+            const tagName = match[1].toLowerCase();
+            if (!['br', 'hr', 'img', 'input', 'meta', 'link'].includes(tagName)) {
+                tagStack.push(tagName);
+            }
+        }
+        
+        // Reset regex state
+        closeTagRegex.lastIndex = 0;
+        
+        // Find all closing tags and remove from stack
+        while ((match = closeTagRegex.exec(result)) !== null) {
+            const tagName = match[1].toLowerCase();
+            const index = tagStack.lastIndexOf(tagName);
+            if (index !== -1) {
+                tagStack.splice(index, 1);
+            }
+        }
+        
+        // Close remaining unclosed tags in reverse order
+        while (tagStack.length > 0) {
+            const tag = tagStack.pop();
+            result += `</${tag}>`;
+        }
+        
+        return result;
+    }
+
+    /**
+     * Remove orphaned closing tags
+     * 
+     * @param {string} html - HTML content to clean
+     * @returns {string} HTML without orphaned closing tags
+     */
+    function removeOrphanedClosingTags(html) {
+        return html.replace(/<\/([a-zA-Z][a-zA-Z0-9]*)(?![^<]*>)/g, '');
+    }
+
+    /**
+     * Fix paragraph structure
+     * 
+     * @param {Document} doc - DOM document to process
+     */
+    function fixParagraphStructure(doc) {
+        doc.querySelectorAll('p').forEach(p => {
+            // Remove empty paragraphs
+            if (!p.textContent.trim() && !p.querySelector('img, br')) {
+                p.remove();
+            }
+            
+            // Fix paragraphs with invalid children
+            Array.from(p.children).forEach(child => {
+                if (['div', 'section', 'article', 'header', 'footer'].includes(child.tagName.toLowerCase())) {
+                    p.parentNode.insertBefore(child, p.nextSibling);
+                }
+            });
+        });
+    }
+
+    /**
+     * Validate and clean nodes
+     * 
+     * @param {Node} node - DOM node to validate
+     */
+    function validateAndCleanNodes(node) {
+        if (!node || node.nodeType !== Node.ELEMENT_NODE) {
+            return;
+        }
+
+        // Process children first
+        const childNodes = Array.from(node.childNodes);
+        childNodes.forEach(child => validateAndCleanNodes(child));
+
+        // Check for invalid tag combinations
+        if (node.tagName === 'LI' && node.parentNode && !['UL', 'OL'].includes(node.parentNode.tagName)) {
+            // Move LI outside of invalid parent
+            const ul = document.createElement('ul');
+            node.parentNode.insertBefore(ul, node);
+            ul.appendChild(node);
+        }
+
+        // Remove invalid attributes
+        const invalidAttrs = ['onclick', 'onload', 'onerror', 'javascript:'];
+        invalidAttrs.forEach(attr => {
+            if (node.hasAttribute(attr)) {
+                node.removeAttribute(attr);
+            }
+        });
+    }
+
+    /**
+     * Apply final fixes to HTML
+     * 
+     * @param {string} html - HTML content to fix
+     * @returns {string} Final cleaned HTML
+     */
+    function applyFinalFixes(html) {
+        return html
+            .replace(REGEX_PATTERNS.whitespace, '><')
+            .replace(REGEX_PATTERNS.htmlEntities, '')
+            .replace(/<([a-zA-Z][a-zA-Z0-9]*)\s+>/g, '<$1>') // Remove empty attributes
+            .replace(/\s+>/g, '>') // Clean up trailing spaces
+            // Fix malformed anchor tags
+            .replace(/<a\s+<a[^>]*>/g, '<a>') // Fix double <a tags
+            .replace(/<a\s+([^>]*?)>\s*<\/a>/g, '') // Remove empty anchor tags
+            .replace(/<a\s+([^>]*?)>\s*([^<]*?)<\/a>/g, (match, attrs, content) => {
+                // Only keep anchor tags with valid href
+                if (attrs.includes('href=')) {
+                    return `<a ${attrs}>${content}</a>`;
+                }
+                return content; // Remove anchor tags without href
+            })
+            // Fix malformed heading tags (like <h< div="">)
+            .replace(/<h<[^>]*>/g, '<h3>')
+            .replace(/<h([1-6])\s+([^>]*?)>\s*<\/h\1>/g, '<h$1 $2></h$1>')
+            // Fix malformed div tags
+            .replace(/<div\s+([^>]*?)>\s*<\/div>/g, '<div $1></div>')
+            // Fix unclosed list items
+            .replace(/<li([^>]*?)>(?!.*<\/li>)/g, '<li$1></li>')
+            // Fix other common malformations
+            .replace(/<([a-zA-Z][a-zA-Z0-9]*)\s+<([a-zA-Z][a-zA-Z0-9]*)/g, '<$1') // Fix double opening tags
+            .replace(/<\/([a-zA-Z][a-zA-Z0-9]*)\s+<\/([a-zA-Z][a-zA-Z0-9]*)/g, '</$1') // Fix double closing tags
+            // Fix unclosed tags by adding closing tags
+            .replace(/<p([^>]*?)>(?!.*<\/p>)/g, '<p$1></p>')
+            .replace(/<h([1-6])([^>]*?)>(?!.*<\/h\1>)/g, '<h$1$2></h$1>')
+            .replace(/<div([^>]*?)>(?!.*<\/div>)/g, '<div$1></div>')
+            .trim();
+    }
+
+    /**
+     * Fallback sanitization for when parsing fails
+     * 
+     * @param {string} html - HTML content to sanitize
+     * @returns {string} Basic sanitized HTML
+     */
+    function fallbackSanitize(html) {
+        return html
+            .replace(/<script[^>]*>.*?<\/script>/gi, '')
+            .replace(/<style[^>]*>.*?<\/style>/gi, '')
+            .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '')
+            .replace(/javascript:/gi, '')
+            .replace(/on\w+\s*=/gi, '')
+            .trim();
+    }
+
+    /**
+     * Validate HTML structure and log issues
+     * 
+     * @param {string} html - HTML content to validate
+     * @param {string} context - Context for logging
+     */
+    function validateHTMLStructure(html) {
+        const issues = [];
+        
+        // Check for unclosed tags
+        const openTags = html.match(/<([a-zA-Z][a-zA-Z0-9]*)(?![^>]*\/>)/g) || [];
+        const closeTags = html.match(/<\/([a-zA-Z][a-zA-Z0-9]*)>/g) || [];
+        
+        const tagCounts = {};
+        
+        openTags.forEach(tag => {
+            const tagName = tag.replace(/[<>]/g, '');
+            tagCounts[tagName] = (tagCounts[tagName] || 0) + 1;
+        });
+        
+        closeTags.forEach(tag => {
+            const tagName = tag.replace(/[<>/]/g, '');
+            tagCounts[tagName] = (tagCounts[tagName] || 0) - 1;
+        });
+        
+        Object.entries(tagCounts).forEach(([tag, count]) => {
+            if (count > 0) {
+                issues.push(`Unclosed <${tag}> tag`);
+            } else if (count < 0) {
+                issues.push(`Orphaned </${tag}> tag`);
+            }
+        });
+        
+        // Check for malformed tags
+        const malformedTags = html.match(/<([a-zA-Z][a-zA-Z0-9]*)\s+<([a-zA-Z][a-zA-Z0-9]*)/g) || [];
+        if (malformedTags.length > 0) {
+            issues.push(`Malformed tags detected: ${malformedTags.join(', ')}`);
+        }
+        
+        // Check for specific malformed patterns we've seen
+        if (html.includes('<h<')) {
+            issues.push('Malformed heading tag detected');
+        }
+        
+        if (html.includes('<a <a')) {
+            issues.push('Double anchor tag detected');
+        }
+        
+        // Check for empty anchor tags without href
+        const emptyAnchors = html.match(/<a\s+[^>]*>\s*<\/a>/g) || [];
+        if (emptyAnchors.length > 0) {
+            issues.push(`Empty anchor tags detected: ${emptyAnchors.length} found`);
+        }
+        
+        // Check for unclosed list items
+        const unclosedLi = html.match(/<li[^>]*>(?!.*<\/li>)/g) || [];
+        if (unclosedLi.length > 0) {
+            issues.push(`Unclosed <li> tag`);
+        }
+        
+        return issues;
+    }
+
+    /**
+     * Log HTML issues for debugging
+     * 
+     * @param {string} html - HTML content to check
+     * @param {string} context - Context for logging
+     */
+    function logHTMLIssues(html, context) {
+        const issues = validateHTMLStructure(html);
+        if (issues.length > 0) {
+            console.warn(`HTML issues in ${context}:`, issues);
+            console.warn('Problematic HTML:', html.substring(0, 200) + '...');
+        }
+    }
+
+    /**
+     * Test function to verify enhanced HTML sanitization
+     * 
+     * This function tests the enhanced HTML sanitization with common
+     * malformed HTML examples to ensure the system is working correctly.
+     * 
+     * @returns {Object} Test results
+     */
+    function testEnhancedSanitization() {
+        const testCases = [
+            {
+                name: 'Unclosed tags',
+                input: '<p>This is a paragraph<p>Another paragraph</p>',
+                expected: 'Should close unclosed p tag'
+            },
+            {
+                name: 'Orphaned closing tags',
+                input: '<p>Content</p></div><p>More content</p>',
+                expected: 'Should remove orphaned div closing tag'
+            },
+            {
+                name: 'Malformed attributes',
+                input: '<a href="http://example.com" >Link</a>',
+                expected: 'Should clean up malformed attributes'
+            },
+            {
+                name: 'Script injection',
+                input: '<p>Content</p><script>alert("xss")</script><p>More content</p>',
+                expected: 'Should remove script tags'
+            },
+            {
+                name: 'Double opening tags',
+                input: '<p><p>Content</p>',
+                expected: 'Should fix double opening tags'
+            },
+            {
+                name: 'Empty anchor tags',
+                input: '<a href="http://example.com"></a><p>Content</p>',
+                expected: 'Should remove empty anchor tags'
+            },
+            {
+                name: 'Malformed anchor tags',
+                input: '<a <a href="http://example.com">Link</a>',
+                expected: 'Should fix malformed anchor tags'
+            }
+        ];
+
+        const results = testCases.map(testCase => {
+            const sanitized = sanitizeHTML(testCase.input);
+            const issues = validateHTMLStructure(sanitized);
+            return {
+                test: testCase.name,
+                input: testCase.input,
+                output: sanitized,
+                issues: issues,
+                passed: issues.length === 0
+            };
+        });
+
+        console.log('Enhanced HTML Sanitization Test Results:', results);
+        return results;
+    }
+
+    // Expose test function globally for debugging
+    window.testEnhancedSanitization = testEnhancedSanitization;
 
     /**
      * Apply green color to specific sections only
@@ -2478,8 +2850,16 @@ jQuery(document).ready(function($) {
                                 // Optimized DOM updates with throttling for better performance
                                 const now = Date.now();
                                 if (now - lastUpdate > UPDATE_THROTTLE) {
-                                    container.innerHTML = sanitizeHTML(buffer);
+                                    try {
+                                        const sanitizedBuffer = sanitizeHTML(buffer);
+                                        container.innerHTML = sanitizedBuffer;
+                                        lastUpdate = now;
+                                    } catch (error) {
+                                        console.warn('HTML sanitization error during streaming:', error);
+                                        // Fallback to basic sanitization
+                                        container.innerHTML = fallbackSanitize(buffer);
                                     lastUpdate = now;
+                                    }
                                 }
                             }
                         }
@@ -4193,25 +4573,10 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         }
 
         try {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString('<div>' + html + '</div>', 'text/html');
+            // Use enhanced sanitization but without truncation
+            let safe = enhancedSanitizeHTML(html);
 
-            // Remove only script and style tags
-            doc.querySelectorAll('script, style').forEach(el => el.remove());
-
-            // Fix list structure
-            fixListStructure(doc);
-
-            // Fix table structure
-            fixTableStructure(doc);
-
-            // Apply basic node cleaning for table-related tags
-            cleanTableNodes(doc.body.firstChild);
-
-            // Simple approach: just get innerHTML without complex node cleaning
-            let safe = doc.body.firstChild.innerHTML;
-
-            // Apply basic regex fixes only
+            // Apply additional custom fixes
             safe = safe
                 .replace(/href="([^"]+)"\s?>\s?/g, '<a href="$1">')
                 .replace(/<\/a>(\w)/g, '</a> $1')
@@ -4222,7 +4587,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
 
             return safe;
         } catch (e) {
-            return html; // Return original if parsing fails
+            return fallbackSanitize(html);
         }
     }
 

@@ -73,7 +73,7 @@ class FeedbackSystem {
      */
     bindEvents() {
         // Handle feedback button clicks  
-        this.$(document).on('click', '.feedback-btn', this.handleFeedbackClick.bind(this));
+        $(document).on('click', '.feedback-btn', this.handleFeedbackClick.bind(this));
         
         // Handle category selection
         $(document).on('click', '.feedback-category-btn', this.handleCategoryClick.bind(this));
@@ -997,6 +997,6 @@ class FeedbackSystem {
 
 // Initialize the feedback system when document is ready
 jQuery(document).ready(function($) {
-    window.FeedbackSystem = new FeedbackSystem();
+    window.FeedbackSystem = new FeedbackSystem($);
     console.log('🎯 Modern Feedback System loaded and ready');
 });
