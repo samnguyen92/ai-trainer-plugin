@@ -196,6 +196,54 @@ jQuery(document).ready(function($) {
     
 
     
+    /**
+     * Handle off-topic response display
+     * 
+     * @param {Object} data - Response data containing off-topic message
+     * @param {string} query - Original user query
+     */
+    function handleOffTopicResponse(data, query) {
+        console.log('🚫 Off-topic query detected:', query);
+        
+        // Create a special off-topic answer block
+        const questionID = 'off-topic-' + Date.now();
+        const offTopicBlock = $(`
+            <div class="exa-answer-block off-topic-block" id="${questionID}">
+                <div class="exa-question-display">
+                    <h3>🔍 "${query}"</h3>
+                </div>
+                <div class="exa-answer-content off-topic-response">
+                    ${data.answer}
+                </div>
+            </div>
+        `);
+        
+        // Add special styling for off-topic responses
+        offTopicBlock.css({
+            'border-left': '4px solid #ff9800',
+            'background-color': '#fff3e0',
+            'padding': '20px',
+            'border-radius': '8px',
+            'margin': '20px 0'
+        });
+        
+        // Add click handlers for suggested questions
+        offTopicBlock.find('.related-questions-list li').on('click', function() {
+            const suggestedQuery = $(this).text();
+            $exaInput.val(suggestedQuery);
+            // Trigger search with the suggested query
+            $('#exa-form').trigger('submit');
+        });
+        
+        $exaAnswer.append(offTopicBlock);
+        $ticketWrapper.show();
+        
+        // Log performance
+        if (data.performance) {
+            console.log(`⚡ Off-topic detection completed in ${data.performance.total_time.toFixed(2)}ms`);
+        }
+    }
+
     // Pre-warming function for better performance
     function prewarmQuery(query) {
         // This function pre-warms common queries for faster response
@@ -232,6 +280,12 @@ jQuery(document).ready(function($) {
             }
 
             const data = response.data || {};
+            
+            // Handle off-topic responses
+            if (data.is_off_topic) {
+                handleOffTopicResponse(data, query);
+                return;
+            }
             const sources = data.sources || '';
             const blockedDomains = data.block_domains || '';
             const results = (data.search && data.search.results) ? data.search.results : [];
@@ -2141,8 +2195,13 @@ jQuery(document).ready(function($) {
     function logHTMLIssues(html, context) {
         const issues = validateHTMLStructure(html);
         if (issues.length > 0) {
-            console.warn(`HTML issues in ${context}:`, issues);
-            console.warn('Problematic HTML:', html.substring(0, 200) + '...');
+            // Only show HTML issues in development mode or when explicitly debugging
+            // Reduce console noise in production while still tracking issues
+            console.debug(`HTML issues in ${context}:`, issues);
+            // Only show problematic HTML if there are serious issues (more than 3 problems)
+            if (issues.length > 3) {
+                console.debug('Problematic HTML:', html.substring(0, 200) + '...');
+            }
         }
     }
 

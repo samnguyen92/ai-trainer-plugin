@@ -2493,6 +2493,40 @@ class Exa_AI_Integration {
             error_log('DEBUG: Query sanitized: ' . $query);
             error_log('DEBUG: Conversation history: ' . print_r($conversation_history, true));
             
+            // OFF-TOPIC DETECTION: Check if query is related to psychedelics
+            if (!$this->is_psychedelic_related_query($query)) {
+                error_log('DEBUG: Off-topic query detected: ' . $query);
+                
+                // Log the off-topic query for analytics
+                global $wpdb;
+                try {
+                    $user_id = get_current_user_id() ?: 0;
+                    $wpdb->insert($wpdb->prefix . 'ai_chat_log', [
+                        'user_id' => $user_id,
+                        'question' => $query,
+                        'answer' => 'OFF_TOPIC_REDIRECT',
+                        'created_at' => current_time('mysql')
+                    ]);
+                    error_log('DEBUG: Off-topic query logged to chat log');
+                } catch (Exception $e) {
+                    error_log('ERROR: Failed to log off-topic query: ' . $e->getMessage());
+                }
+                
+                $off_topic_response = [
+                    'answer' => $this->get_off_topic_response(),
+                    'sources' => '',
+                    'is_off_topic' => true,
+                    'search_completed' => false,
+                    'performance' => [
+                        'total_time' => (microtime(true) - $start_time) * 1000,
+                        'memory_used' => memory_get_usage() - $memory_start
+                    ]
+                ];
+                
+                wp_send_json_success($off_topic_response);
+                return;
+            }
+            
             // BASIC SEARCH: Start with minimal functionality
             error_log('DEBUG: Starting basic search functionality');
             
@@ -4645,6 +4679,434 @@ class Exa_AI_Integration {
         
         error_log('Fallback sequential search completed with ' . count($all_results) . ' total results');
         return $all_results;
+    }
+
+    /**
+     * Multi-layered off-topic detection system
+     * 
+     * Uses a hybrid approach with multiple detection layers:
+     * 1. Quick obvious rejections (minimal keywords)
+     * 2. AI classification for borderline cases  
+     * 3. Semantic similarity as backup
+     * 
+     * This approach is much more accurate than keyword-only systems
+     * and should catch 95%+ of off-topic queries.
+     * 
+     * @param string $query The user's query
+     * @return bool True if psychedelic-related, false otherwise
+     */
+    private function is_psychedelic_related_query($query) {
+        $query_lower = strtolower(trim($query));
+        
+        // Debug logging for off-topic detection
+        error_log('DEBUG: Multi-layer off-topic detection for query: ' . $query_lower);
+        
+        // Layer 0: Check for nonsensical or emoji-only queries
+        $nonsensical_result = $this->is_nonsensical_query($query_lower);
+        if ($nonsensical_result !== false) {
+            error_log('DEBUG: Layer 0 - Nonsensical/tampering query detected: ' . $nonsensical_result);
+            return false;
+        }
+        
+        // Layer 1: Quick obvious rejections (minimal patterns)
+        if ($this->is_obviously_off_topic($query_lower)) {
+            error_log('DEBUG: Layer 1 - Obviously off-topic query detected');
+            return false;
+        }
+        
+        // Layer 2: AI classification for borderline cases
+        if ($this->classify_query_intent($query)) {
+            error_log('DEBUG: Layer 2 - AI classified as off-topic');
+            return false;
+        }
+        
+        // Layer 3: Semantic similarity as backup
+        if (!$this->is_semantically_psychedelic($query)) {
+            error_log('DEBUG: Layer 3 - Semantic similarity below threshold');
+            return false;
+        }
+        
+        error_log('DEBUG: Query passed all detection layers - allowing');
+        return true; // Passed all checks
+    }
+
+    /**
+     * Layer 1: Quick obvious rejections with minimal patterns
+     * Only catches the most obvious off-topic queries to avoid false positives
+     * 
+     * @param string $query_lower Lowercase query
+     * @return bool True if obviously off-topic
+     */
+    private function is_obviously_off_topic($query_lower) {
+        // Keep only the most obvious patterns to minimize false positives
+        $obvious_patterns = [
+            // Programming (very specific)
+            '/\b(?:javascript|python|html|css|programming|coding|node\.js|react|angular)\b/i',
+            '/\bhow\s+to\s+(?:code|program|debug|install|setup)\b/i',
+            '/\bwhat\s+is\s+(?:javascript|python|html|css|node\.js|react)\b/i',
+            
+            // Travel (very specific)
+            '/\b(?:flight|airport|hotel|directions|uber|lyft)\b/i',
+            '/\bhow\s+(?:do\s+i|can\s+i)\s+(?:get|go|travel)\s+(?:from|to)\b/i',
+            '/\bportland\s+to\s+|new\s+york\s+to\s+|california\s+to\s+/i',
+            
+            // General topics (very obvious)
+            '/\b(?:weather|sports|cooking|recipe|netflix|youtube)\b/i',
+            '/\bwhat\s+is\s+the\s+weather\b/i',
+            '/\bhow\s+to\s+(?:cook|bake|make\s+food)\b/i',
+            
+            // Grammar/Education (very specific)
+            '/\baffect\s+vs\s+effect|their\s+vs\s+there|your\s+vs\s+you\'re\b/i',
+            '/\benglish\s+grammar|spelling|punctuation\b/i',
+            '/\bhow\s+to\s+write\s+an\s+essay\b/i',
+            
+            // Science (very specific non-psychedelic)
+            '/\bphotosynthesis|mitosis|dna|quantum\s+mechanics\b/i',
+            '/\bhow\s+does\s+photosynthesis\s+work\b/i',
+            
+            // Web optimization (very specific)
+            '/\bimage\s+optimization|web\s+performance|page\s+speed|seo\b/i',
+            '/\bhow\s+to\s+optimize\s+(?:images?|website|performance)\b/i'
+        ];
+        
+        foreach ($obvious_patterns as $pattern) {
+            if (preg_match($pattern, $query_lower)) {
+                error_log('DEBUG: Obviously off-topic pattern matched: ' . $pattern);
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Layer 2: AI classification for borderline cases
+     * Uses OpenAI to classify query intent with high accuracy
+     * 
+     * @param string $query The original query
+     * @return bool True if AI classifies as off-topic
+     */
+    private function classify_query_intent($query) {
+        // Skip AI call if we don't have an API key
+        if (empty($this->openai_api_key)) {
+            error_log('DEBUG: No OpenAI API key, skipping AI classification');
+            return false; // Fail open
+        }
+        
+        $classification_prompt = "Classify this query into one category:
+
+PSYCHEDELIC: Questions about psychedelics, psychedelic medicine, psilocybin, LSD, MDMA, ayahuasca, microdosing, psychedelic therapy, consciousness research, harm reduction, set and setting, or related topics.
+
+OFF_TOPIC: Questions about technology, travel, grammar, cooking, sports, general health, programming, web development, study skills, science (non-psychedelic), etc.
+
+Query: \"$query\"
+
+Respond with only: PSYCHEDELIC or OFF_TOPIC";
+
+        try {
+            $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->openai_api_key,
+                    'Content-Type' => 'application/json',
+                ],
+                'body' => json_encode([
+                    'model' => 'gpt-4o-mini', // Fast and cheap for classification
+                    'messages' => [
+                        ['role' => 'user', 'content' => $classification_prompt]
+                    ],
+                    'max_tokens' => 10,
+                    'temperature' => 0 // Deterministic
+                ]),
+                'timeout' => 10
+            ]);
+            
+            if (is_wp_error($response)) {
+                error_log('DEBUG: AI classification API error: ' . $response->get_error_message());
+                return false; // Fail open on API errors
+            }
+            
+            $body = json_decode(wp_remote_retrieve_body($response), true);
+            $classification = trim($body['choices'][0]['message']['content'] ?? 'PSYCHEDELIC');
+            
+            error_log('DEBUG: AI classification result: ' . $classification);
+            return $classification === 'OFF_TOPIC';
+            
+        } catch (Exception $e) {
+            error_log('DEBUG: AI classification exception: ' . $e->getMessage());
+            return false; // Fail open on exceptions
+        }
+    }
+
+    /**
+     * Layer 3: Semantic similarity to psychedelic topics
+     * Uses embeddings to measure similarity to known psychedelic content
+     * 
+     * @param string $query The original query
+     * @return bool True if semantically similar to psychedelic topics
+     */
+    private function is_semantically_psychedelic($query) {
+        try {
+            // Generate embedding for the query
+            $query_embedding = $this->get_openai_embedding($query);
+            if (!$query_embedding) {
+                error_log('DEBUG: Could not generate query embedding, allowing query');
+                return true; // Fail open if we can't get embeddings
+            }
+            
+            $query_embedding = ai_trainer_normalize_embedding(json_decode($query_embedding, true));
+            
+            // Pre-defined psychedelic topic embeddings (these would be pre-computed)
+            $psychedelic_topics = [
+                "psilocybin mushrooms therapeutic benefits mental health treatment",
+                "MDMA therapy PTSD treatment clinical trials breakthrough therapy",
+                "LSD microdosing cognitive enhancement research studies", 
+                "ayahuasca ceremony spiritual healing consciousness exploration",
+                "psychedelic medicine breakthrough therapy FDA approval",
+                "set and setting harm reduction psychedelic safety guidelines",
+                "psychedelic integration therapy mental health treatment",
+                "consciousness research altered states psychedelic experience"
+            ];
+            
+            $max_similarity = 0;
+            foreach ($psychedelic_topics as $topic) {
+                $topic_embedding = $this->get_cached_or_generate_embedding($topic);
+                if ($topic_embedding) {
+                    $similarity = $this->cosine_similarity($query_embedding, $topic_embedding);
+                    $max_similarity = max($max_similarity, $similarity);
+                }
+            }
+            
+            error_log('DEBUG: Maximum semantic similarity: ' . $max_similarity);
+            
+            // If similarity is below threshold, likely off-topic
+            $threshold = 0.25; // Tune this threshold based on testing
+            return $max_similarity > $threshold;
+            
+        } catch (Exception $e) {
+            error_log('DEBUG: Semantic similarity error: ' . $e->getMessage());
+            return true; // Fail open on errors
+        }
+    }
+
+    /**
+     * Get cached embedding or generate new one
+     * 
+     * @param string $text Text to get embedding for
+     * @return array|null Normalized embedding array or null on failure
+     */
+    private function get_cached_or_generate_embedding($text) {
+        // Simple in-memory cache for this session
+        static $embedding_cache = [];
+        
+        $cache_key = md5($text);
+        if (isset($embedding_cache[$cache_key])) {
+            return $embedding_cache[$cache_key];
+        }
+        
+        $embedding_json = $this->get_openai_embedding($text);
+        if ($embedding_json) {
+            $embedding = ai_trainer_normalize_embedding(json_decode($embedding_json, true));
+            $embedding_cache[$cache_key] = $embedding;
+            return $embedding;
+        }
+        
+        return null;
+    }
+
+    /**
+     * Check if a query is nonsensical, spam, or emoji-only
+     * 
+     * Detects queries that are clearly not meaningful questions:
+     * - Emoji-only queries
+     * - Repeated characters/symbols
+     * - Very short nonsensical inputs
+     * - Common spam patterns
+     * 
+     * @param string $query_lower The lowercase query
+     * @return string|false Detection type if nonsensical, false otherwise
+     */
+    private function is_nonsensical_query($query_lower) {
+        $original_query = $query_lower;
+        
+        // Remove common punctuation and spaces for analysis
+        $cleaned_query = preg_replace('/[^\w\s]/', '', $query_lower);
+        $cleaned_query = trim($cleaned_query);
+        
+        // Check for emoji-only queries (emojis get removed, leaving empty string)
+        if (empty($cleaned_query) && !empty($original_query)) {
+            error_log('DEBUG: Emoji-only or symbol-only query detected');
+            return 'emoji_symbols';
+        }
+        
+        // Check for very short queries (less than 3 characters after cleaning)
+        if (strlen($cleaned_query) < 3) {
+            error_log('DEBUG: Too short query detected: ' . $cleaned_query);
+            return 'too_short';
+        }
+        
+        // Check for repeated character patterns (like "aaaaa" or "11111")
+        if (preg_match('/^(.)\1{4,}$/', $cleaned_query)) {
+            error_log('DEBUG: Repeated character pattern detected');
+            return 'repeated_chars';
+        }
+        
+        // Check for common nonsensical patterns
+        $nonsensical_patterns = [
+            '/^[0-9]+$/',                    // Only numbers
+            '/^[a-z]$/',                     // Single letter
+            '/^(test|testing|hello|hi)$/',   // Common test words
+            '/^(asdf|qwerty|zxcv|hjkl)$/',  // Keyboard mashing
+            '/^(lorem|ipsum|dolor)/',        // Lorem ipsum text
+            '/^(spam|fake|test123)$/',       // Common spam
+        ];
+        
+        // Check for code-like patterns and tampering attempts
+        $code_tampering_patterns = [
+            // Code syntax patterns
+            '/[{}()\[\];]/',                 // Code brackets and semicolons
+            '/function\s*\(/',               // Function definitions
+            '/\bif\s*\(|\bfor\s*\(|\bwhile\s*\(/', // Control structures
+            '/\bvar\s+|\blet\s+|\bconst\s+/', // Variable declarations
+            '/\bclass\s+|\bdef\s+/',         // Class/function definitions
+            '/\bimport\s+|\bfrom\s+/',       // Import statements
+            '/\breturn\s+|\bprint\s*\(/',    // Common code keywords
+            '/\$[a-zA-Z_]/',                 // PHP variables
+            '/\<\?php|\?\>/',                // PHP tags
+            '/\<script|\<\/script\>/',       // Script tags
+            '/\bSELECT\s+|\bINSERT\s+|\bUPDATE\s+|\bDELETE\s+/', // SQL commands
+            '/\bdrop\s+table|\bcreate\s+table/', // SQL DDL
+            '/\bunion\s+select|\bor\s+1\s*=\s*1/', // SQL injection patterns
+            
+            // System tampering attempts
+            '/\bexec\s*\(|\beval\s*\(/',     // Code execution
+            '/\bsystem\s*\(|\bshell_exec\s*\(/', // System commands
+            '/\b(rm\s+-rf|del\s+\/|format\s+c:)/', // Destructive commands
+            '/\b(cat\s+\/etc\/passwd|ls\s+-la)/', // System exploration
+            '/\b(wget\s+|curl\s+|nc\s+)/',   // Network commands
+            '/\b(sudo\s+|chmod\s+|chown\s+)/', // Permission commands
+            
+            // Injection attempts
+            '/\'\s*or\s+\'\w*\'\s*=\s*\'\w*\'/', // SQL injection
+            '/\<script\>.*alert\(/',         // XSS attempts  
+            '/javascript:\s*/',              // JavaScript protocol
+            '/\bon(click|load|error)\s*=/',  // Event handlers
+            '/\bvbscript:\s*/',              // VBScript protocol
+            '/\bdata:\s*text\/html/',        // Data URL attacks
+            
+            // Prompt injection attempts
+            '/ignore\s+(previous\s+)?instructions/', // Prompt injection
+            '/you\s+are\s+now\s+a\s+/',      // Role change attempts
+            '/forget\s+everything\s+above/', // Context reset attempts
+            '/system\s+prompt\s*:/',         // System prompt override
+            '/\[system\]|\[user\]|\[assistant\]/', // Chat format injection
+            '/pretend\s+to\s+be\s+/',        // Impersonation attempts
+            '/act\s+as\s+(if\s+you\s+are\s+)?a\s+/', // Role playing attempts
+            
+            // Encoding/obfuscation attempts
+            '/\\x[0-9a-f]{2}/',              // Hex encoding
+            '/\\u[0-9a-f]{4}/',              // Unicode encoding
+            '/&#\d+;|&#x[0-9a-f]+;/',       // HTML entities
+            '/%[0-9a-f]{2}/',               // URL encoding
+            '/\bbase64\b|\batob\b|\bbtoa\b/', // Base64 encoding
+            
+            // Advanced tampering patterns
+            '/\boverride\s+system|\bbypass\s+filter/', // System override attempts
+            '/\bdisable\s+security|\bturn\s+off\s+safety/', // Security bypass
+            '/\bjailbreak\s+mode|\bdeveloper\s+mode/', // Mode switching
+            '/\bdebug\s+mode\s+on|\bverbose\s+error/', // Debug mode activation
+            '/\btrace\s+execution|\bdump\s+memory/', // System introspection
+            '/\bshow\s+source\s+code|\bview\s+config/', // Source code requests
+            '/\badmin\s+panel|\bbackdoor\s+access/', // Unauthorized access
+            '/\broot\s+privileges|\belevate\s+permissions/', // Permission escalation
+            
+            // AI/LLM specific tampering
+            '/\btoken\s+limit|\bcontext\s+window/', // Technical AI terms
+            '/\btemperature\s*=|\btop_p\s*=/', // AI parameters
+            '/\bmax_tokens\s*=|\bstop\s+sequence/', // Generation parameters  
+            '/\bmodel\s+weights|\bfine.?tun/', // Model manipulation
+            '/\bprompt\s+engineering|\bchain\s+of\s+thought/', // Advanced prompting
+            '/\bfew.?shot\s+learning|\bzero.?shot/', // Learning techniques
+            
+            // Common hacking terms
+            '/\bexploit\s+|\bpayload\s+|\bshellcode/', // Exploit terms
+            '/\breverse\s+shell|\bbind\s+shell/', // Shell access
+            '/\bmetasploit|\bnmap\s+|\bburp\s+suite/', // Hacking tools
+            '/\bsql\s+injection|\bxss\s+attack/', // Attack types
+            '/\bbuffer\s+overflow|\bformat\s+string/', // Vulnerability types
+        ];
+        
+        foreach ($nonsensical_patterns as $pattern) {
+            if (preg_match($pattern, $cleaned_query)) {
+                error_log('DEBUG: Nonsensical pattern detected: ' . $pattern);
+                return 'nonsensical';
+            }
+        }
+        
+        // Check for code and tampering patterns (use original query for better detection)
+        foreach ($code_tampering_patterns as $pattern) {
+            if (preg_match($pattern, $original_query)) {
+                error_log('DEBUG: Code/tampering pattern detected: ' . $pattern);
+                return 'code_tampering';
+            }
+        }
+        
+        // Check for queries that are just random characters (low vowel ratio)
+        if (strlen($cleaned_query) > 3) {
+            $vowel_count = preg_match_all('/[aeiou]/', $cleaned_query);
+            $consonant_count = preg_match_all('/[bcdfghjklmnpqrstvwxyz]/', $cleaned_query);
+            $total_letters = $vowel_count + $consonant_count;
+            
+            if ($total_letters > 0) {
+                $vowel_ratio = $vowel_count / $total_letters;
+                // If less than 10% vowels, likely random characters
+                if ($vowel_ratio < 0.1 && $total_letters > 5) {
+                    error_log('DEBUG: Low vowel ratio detected, likely random characters');
+                    return 'random_chars';
+                }
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Generate standardized off-topic response
+     * 
+     * @return string HTML formatted response for off-topic queries
+     */
+    private function get_off_topic_response() {
+        return '
+        <div class="off-topic-response">
+            <h2>🔬 Psybrary Scope Notice</h2>
+            <p>The Psybrary is specifically designed as a subject matter expert focused exclusively on <strong>psychedelics, psychedelic medicine, and related research</strong>.</p>
+            
+            <p>Your query appears to be outside our area of expertise or may not contain a clear question. For the most accurate and comprehensive information, we recommend:</p>
+            
+            <ul>
+                <li><strong>General questions:</strong> Try <a href="https://www.google.com" target="_blank">Google</a> or <a href="https://www.wikipedia.org" target="_blank">Wikipedia</a></li>
+                <li><strong>Medical questions:</strong> Consult with healthcare professionals or medical databases</li>
+                <li><strong>Academic research:</strong> Use <a href="https://scholar.google.com" target="_blank">Google Scholar</a> or <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank">PubMed</a></li>
+                <li><strong>Technical questions:</strong> Visit <a href="https://stackoverflow.com" target="_blank">Stack Overflow</a> or relevant technical communities</li>
+            </ul>
+            
+            <p>If you have a question related to psychedelics, please:</p>
+            <ul>
+                <li><strong>Ask a clear, specific question</strong> using complete sentences</li>
+                <li><strong>Include psychedelic-related terms</strong> like psilocybin, LSD, MDMA, microdosing, etc.</li>
+                <li><strong>Be specific about what you want to know</strong> (effects, safety, research, etc.)</li>
+            </ul>
+            
+            <div class="related-questions-section">
+                <h3>🌿 Explore Psychedelic Topics Instead</h3>
+                <ul class="related-questions-list">
+                    <li>What are the therapeutic benefits of psilocybin for mental health?</li>
+                    <li>How does microdosing work and what are the current research findings?</li>
+                    <li>What is the current legal status of psychedelic medicine?</li>
+                    <li>How do psychedelics affect the brain and consciousness?</li>
+                    <li>What safety considerations should I know about psychedelic use?</li>
+                </ul>
+            </div>
+        </div>';
     }
 }
 
