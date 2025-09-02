@@ -11,7 +11,7 @@
  * AI Trainer Dashboard - WordPress Plugin
  * 
  * This plugin provides an AI-powered training dashboard that integrates with Exa.ai and OpenAI
- * to create a RAG (Retrieval-Augmented Generation) system for psychedelic information.
+ * to create a RAG (Retrieval-Augmented Generation) system for drug and substance information.
  * 
  * ============================================================================
  * ARCHITECTURE OVERVIEW
@@ -2265,7 +2265,7 @@ class Exa_AI_Integration {
                 </div>
                 <div class="exa-box-wrapper">
                     <div id="exa-search-box">
-                        <input type="text" id="exa-input" placeholder="Ask anything about psychedelics" />
+                        <input type="text" id="exa-input" placeholder="Ask anything about drugs and substances" />
                         <button id="exa-submit">➜</button>
                         <!-- <button id="exa-voice">🎤</button> -->
                     </div>
@@ -2276,7 +2276,7 @@ class Exa_AI_Integration {
                         <h2>Submit a Ticket</h2>
                         <hr />
                         <p>👋 <strong>Want some human attention?</strong></p>
-                        <p>Want more support? - submit a ticket, and someone who specializes in psychedelics will follow up to discuss this AI-curated answer.</p>
+                        <p>Want more support? - submit a ticket, and someone who specializes in drugs and substances will follow up to discuss this AI-curated answer.</p>
                         <?php 
                             echo do_shortcode('[fluentform id="7"]'); 
                         ?>
@@ -2407,7 +2407,7 @@ class Exa_AI_Integration {
                 'stream' => true,
                 'temperature' => 0.7,
                 'messages' => [
-                    ['role' => 'system', 'content' => 'You are a psychedelic expert and precise HTML content generator. CRITICAL REQUIREMENTS:
+                    ['role' => 'system', 'content' => 'You are a drug and substance expert and precise HTML content generator. CRITICAL REQUIREMENTS:
 
 1. ONLY return valid, complete HTML using these tags: <h2>, <h3>, <p>, <ul>, <ol>, <li>, <a>, <strong>, <em>, <br>
 2. NEVER generate partial tags like "<p" without closing ">" or unclosed tags like "<p>text"
@@ -2506,7 +2506,7 @@ Generate ONLY the HTML content, nothing else. Each tag must be complete and prop
             error_log('DEBUG: Query sanitized: ' . $query);
             error_log('DEBUG: Conversation history: ' . print_r($conversation_history, true));
             
-            // OFF-TOPIC DETECTION: Check if query is related to psychedelics
+            // OFF-TOPIC DETECTION: Check if query is related to drugs/substances
             if (!$this->is_psychedelic_related_query($query)) {
                 error_log('DEBUG: Off-topic query detected: ' . $query);
                 
@@ -4701,7 +4701,7 @@ Generate ONLY the HTML content, nothing else. Each tag must be complete and prop
      * This approach is much more accurate and flexible than keyword-based systems.
      * 
      * @param string $query The user's query
-     * @return bool True if psychedelic-related, false otherwise
+     * @return bool True if drug/substance-related, false otherwise
      */
     private function is_psychedelic_related_query($query) {
         $query_lower = strtolower(trim($query));
@@ -4722,11 +4722,11 @@ Generate ONLY the HTML content, nothing else. Each tag must be complete and prop
     /**
      * OpenAI-powered query classification
      * 
-     * Uses OpenAI to intelligently determine if a query is related to psychedelics.
+     * Uses OpenAI to intelligently determine if a query is related to drugs/substances.
      * This is much more accurate and flexible than pattern matching.
      * 
      * @param string $query The original query
-     * @return bool True if psychedelic-related, false if off-topic
+     * @return bool True if drug/substance-related, false if off-topic
      */
     private function openai_classify_query_intent($query) {
         // Check if we have an API key
@@ -4735,38 +4735,45 @@ Generate ONLY the HTML content, nothing else. Each tag must be complete and prop
             return true; // Fail open if no API key
         }
         
-        $classification_prompt = "You are a content classifier for a psychedelic knowledge base called the Psybrary.
+        $classification_prompt = "You are a content classifier for a drug and substance knowledge base called the Psybrary.
 
-Classify this user query as either PSYCHEDELIC or OFF_TOPIC:
+Classify this user query as either DRUG_RELATED or OFF_TOPIC:
 
-PSYCHEDELIC queries are about:
+DRUG_RELATED queries are about:
 - Psychedelic substances (psilocybin, LSD, MDMA, DMT, ayahuasca, mescaline, etc.)
-- Psychedelic medicine and therapy
-- Microdosing
-- Consciousness research related to psychedelics
-- Harm reduction for psychedelic use
-- Set and setting
-- Psychedelic integration
-- Legal status of psychedelics
-- Research studies on psychedelics
-- Effects and safety of psychedelics
+- Stimulants (cocaine, amphetamines, methamphetamine, caffeine, etc.)
+- Depressants (alcohol, benzodiazepines, barbiturates, opioids, etc.)
+- Cannabis and cannabinoids (THC, CBD, marijuana, hemp, etc.)
+- Opioids (heroin, fentanyl, oxycodone, morphine, etc.)
+- Prescription drugs and pharmaceuticals
+- Drug medicine and therapy
+- Substance use disorders and addiction
+- Harm reduction for any substance use
+- Drug interactions and safety
+- Drug integration and recovery
+- Legal status of substances
+- Research studies on drugs and substances
+- Effects and safety of any drugs or substances
+- Microdosing any substances
+- Drug testing and detection
+- Consciousness research related to any substances
 
 OFF_TOPIC queries are about:
 - Technology, programming, web development
 - Travel, directions, transportation
 - Food, cooking, recipes (like tofu, pasta, etc.)
-- General health, fitness, nutrition (non-psychedelic)
+- General health, fitness, nutrition (non-drug related)
 - Education, study skills, homework
 - Business, career, jobs
 - Entertainment, movies, games
 - Grammar, language, writing
-- Science topics not related to psychedelics
+- Science topics not related to drugs or substances
 - Shopping, consumer products
-- Any other non-psychedelic topics
+- Any other non-drug/substance topics
 
 Query: \"$query\"
 
-Respond with exactly one word: PSYCHEDELIC or OFF_TOPIC";
+Respond with exactly one word: DRUG_RELATED or OFF_TOPIC";
 
         try {
             $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
@@ -4797,12 +4804,12 @@ Respond with exactly one word: PSYCHEDELIC or OFF_TOPIC";
             }
             
             $body = json_decode(wp_remote_retrieve_body($response), true);
-            $classification = trim(strtoupper($body['choices'][0]['message']['content'] ?? 'PSYCHEDELIC'));
+            $classification = trim(strtoupper($body['choices'][0]['message']['content'] ?? 'DRUG_RELATED'));
             
             error_log('DEBUG: OpenAI classification result: ' . $classification);
             
-            // Return true if psychedelic-related, false if off-topic
-            return $classification === 'PSYCHEDELIC';
+            // Return true if drug-related, false if off-topic
+            return $classification === 'DRUG_RELATED';
             
         } catch (Exception $e) {
             error_log('DEBUG: OpenAI classification exception: ' . $e->getMessage());
@@ -4977,7 +4984,7 @@ Respond with exactly one word: PSYCHEDELIC or OFF_TOPIC";
         return '
         <div class="off-topic-response">
             <h2>🔬 Psybrary Scope Notice</h2>
-            <p>The Psybrary is a specialized knowledge base dedicated exclusively to <strong>psychedelics, psychedelic medicine, and related research</strong>.</p>
+            <p>The Psybrary is a specialized knowledge base dedicated to <strong>drugs, substances, psychedelics, and related medicine and research</strong>.</p>
             
             <p>Your query appears outside our scope or may not contain a clear question. For reliable information, we recommend:</p>
             
