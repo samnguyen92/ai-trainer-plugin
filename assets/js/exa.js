@@ -86,6 +86,9 @@ jQuery(document).ready(function($) {
         consecutiveOl: /<\/ol>\s*<ol>/g,
         whitespace: />\s+</g,
         htmlEntities: /(&lt;|&gt;|<>)|<!--.*?-->/gi,
+        ampersandFix: /&amp;/g,
+        brokenSentences: /(\w+)\s+in\s+the\s+s\s+and\s+(\d{4}s)/g,  // Fix "in the s and 1990s"
+        missingSpaces: /(\w+)([A-Z][a-z]+)/g,  // Fix missing spaces between words
         javascript: /^javascript:/i,
         // New patterns for better HTML fixing
         unclosedTags: /<([a-zA-Z][a-zA-Z0-9]*)([^>]*?)(?<!\/)>/g,
@@ -919,14 +922,9 @@ jQuery(document).ready(function($) {
         // Append to the answer block
         block.append(feedbackContainer);
         
-        // Initialize the modern feedback system for this block
-        if (window.FeedbackSystem) {
-            window.FeedbackSystem.createFeedbackUI(chatlogId, feedbackContainer);
-        } else {
-            console.warn('FeedbackSystem not loaded, falling back to basic feedback');
-            // Fallback to basic feedback if the new system isn't loaded
-            addBasicFeedback(feedbackContainer, chatlogId);
-        }
+        // Use simple feedback system (complex system disabled)
+        console.log('Using simple feedback system');
+        addBasicFeedback(feedbackContainer, chatlogId);
         
         // Add share button functionality
         feedbackContainer.find('.share-btn').on('click', function(e) {
@@ -1901,6 +1899,9 @@ jQuery(document).ready(function($) {
                 .replace(REGEX_PATTERNS.consecutiveUl, '')
                 .replace(REGEX_PATTERNS.consecutiveOl, '')
                 .replace(REGEX_PATTERNS.whitespace, '><')
+                .replace(REGEX_PATTERNS.ampersandFix, '&')  // Fix double-encoded ampersands
+                .replace(REGEX_PATTERNS.brokenSentences, '$1 in the 1980s and $2')  // Fix broken decade references
+                .replace(REGEX_PATTERNS.missingSpaces, '$1 $2')  // Add missing spaces between words
                 .trim();
 
             // Truncate if needed (only for display, not for chatlog storage)
@@ -2108,6 +2109,9 @@ jQuery(document).ready(function($) {
         return html
             .replace(REGEX_PATTERNS.whitespace, '><')
             .replace(REGEX_PATTERNS.htmlEntities, '')
+            .replace(REGEX_PATTERNS.ampersandFix, '&')  // Fix double-encoded ampersands
+            .replace(REGEX_PATTERNS.brokenSentences, '$1 in the 1980s and $2')  // Fix broken decade references
+            .replace(REGEX_PATTERNS.missingSpaces, '$1 $2')  // Add missing spaces between words
             .replace(/<([a-zA-Z][a-zA-Z0-9]*)\s+>/g, '<$1>') // Remove empty attributes
             .replace(/\s+>/g, '>') // Clean up trailing spaces
             // Fix malformed anchor tags
@@ -2768,6 +2772,9 @@ jQuery(document).ready(function($) {
             .replace(REGEX_PATTERNS.consecutiveOl, '')
             .replace(REGEX_PATTERNS.whitespace, '><')
             .replace(REGEX_PATTERNS.htmlEntities, '')
+            .replace(REGEX_PATTERNS.ampersandFix, '&')  // Fix double-encoded ampersands
+            .replace(REGEX_PATTERNS.brokenSentences, '$1 in the 1980s and $2')  // Fix broken decade references
+            .replace(REGEX_PATTERNS.missingSpaces, '$1 $2')  // Add missing spaces between words
             .trim();
     }
 

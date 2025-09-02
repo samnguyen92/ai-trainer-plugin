@@ -71,9 +71,11 @@
     }
     
     /**
-     * Bind event listeners
+     * Bind event listeners - DISABLED to prevent conflicts with simple feedback
      */
     bindEvents() {
+        // Complex feedback system disabled - using simple thumbs up/down instead
+        /*
         // Handle feedback button clicks  
         $(document).on('click', '.feedback-btn', this.handleFeedbackClick.bind(this));
         
@@ -88,6 +90,7 @@
         
         // Handle escape key
         $(document).on('keydown', this.handleKeydown.bind(this));
+        */
     }
     
     /**
@@ -856,6 +859,17 @@
     }
     
     /**
+     * Handle feedback button clicks
+     */
+    handleFeedbackClick(e) {
+        const btn = $(e.currentTarget);
+        const type = btn.data('type');
+        const chatlogId = btn.closest('.feedback-container').data('chatlog-id');
+        
+        this.showFeedbackPanel(chatlogId, type);
+    }
+    
+    /**
      * Handle category selection
      */
     handleCategoryClick(e) {
@@ -997,10 +1011,12 @@
     }
 }
 
-// Initialize the feedback system when document is ready
+// Initialize the feedback system when document is ready - DISABLED
+/*
 jQuery(document).ready(function($) {
     window.FeedbackSystem = new FeedbackSystem();
     console.log('🎯 Modern Feedback System loaded and ready');
 });
+*/
 
 })(jQuery);

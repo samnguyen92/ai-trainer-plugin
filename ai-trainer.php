@@ -4682,15 +4682,10 @@ class Exa_AI_Integration {
     }
 
     /**
-     * Multi-layered off-topic detection system
+     * OpenAI-powered off-topic detection system
      * 
-     * Uses a hybrid approach with multiple detection layers:
-     * 1. Quick obvious rejections (minimal keywords)
-     * 2. AI classification for borderline cases  
-     * 3. Semantic similarity as backup
-     * 
-     * This approach is much more accurate than keyword-only systems
-     * and should catch 95%+ of off-topic queries.
+     * Uses OpenAI to intelligently classify query intent rather than brittle pattern matching.
+     * This approach is much more accurate and flexible than keyword-based systems.
      * 
      * @param string $query The user's query
      * @return bool True if psychedelic-related, false otherwise
@@ -4699,109 +4694,66 @@ class Exa_AI_Integration {
         $query_lower = strtolower(trim($query));
         
         // Debug logging for off-topic detection
-        error_log('DEBUG: Multi-layer off-topic detection for query: ' . $query_lower);
+        error_log('DEBUG: OpenAI-powered off-topic detection for query: ' . $query_lower);
         
-        // Layer 0: Check for nonsensical or emoji-only queries
-        $nonsensical_result = $this->is_nonsensical_query($query_lower);
-        if ($nonsensical_result !== false) {
-            error_log('DEBUG: Layer 0 - Nonsensical/tampering query detected: ' . $nonsensical_result);
+        // Step 1: Quick check for nonsensical or malicious queries (keep this simple check)
+        if ($this->is_nonsensical_query($query_lower) !== false) {
+            error_log('DEBUG: Nonsensical/malicious query detected');
             return false;
         }
         
-        // Layer 1: Quick obvious rejections (minimal patterns)
-        if ($this->is_obviously_off_topic($query_lower)) {
-            error_log('DEBUG: Layer 1 - Obviously off-topic query detected');
-            return false;
-        }
-        
-        // Layer 2: AI classification for borderline cases
-        if ($this->classify_query_intent($query)) {
-            error_log('DEBUG: Layer 2 - AI classified as off-topic');
-            return false;
-        }
-        
-        // Layer 3: Semantic similarity as backup
-        if (!$this->is_semantically_psychedelic($query)) {
-            error_log('DEBUG: Layer 3 - Semantic similarity below threshold');
-            return false;
-        }
-        
-        error_log('DEBUG: Query passed all detection layers - allowing');
-        return true; // Passed all checks
+        // Step 2: Use OpenAI to classify the query intent
+        return $this->openai_classify_query_intent($query);
     }
 
     /**
-     * Layer 1: Quick obvious rejections with minimal patterns
-     * Only catches the most obvious off-topic queries to avoid false positives
+     * OpenAI-powered query classification
      * 
-     * @param string $query_lower Lowercase query
-     * @return bool True if obviously off-topic
-     */
-    private function is_obviously_off_topic($query_lower) {
-        // Keep only the most obvious patterns to minimize false positives
-        $obvious_patterns = [
-            // Programming (very specific)
-            '/\b(?:javascript|python|html|css|programming|coding|node\.js|react|angular)\b/i',
-            '/\bhow\s+to\s+(?:code|program|debug|install|setup)\b/i',
-            '/\bwhat\s+is\s+(?:javascript|python|html|css|node\.js|react)\b/i',
-            
-            // Travel (very specific)
-            '/\b(?:flight|airport|hotel|directions|uber|lyft)\b/i',
-            '/\bhow\s+(?:do\s+i|can\s+i)\s+(?:get|go|travel)\s+(?:from|to)\b/i',
-            '/\bportland\s+to\s+|new\s+york\s+to\s+|california\s+to\s+/i',
-            
-            // General topics (very obvious)
-            '/\b(?:weather|sports|cooking|recipe|netflix|youtube)\b/i',
-            '/\bwhat\s+is\s+the\s+weather\b/i',
-            '/\bhow\s+to\s+(?:cook|bake|make\s+food)\b/i',
-            
-            // Grammar/Education (very specific)
-            '/\baffect\s+vs\s+effect|their\s+vs\s+there|your\s+vs\s+you\'re\b/i',
-            '/\benglish\s+grammar|spelling|punctuation\b/i',
-            '/\bhow\s+to\s+write\s+an\s+essay\b/i',
-            
-            // Science (very specific non-psychedelic)
-            '/\bphotosynthesis|mitosis|dna|quantum\s+mechanics\b/i',
-            '/\bhow\s+does\s+photosynthesis\s+work\b/i',
-            
-            // Web optimization (very specific)
-            '/\bimage\s+optimization|web\s+performance|page\s+speed|seo\b/i',
-            '/\bhow\s+to\s+optimize\s+(?:images?|website|performance)\b/i'
-        ];
-        
-        foreach ($obvious_patterns as $pattern) {
-            if (preg_match($pattern, $query_lower)) {
-                error_log('DEBUG: Obviously off-topic pattern matched: ' . $pattern);
-                return true;
-            }
-        }
-        
-        return false;
-    }
-
-    /**
-     * Layer 2: AI classification for borderline cases
-     * Uses OpenAI to classify query intent with high accuracy
+     * Uses OpenAI to intelligently determine if a query is related to psychedelics.
+     * This is much more accurate and flexible than pattern matching.
      * 
      * @param string $query The original query
-     * @return bool True if AI classifies as off-topic
+     * @return bool True if psychedelic-related, false if off-topic
      */
-    private function classify_query_intent($query) {
-        // Skip AI call if we don't have an API key
+    private function openai_classify_query_intent($query) {
+        // Check if we have an API key
         if (empty($this->openai_api_key)) {
-            error_log('DEBUG: No OpenAI API key, skipping AI classification');
-            return false; // Fail open
+            error_log('DEBUG: No OpenAI API key available, allowing query (fail-open)');
+            return true; // Fail open if no API key
         }
         
-        $classification_prompt = "Classify this query into one category:
+        $classification_prompt = "You are a content classifier for a psychedelic knowledge base called the Psybrary.
 
-PSYCHEDELIC: Questions about psychedelics, psychedelic medicine, psilocybin, LSD, MDMA, ayahuasca, microdosing, psychedelic therapy, consciousness research, harm reduction, set and setting, or related topics.
+Classify this user query as either PSYCHEDELIC or OFF_TOPIC:
 
-OFF_TOPIC: Questions about technology, travel, grammar, cooking, sports, general health, programming, web development, study skills, science (non-psychedelic), etc.
+PSYCHEDELIC queries are about:
+- Psychedelic substances (psilocybin, LSD, MDMA, DMT, ayahuasca, mescaline, etc.)
+- Psychedelic medicine and therapy
+- Microdosing
+- Consciousness research related to psychedelics
+- Harm reduction for psychedelic use
+- Set and setting
+- Psychedelic integration
+- Legal status of psychedelics
+- Research studies on psychedelics
+- Effects and safety of psychedelics
+
+OFF_TOPIC queries are about:
+- Technology, programming, web development
+- Travel, directions, transportation
+- Food, cooking, recipes (like tofu, pasta, etc.)
+- General health, fitness, nutrition (non-psychedelic)
+- Education, study skills, homework
+- Business, career, jobs
+- Entertainment, movies, games
+- Grammar, language, writing
+- Science topics not related to psychedelics
+- Shopping, consumer products
+- Any other non-psychedelic topics
 
 Query: \"$query\"
 
-Respond with only: PSYCHEDELIC or OFF_TOPIC";
+Respond with exactly one word: PSYCHEDELIC or OFF_TOPIC";
 
         try {
             $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
@@ -4810,108 +4762,42 @@ Respond with only: PSYCHEDELIC or OFF_TOPIC";
                     'Content-Type' => 'application/json',
                 ],
                 'body' => json_encode([
-                    'model' => 'gpt-4o-mini', // Fast and cheap for classification
+                    'model' => 'gpt-4o-mini', // Fast and cost-effective for classification
                     'messages' => [
                         ['role' => 'user', 'content' => $classification_prompt]
                     ],
-                    'max_tokens' => 10,
-                    'temperature' => 0 // Deterministic
+                    'max_tokens' => 5,
+                    'temperature' => 0 // Deterministic classification
                 ]),
-                'timeout' => 10
+                'timeout' => 15
             ]);
             
             if (is_wp_error($response)) {
-                error_log('DEBUG: AI classification API error: ' . $response->get_error_message());
-                return false; // Fail open on API errors
+                error_log('DEBUG: OpenAI classification API error: ' . $response->get_error_message());
+                return true; // Fail open on API errors
+            }
+            
+            $http_code = wp_remote_retrieve_response_code($response);
+            if ($http_code !== 200) {
+                error_log('DEBUG: OpenAI classification HTTP error: ' . $http_code);
+                return true; // Fail open on HTTP errors
             }
             
             $body = json_decode(wp_remote_retrieve_body($response), true);
-            $classification = trim($body['choices'][0]['message']['content'] ?? 'PSYCHEDELIC');
+            $classification = trim(strtoupper($body['choices'][0]['message']['content'] ?? 'PSYCHEDELIC'));
             
-            error_log('DEBUG: AI classification result: ' . $classification);
-            return $classification === 'OFF_TOPIC';
+            error_log('DEBUG: OpenAI classification result: ' . $classification);
+            
+            // Return true if psychedelic-related, false if off-topic
+            return $classification === 'PSYCHEDELIC';
             
         } catch (Exception $e) {
-            error_log('DEBUG: AI classification exception: ' . $e->getMessage());
-            return false; // Fail open on exceptions
+            error_log('DEBUG: OpenAI classification exception: ' . $e->getMessage());
+            return true; // Fail open on exceptions
         }
     }
 
-    /**
-     * Layer 3: Semantic similarity to psychedelic topics
-     * Uses embeddings to measure similarity to known psychedelic content
-     * 
-     * @param string $query The original query
-     * @return bool True if semantically similar to psychedelic topics
-     */
-    private function is_semantically_psychedelic($query) {
-        try {
-            // Generate embedding for the query
-            $query_embedding = $this->get_openai_embedding($query);
-            if (!$query_embedding) {
-                error_log('DEBUG: Could not generate query embedding, allowing query');
-                return true; // Fail open if we can't get embeddings
-            }
-            
-            $query_embedding = ai_trainer_normalize_embedding(json_decode($query_embedding, true));
-            
-            // Pre-defined psychedelic topic embeddings (these would be pre-computed)
-            $psychedelic_topics = [
-                "psilocybin mushrooms therapeutic benefits mental health treatment",
-                "MDMA therapy PTSD treatment clinical trials breakthrough therapy",
-                "LSD microdosing cognitive enhancement research studies", 
-                "ayahuasca ceremony spiritual healing consciousness exploration",
-                "psychedelic medicine breakthrough therapy FDA approval",
-                "set and setting harm reduction psychedelic safety guidelines",
-                "psychedelic integration therapy mental health treatment",
-                "consciousness research altered states psychedelic experience"
-            ];
-            
-            $max_similarity = 0;
-            foreach ($psychedelic_topics as $topic) {
-                $topic_embedding = $this->get_cached_or_generate_embedding($topic);
-                if ($topic_embedding) {
-                    $similarity = $this->cosine_similarity($query_embedding, $topic_embedding);
-                    $max_similarity = max($max_similarity, $similarity);
-                }
-            }
-            
-            error_log('DEBUG: Maximum semantic similarity: ' . $max_similarity);
-            
-            // If similarity is below threshold, likely off-topic
-            $threshold = 0.25; // Tune this threshold based on testing
-            return $max_similarity > $threshold;
-            
-        } catch (Exception $e) {
-            error_log('DEBUG: Semantic similarity error: ' . $e->getMessage());
-            return true; // Fail open on errors
-        }
-    }
 
-    /**
-     * Get cached embedding or generate new one
-     * 
-     * @param string $text Text to get embedding for
-     * @return array|null Normalized embedding array or null on failure
-     */
-    private function get_cached_or_generate_embedding($text) {
-        // Simple in-memory cache for this session
-        static $embedding_cache = [];
-        
-        $cache_key = md5($text);
-        if (isset($embedding_cache[$cache_key])) {
-            return $embedding_cache[$cache_key];
-        }
-        
-        $embedding_json = $this->get_openai_embedding($text);
-        if ($embedding_json) {
-            $embedding = ai_trainer_normalize_embedding(json_decode($embedding_json, true));
-            $embedding_cache[$cache_key] = $embedding;
-            return $embedding;
-        }
-        
-        return null;
-    }
 
     /**
      * Check if a query is nonsensical, spam, or emoji-only
@@ -5078,32 +4964,37 @@ Respond with only: PSYCHEDELIC or OFF_TOPIC";
         return '
         <div class="off-topic-response">
             <h2>🔬 Psybrary Scope Notice</h2>
-            <p>The Psybrary is specifically designed as a subject matter expert focused exclusively on <strong>psychedelics, psychedelic medicine, and related research</strong>.</p>
+            <p>The Psybrary is a specialized knowledge base dedicated exclusively to <strong>psychedelics, psychedelic medicine, and related research</strong>.</p>
             
-            <p>Your query appears to be outside our area of expertise or may not contain a clear question. For the most accurate and comprehensive information, we recommend:</p>
+            <p>Your query appears outside our scope or may not contain a clear question. For reliable information, we recommend:</p>
             
             <ul>
-                <li><strong>General questions:</strong> Try <a href="https://www.google.com" target="_blank">Google</a> or <a href="https://www.wikipedia.org" target="_blank">Wikipedia</a></li>
-                <li><strong>Medical questions:</strong> Consult with healthcare professionals or medical databases</li>
-                <li><strong>Academic research:</strong> Use <a href="https://scholar.google.com" target="_blank">Google Scholar</a> or <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank">PubMed</a></li>
-                <li><strong>Technical questions:</strong> Visit <a href="https://stackoverflow.com" target="_blank">Stack Overflow</a> or relevant technical communities</li>
+                <li><strong>General knowledge:</strong> <a href="https://www.google.com" target="_blank">Google</a>, <a href="https://www.wikipedia.org" target="_blank">Wikipedia</a></li>
+                <li><strong>Medical advice:</strong> <a href="https://www.mayoclinic.org" target="_blank">Mayo Clinic</a>, <a href="https://medlineplus.gov" target="_blank">MedlinePlus</a></li>
+                <li><strong>Academic research:</strong> <a href="https://scholar.google.com" target="_blank">Google Scholar</a>, <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank">PubMed</a></li>
+                <li><strong>Technical support:</strong> <a href="https://stackoverflow.com" target="_blank">Stack Overflow</a></li>
             </ul>
             
-            <p>If you have a question related to psychedelics, please:</p>
+            <hr style="border: none; border-top: 1px solid rgba(156, 39, 176, 0.3); margin: 25px 0;">
+            
+            <h3>How to Get the Best Psybrary Answer</h3>
+            <p>When asking about psychedelics, please:</p>
             <ul>
-                <li><strong>Ask a clear, specific question</strong> using complete sentences</li>
-                <li><strong>Include psychedelic-related terms</strong> like psilocybin, LSD, MDMA, microdosing, etc.</li>
-                <li><strong>Be specific about what you want to know</strong> (effects, safety, research, etc.)</li>
+                <li><strong>Use clear, complete sentences</strong></li>
+                <li><strong>Include psychedelic-related terms</strong> (e.g., psilocybin, LSD, MDMA, microdosing)</li>
+                <li><strong>Be specific</strong> (e.g., effects, safety, current research, legality)</li>
             </ul>
+            
+            <hr style="border: none; border-top: 1px solid rgba(156, 39, 176, 0.3); margin: 25px 0;">
             
             <div class="related-questions-section">
-                <h3>🌿 Explore Psychedelic Topics Instead</h3>
+                <h3>🌿 Example Psychedelic Questions You Can Ask</h3>
                 <ul class="related-questions-list">
                     <li>What are the therapeutic benefits of psilocybin for mental health?</li>
-                    <li>How does microdosing work and what are the current research findings?</li>
+                    <li>How does microdosing work and what does research say so far?</li>
                     <li>What is the current legal status of psychedelic medicine?</li>
                     <li>How do psychedelics affect the brain and consciousness?</li>
-                    <li>What safety considerations should I know about psychedelic use?</li>
+                    <li>What safety considerations should I know before use?</li>
                 </ul>
                 <div class="off-topic-actions">
                     <button class="new-search-btn" onclick="startNewSearch()">
@@ -5111,7 +5002,7 @@ Respond with only: PSYCHEDELIC or OFF_TOPIC";
                             <circle cx="11" cy="11" r="8"></circle>
                             <path d="m21 21-4.35-4.35"></path>
                         </svg>
-                        Start New Search
+                        Start a New Psychedelic Search
                     </button>
                 </div>
             </div>
