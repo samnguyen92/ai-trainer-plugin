@@ -5004,108 +5004,108 @@ Respond with exactly one word: DRUG_RELATED or OFF_TOPIC";
      */
     private function get_off_topic_response() {
         return '
-        <div class="off-topic-response" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 16px; padding: 24px; margin: 20px 0; color: white; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);">
-            <h2 style="text-align: center; margin-bottom: 20px; font-size: 24px; color: white;">🔬 Psybrary Scope Notice</h2>
-            <p style="font-size: 16px; margin-bottom: 16px; text-align: center;">It looks like your question may be outside The Psybrary\'s expertise.</p>
+        <div class="off-topic-response" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 16px; padding: 16px; margin: 20px 0; color: white; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); max-width: 100%; overflow: hidden;">
+            <h2 style="text-align: center; margin-bottom: 20px; font-size: 20px; color: white; line-height: 1.3;">🔬 Psybrary Scope Notice</h2>
+            <p style="font-size: 15px; margin-bottom: 16px; text-align: center; line-height: 1.4;">It looks like your question may be outside The Psybrary\'s expertise.</p>
             
-            <div style="background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.1);">
-                <p style="font-size: 16px; margin-bottom: 16px; text-align: center;">The Psybrary is a specialized knowledge base focused on <strong style="color: #a855f7;">psychedelics, substances, and related research</strong>.</p>
+            <div style="background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                <p style="font-size: 15px; margin-bottom: 16px; text-align: center; line-height: 1.4;">The Psybrary is a specialized knowledge base focused on <strong style="color: #a855f7;">psychedelics, substances, and related research</strong>.</p>
                 
-                <p style="font-size: 16px; margin-bottom: 16px; font-weight: 500; text-align: center;">For other reliable info, you might try:</p>
+                <p style="font-size: 15px; margin-bottom: 16px; font-weight: 500; text-align: center; line-height: 1.4;">For other reliable info, you might try:</p>
                 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
-                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; text-align: center;">
-                        <h4 style="color: #a855f7; margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">General knowledge</h4>
-                        <div style="font-size: 14px;">
-                            <a href="https://www.google.com" target="_blank" style="color: #60a5fa; text-decoration: none; margin-right: 8px;">Google</a>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px;">
+                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center;">
+                        <h4 style="color: #a855f7; margin: 0 0 6px 0; font-size: 13px; font-weight: 600;">General knowledge</h4>
+                        <div style="font-size: 12px; display: flex; flex-direction: column; gap: 4px;">
+                            <a href="https://www.google.com" target="_blank" style="color: #60a5fa; text-decoration: none;">Google</a>
                             <a href="https://www.wikipedia.org" target="_blank" style="color: #60a5fa; text-decoration: none;">Wikipedia</a>
                         </div>
                     </div>
                     
-                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; text-align: center;">
-                        <h4 style="color: #a855f7; margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">Health & medicine</h4>
-                        <div style="font-size: 14px;">
-                            <a href="https://www.mayoclinic.org" target="_blank" style="color: #60a5fa; text-decoration: none; margin-right: 8px;">Mayo Clinic</a>
+                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center;">
+                        <h4 style="color: #a855f7; margin: 0 0 6px 0; font-size: 13px; font-weight: 600;">Health & medicine</h4>
+                        <div style="font-size: 12px; display: flex; flex-direction: column; gap: 4px;">
+                            <a href="https://www.mayoclinic.org" target="_blank" style="color: #60a5fa; text-decoration: none;">Mayo Clinic</a>
                             <a href="https://medlineplus.gov" target="_blank" style="color: #60a5fa; text-decoration: none;">MedlinePlus</a>
                         </div>
                     </div>
                     
-                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; text-align: center;">
-                        <h4 style="color: #a855f7; margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">Academic research</h4>
-                        <div style="font-size: 14px;">
-                            <a href="https://scholar.google.com" target="_blank" style="color: #60a5fa; text-decoration: none; margin-right: 8px;">Google Scholar</a>
+                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center;">
+                        <h4 style="color: #a855f7; margin: 0 0 6px 0; font-size: 13px; font-weight: 600;">Academic research</h4>
+                        <div style="font-size: 12px; display: flex; flex-direction: column; gap: 4px;">
+                            <a href="https://scholar.google.com" target="_blank" style="color: #60a5fa; text-decoration: none;">Google Scholar</a>
                             <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank" style="color: #60a5fa; text-decoration: none;">PubMed</a>
                         </div>
                     </div>
                     
-                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; text-align: center;">
-                        <h4 style="color: #a855f7; margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">Tech support</h4>
-                        <div style="font-size: 14px;">
+                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center;">
+                        <h4 style="color: #a855f7; margin: 0 0 6px 0; font-size: 13px; font-weight: 600;">Tech support</h4>
+                        <div style="font-size: 12px; display: flex; flex-direction: column; gap: 4px;">
                             <a href="https://stackoverflow.com" target="_blank" style="color: #60a5fa; text-decoration: none;">Stack Overflow</a>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <div style="background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.1);">
-                <h3 style="color: white; margin: 0 0 16px 0; font-size: 18px; font-weight: 600; text-align: center;">💡 How to Get the Best Psybrary Answer</h3>
-                <p style="margin: 0 0 16px 0; font-size: 16px; text-align: center;">To get the most useful response here, try to:</p>
+            <div style="background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                <h3 style="color: white; margin: 0 0 16px 0; font-size: 16px; font-weight: 600; text-align: center; line-height: 1.3;">💡 How to Get the Best Psybrary Answer</h3>
+                <p style="margin: 0 0 16px 0; font-size: 14px; text-align: center; line-height: 1.4;">To get the most useful response here, try to:</p>
                 
                 <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; min-width: 300px; justify-content: center;">
-                        <span style="background: #a855f7; color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold;">1</span>
-                        <span style="font-size: 15px; text-align: center;"><strong>Write in clear, complete sentences</strong></span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; width: 100%; max-width: 280px; justify-content: center;">
+                        <span style="background: #a855f7; color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; flex-shrink: 0;">1</span>
+                        <span style="font-size: 13px; text-align: center; line-height: 1.3;"><strong>Write in clear, complete sentences</strong></span>
                     </div>
                     
-                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; min-width: 300px; justify-content: center;">
-                        <span style="background: #a855f7; color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold;">2</span>
-                        <span style="font-size: 15px; text-align: center;"><strong>Include psychedelic-related terms:</strong> psilocybin, LSD, MDMA, microdosing</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; width: 100%; max-width: 280px; justify-content: center;">
+                        <span style="background: #a855f7; color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; flex-shrink: 0;">2</span>
+                        <span style="font-size: 13px; text-align: center; line-height: 1.3;"><strong>Include psychedelic-related terms:</strong> psilocybin, LSD, MDMA, microdosing</span>
                     </div>
                     
-                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; min-width: 300px; justify-content: center;">
-                        <span style="background: #a855f7; color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold;">3</span>
-                        <span style="font-size: 15px; text-align: center;"><strong>Be specific:</strong> effects, safety, research, legality, etc.</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; width: 100%; max-width: 280px; justify-content: center;">
+                        <span style="background: #a855f7; color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; flex-shrink: 0;">3</span>
+                        <span style="font-size: 13px; text-align: center; line-height: 1.3;"><strong>Be specific:</strong> effects, safety, research, legality, etc.</span>
                     </div>
                 </div>
             </div>
             
-            <div style="background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 20px; border: 1px solid rgba(255, 255, 255, 0.1);">
-                <h3 style="color: white; margin: 0 0 16px 0; font-size: 18px; font-weight: 600; text-align: center;">🌿 Example Psychedelic Questions You Can Ask</h3>
+            <div style="background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 16px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                <h3 style="color: white; margin: 0 0 16px 0; font-size: 16px; font-weight: 600; text-align: center; line-height: 1.3;">🌿 Example Psychedelic Questions You Can Ask</h3>
                 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; margin-bottom: 16px;">
-                    <div class="example-question" onclick="askFollowupQuestion(\'What\\\'s a typical microdosing schedule people follow?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
-                        <p style="margin: 0; font-size: 14px; line-height: 1.4; color: white;">What\'s a typical microdosing schedule people follow?</p>
-                        <div style="position: absolute; top: 8px; right: 8px; width: 16px; height: 16px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #a855f7;">→</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-bottom: 16px;">
+                    <div class="example-question" onclick="askFollowupQuestion(\'What\\\'s a typical microdosing schedule people follow?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
+                        <p style="margin: 0; font-size: 13px; line-height: 1.3; color: white;">What\'s a typical microdosing schedule people follow?</p>
+                        <div style="position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #a855f7;">→</div>
                     </div>
                     
-                    <div class="example-question" onclick="askFollowupQuestion(\'How long does an LSD trip usually last?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
-                        <p style="margin: 0; font-size: 14px; line-height: 1.4; color: white;">How long does an LSD trip usually last?</p>
-                        <div style="position: absolute; top: 8px; right: 8px; width: 16px; height: 16px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #a855f7;">→</div>
+                    <div class="example-question" onclick="askFollowupQuestion(\'How long does an LSD trip usually last?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
+                        <p style="margin: 0; font-size: 13px; line-height: 1.3; color: white;">How long does an LSD trip usually last?</p>
+                        <div style="position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #a855f7;">→</div>
                     </div>
                     
-                    <div class="example-question" onclick="askFollowupQuestion(\'Is it safe to mix psilocybin with antidepressants?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
-                        <p style="margin: 0; font-size: 14px; line-height: 1.4; color: white;">Is it safe to mix psilocybin with antidepressants?</p>
-                        <div style="position: absolute; top: 8px; right: 8px; width: 16px; height: 16px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #a855f7;">→</div>
+                    <div class="example-question" onclick="askFollowupQuestion(\'Is it safe to mix psilocybin with antidepressants?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
+                        <p style="margin: 0; font-size: 13px; line-height: 1.3; color: white;">Is it safe to mix psilocybin with antidepressants?</p>
+                        <div style="position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #a855f7;">→</div>
                     </div>
                     
-                    <div class="example-question" onclick="askFollowupQuestion(\'What\\\'s the difference between MDMA and Molly?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
-                        <p style="margin: 0; font-size: 14px; line-height: 1.4; color: white;">What\'s the difference between MDMA and Molly?</p>
-                        <div style="position: absolute; top: 8px; right: 8px; width: 16px; height: 16px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #a855f7;">→</div>
+                    <div class="example-question" onclick="askFollowupQuestion(\'What\\\'s the difference between MDMA and Molly?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
+                        <p style="margin: 0; font-size: 13px; line-height: 1.3; color: white;">What\'s the difference between MDMA and Molly?</p>
+                        <div style="position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #a855f7;">→</div>
                     </div>
                     
-                    <div class="example-question" onclick="askFollowupQuestion(\'Can psychedelics help with anxiety or depression?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
-                        <p style="margin: 0; font-size: 14px; line-height: 1.4; color: white;">Can psychedelics help with anxiety or depression?</p>
-                        <div style="position: absolute; top: 8px; right: 8px; width: 16px; height: 16px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #a855f7;">→</div>
+                    <div class="example-question" onclick="askFollowupQuestion(\'Can psychedelics help with anxiety or depression?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
+                        <p style="margin: 0; font-size: 13px; line-height: 1.3; color: white;">Can psychedelics help with anxiety or depression?</p>
+                        <div style="position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #a855f7;">→</div>
                     </div>
                     
-                    <div class="example-question" onclick="askFollowupQuestion(\'What should I do to prepare for my first mushroom trip?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
-                        <p style="margin: 0; font-size: 14px; line-height: 1.4; color: white;">What should I do to prepare for my first mushroom trip?</p>
-                        <div style="position: absolute; top: 8px; right: 8px; width: 16px; height: 16px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #a855f7;">→</div>
+                    <div class="example-question" onclick="askFollowupQuestion(\'What should I do to prepare for my first mushroom trip?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
+                        <p style="margin: 0; font-size: 13px; line-height: 1.3; color: white;">What should I do to prepare for my first mushroom trip?</p>
+                        <div style="position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #a855f7;">→</div>
                     </div>
                 </div>
                 
                 <div style="text-align: center;">
-                    <button class="new-search-btn" onclick="startNewSearch()" style="background: linear-gradient(45deg, #10b981, #34d399); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);">
+                    <button class="new-search-btn" onclick="startNewSearch()" style="background: linear-gradient(45deg, #10b981, #34d399); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3); width: 100%; max-width: 280px;">
                         🔍 Start a New Psychedelic Search
                     </button>
                 </div>
@@ -5113,6 +5113,11 @@ Respond with exactly one word: DRUG_RELATED or OFF_TOPIC";
         </div>
         
         <script>
+        function startNewSearch() {
+            // Navigate to the homepage
+            window.location.href = \'http://localpsybrary.local/\';
+        }
+        
         function askFollowupQuestion(question) {
             console.log(\'Attempting to ask question:\', question);
             
