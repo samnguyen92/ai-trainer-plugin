@@ -260,8 +260,8 @@ jQuery(document).ready(function($) {
         offTopicBlock.find('.related-questions-list li').on('click', function() {
             const suggestedQuery = $(this).text();
             $exaInput.val(suggestedQuery);
-            // Trigger search with the suggested query
-            $('#exa-form').trigger('submit');
+            // Submit search with the suggested query
+            submitSearch();
         });
         
         // Ensure the new search button is properly bound
@@ -5457,6 +5457,45 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         }
         
         if (!$relatedQuestionsList.length) return;
+        
+        // Add click handlers to each related question
+        $relatedQuestionsList.find('li').each(function() {
+            const $li = $(this);
+            let questionText = $li.text().trim();
+            
+            // Check if there's a link inside the li element
+            const $link = $li.find('a');
+            if ($link.length > 0) {
+                questionText = $link.text().trim();
+                // Remove the href to prevent navigation
+                $link.removeAttr('href');
+            }
+            
+            // Skip if this is empty or contains informational content
+            if (!questionText || questionText.includes('What it is:') || 
+                questionText.includes('How it works:') || questionText.includes('Potential benefits:') ||
+                questionText.includes('MANDATORY:') || questionText.includes('<!--')) {
+                return;
+            }
+            
+            // Add cursor pointer and click handler
+            $li.css('cursor', 'pointer');
+            $li.addClass('related-question-clickable');
+            
+            $li.off('click').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Populate the input field with the question
+                $exaInput.val(questionText);
+                
+                // Focus on the input field
+                $exaInput.focus();
+                
+                // Submit the search
+                submitSearch();
+            });
+        });
     }
 
 
@@ -5684,6 +5723,37 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
             if (settings.url && settings.url.includes('ajax')) {
                 setTimeout(formatAllReactionDetails, 100);
             }
+        });
+        
+        // Global event handler for related questions that might be added dynamically
+        $(document).on('click', '.section-related-questions li', function(e) {
+            const $li = $(this);
+            let questionText = $li.text().trim();
+            
+            // Check if there's a link inside the li element
+            const $link = $li.find('a');
+            if ($link.length > 0) {
+                questionText = $link.text().trim();
+            }
+            
+            // Skip if this is empty or contains informational content
+            if (!questionText || questionText.includes('What it is:') || 
+                questionText.includes('How it works:') || questionText.includes('Potential benefits:') ||
+                questionText.includes('MANDATORY:') || questionText.includes('<!--')) {
+                return;
+            }
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Populate the input field with the question
+            $exaInput.val(questionText);
+            
+            // Focus on the input field
+            $exaInput.focus();
+            
+            // Submit the search
+            submitSearch();
         });
     });
 
