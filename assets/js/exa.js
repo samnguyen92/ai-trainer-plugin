@@ -1880,47 +1880,104 @@ jQuery(document).ready(function($) {
      * // Returns safe HTML for display
      */
     function sanitizeHTML(html) {
+        // Redirect to unified sanitization method to prevent conflicts
+        return unifiedSanitizeHTML(html);
+    }
+
+    /**
+     * Unified HTML sanitization combining all approaches
+     * 
+     * This is the single method that replaces all other sanitization methods.
+     * It combines structure repair, DOMParser processing, and regex cleanup
+     * in the correct order to prevent conflicts.
+     * 
+     * @param {string} html - Raw HTML content to sanitize
+     * @returns {string} Clean, validated HTML content
+     */
+    function unifiedSanitizeHTML(html) {
         if (!html || typeof html !== 'string') {
             return '';
         }
 
-        // Log HTML issues for debugging
-        logHTMLIssues(html, 'pre-sanitization');
-
         try {
-            // Use enhanced sanitization
-            let safe = enhancedSanitizeHTML(html);
+            // Log initial HTML issues for debugging
+            logHTMLIssues(html, 'pre-unified-sanitization');
 
-            // Apply additional custom fixes
-            safe = safe
-                .replace(REGEX_PATTERNS.hrefFix, '<a href="$1">')
-                .replace(REGEX_PATTERNS.linkText, '</a> $1')
-                .replace(REGEX_PATTERNS.emptyLi, '')
-                .replace(REGEX_PATTERNS.consecutiveUl, '')
-                .replace(REGEX_PATTERNS.consecutiveOl, '')
-                .replace(REGEX_PATTERNS.whitespace, '><')
-                .replace(REGEX_PATTERNS.ampersandFix, '&')  // Fix double-encoded ampersands
-                .replace(REGEX_PATTERNS.brokenSentences, '$1 in the 1980s and $2')  // Fix broken decade references
-                .replace(REGEX_PATTERNS.missingSpaces, '$1 $2')  // Add missing spaces between words
+            // STEP 1: Pre-process and fix obvious structural issues
+            let processed = html
+                .replace(REGEX_PATTERNS.doubleSpaces, ' ')
+                .replace(REGEX_PATTERNS.lineBreaks, '\n')
+                .replace(REGEX_PATTERNS.emptyParagraphs, '')
                 .trim();
 
-            // Truncate if needed (only for display, not for chatlog storage)
+            // STEP 2: Fix malformed tags that can't be parsed
+            processed = fixUnclosedTags(processed);
+            processed = removeOrphanedClosingTags(processed);
+
+            // STEP 3: Use DOMParser for structure validation and cleaning
+            const parser = new DOMParser();
+            const doc = parser.parseFromString('<div>' + processed + '</div>', 'text/html');
+
+            // STEP 4: Remove unsafe elements
+            doc.querySelectorAll('script, style, iframe, object, embed').forEach(el => el.remove());
+
+            // STEP 5: Fix structure issues
+            fixListStructure(doc);
+            fixTableStructure(doc);
+            fixParagraphStructure(doc);
+            
+            // STEP 6: Validate and clean nodes
+            validateAndCleanNodes(doc.body.firstChild);
+
+            // STEP 7: Extract clean HTML
+            let safe = doc.body.firstChild.innerHTML;
+
+            // STEP 8: Apply regex fixes in dependency order (most critical change)
+            safe = safe
+                .replace(REGEX_PATTERNS.whitespace, '><')                    // First: clean whitespace
+                .replace(REGEX_PATTERNS.htmlEntities, '')                    // Then: remove entities
+                .replace(REGEX_PATTERNS.hrefFix, '<a href="$1">')           // Then: fix href attributes
+                .replace(REGEX_PATTERNS.linkText, '</a> $1')                // Then: fix link text spacing
+                .replace(REGEX_PATTERNS.emptyLi, '')                        // Then: remove empty list items
+                .replace(REGEX_PATTERNS.consecutiveUl, '')                  // Then: merge consecutive lists
+                .replace(REGEX_PATTERNS.consecutiveOl, '')                  // Then: merge consecutive ordered lists
+                .replace(REGEX_PATTERNS.ampersandFix, '&')                  // Then: fix double-encoded ampersands
+                .replace(REGEX_PATTERNS.brokenSentences, '$1 in the 1980s and $2')  // Then: fix broken decade references
+                .replace(REGEX_PATTERNS.missingSpaces, '$1 $2')             // Finally: add missing spaces between words
+                .trim();
+
+            // STEP 9: Truncate if needed (only for display, not for chatlog storage)
             if (safe.length > MAX_LENGTH) {
                 safe = truncateHTML(safe);
             }
 
-            // Apply green color to "Where to Learn More" section
+            // STEP 10: Apply special styling
             safe = applyWhereToLearnMoreStyling(safe);
 
-            // Fix truncated years that commonly get cut off
+            // STEP 11: Fix truncated years that commonly get cut off
             safe = fixTruncatedYears(safe);
 
+            // STEP 12: Fix specific common AI errors
+            safe = safe
+                .replace(/\b(li|ul|ol|div|span)\b(?![^<]*>)/g, '')  // Remove stray tag names not in tags
+                .replace(/<li>\s*<\/li>/g, '')                       // Remove empty list items
+                .replace(/(<\/[^>]+>)\s*\1/g, '$1')                 // Remove duplicate closing tags
+                .replace(/^[^<]*?(<[^>]+>)/g, '$1')                 // Remove text before first tag
+                .replace(/(<\/[^>]+>)[^<]*?$/g, '$1');              // Remove text after last tag
+
+            // STEP 13: Final validation check
+            const finalIssues = validateHTMLStructure(safe);
+            if (finalIssues.length > 3) {
+                console.warn('Unified sanitization produced issues, using fallback:', finalIssues);
+                return fallbackSanitize(html);
+            }
+
             // Log final HTML issues
-            logHTMLIssues(safe, 'post-sanitization');
+            logHTMLIssues(safe, 'post-unified-sanitization');
 
             return safe;
         } catch (e) {
-            console.warn('Sanitize error:', e, 'Original HTML:', html);
+            console.warn('Unified sanitization error:', e, 'Original HTML:', html.substring(0, 200));
             return fallbackSanitize(html);
         }
     }
@@ -1928,6 +1985,7 @@ jQuery(document).ready(function($) {
     /**
      * Enhanced HTML sanitization with comprehensive fixing
      * 
+     * @deprecated Use unifiedSanitizeHTML instead
      * This function provides comprehensive HTML cleaning and fixing:
      * - Fixes unclosed tags systematically
      * - Removes orphaned closing tags
@@ -2868,10 +2926,17 @@ jQuery(document).ready(function($) {
             function readStream() {
                 return reader.read().then(({ done, value }) => {
                     if (done) {
-                        // Stream complete
+                        // Stream complete - apply final unified sanitization
                         performance.measure('stream_complete', PERFORMANCE_MARK);
-                        const cleanedHTML = sanitizeHTML(buffer);
-                        container.innerHTML = cleanedHTML;
+                        let cleanedHTML;
+                        try {
+                            cleanedHTML = unifiedSanitizeHTML(buffer);
+                            container.innerHTML = cleanedHTML;
+                        } catch (error) {
+                            console.warn('Final HTML sanitization error:', error);
+                            cleanedHTML = fallbackSanitize(buffer);
+                            container.innerHTML = cleanedHTML;
+                        }
                         
                         // Make related questions clickable after content is loaded
                         makeRelatedQuestionsClickable(container);
@@ -2943,19 +3008,24 @@ jQuery(document).ready(function($) {
                             const data = line.slice(6);
                             if (data && data !== '[DONE]') {
                                 buffer += data;
-                                // Optimized DOM updates with throttling for better performance
+                                // Show raw buffer during streaming - sanitize only when complete
                                 const now = Date.now();
                                 if (now - lastUpdate > UPDATE_THROTTLE) {
-                                    try {
-                                        const sanitizedBuffer = sanitizeHTML(buffer);
-                                        container.innerHTML = sanitizedBuffer;
-                                        lastUpdate = now;
-                                    } catch (error) {
-                                        console.warn('HTML sanitization error during streaming:', error);
-                                        // Fallback to basic sanitization
-                                        container.innerHTML = fallbackSanitize(buffer);
+                                    // Display raw buffer without sanitization to avoid partial HTML corruption
+                                    container.innerHTML = buffer;
                                     lastUpdate = now;
-                                    }
+                                }
+                            } else if (data === '[DONE]') {
+                                // Only sanitize when streaming is complete
+                                let cleanedHTML;
+                                try {
+                                    cleanedHTML = unifiedSanitizeHTML(buffer);
+                                    container.innerHTML = cleanedHTML;
+                                } catch (error) {
+                                    console.warn('HTML sanitization error on completion:', error);
+                                    // Fallback to basic sanitization
+                                    cleanedHTML = fallbackSanitize(buffer);
+                                    container.innerHTML = cleanedHTML;
                                 }
                             }
                         }
@@ -3087,19 +3157,18 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
   If the trusted sources do not provide enough information to answer, output exactly:
   <h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>
 
-  Formatting rules:
-  - Output valid HTML only (no Markdown).
-  - Prefer <h2>, <h3>, <p>, <ul>, <ol>, <li>, <table>, <thead>, <tbody>, <tr>, <td>, <th>, <a>.
-  - Keep it concise and avoid repetition.
-  - ALWAYS include the "Related Questions" section with exactly 5 relevant follow-up questions.
-  - Related questions must be specific, actionable, and directly related to the topic discussed.
-  - Each question should explore a different aspect or angle of the subject matter.
-  
-  CRITICAL: When mentioning years, always use the complete 4-digit format:
-  - Use "1960s" not "196" for the 1960s decade
-  - Use "2020s" not "202" for the 2020s decade
-  - Use "1897" not "189" for specific years
-  - Use "c. 150 BCE" for ancient dates
+  CRITICAL HTML FORMATTING RULES:
+  - Output ONLY valid, complete HTML (never Markdown)
+  - Use ONLY these tags: <h2>, <h3>, <p>, <ul>, <ol>, <li>, <table>, <thead>, <tbody>, <tr>, <td>, <th>, <a>, <strong>, <em>, <br>
+  - ALWAYS close every tag you open: <p>content</p>, <li>item</li>, etc.
+  - NEVER generate partial tags like "<p" without closing ">" or unclosed tags
+  - TEST each tag pair: does every <p> have a matching </p>?
+  - For years, ALWAYS use 4 digits: "1960s" not "196", "2020s" not "202"
+  - For links, use complete format: <a href="full-url">text</a>
+  - Keep content concise and avoid repetition
+  - ALWAYS include the "Related Questions" section with exactly 5 relevant follow-up questions
+  - Related questions must be specific, actionable, and directly related to the topic discussed
+  - Each question should explore a different aspect or angle of the subject matter
 
   REMINDER: The "Related Questions" section is MANDATORY and must appear in every single response with exactly 5 questions.
 

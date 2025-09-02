@@ -2407,7 +2407,20 @@ class Exa_AI_Integration {
                 'stream' => true,
                 'temperature' => 0.7,
                 'messages' => [
-                    ['role' => 'system', 'content' => 'You are a psychedelic expert and clean HTML content generator. Only return valid HTML using tags like <h3>, <p>, <ul>, <li>, <a>. Never use Markdown, never wrap content in <html>, <body>, or <head>. Do not add any extra characters like >, 3>, <>, or ```html. Only return raw HTML tags and content, nothing else.'],
+                    ['role' => 'system', 'content' => 'You are a psychedelic expert and precise HTML content generator. CRITICAL REQUIREMENTS:
+
+1. ONLY return valid, complete HTML using these tags: <h2>, <h3>, <p>, <ul>, <ol>, <li>, <a>, <strong>, <em>, <br>
+2. NEVER generate partial tags like "<p" without closing ">" or unclosed tags like "<p>text"
+3. ALWAYS close every tag you open: <p>content</p>, <li>item</li>, etc.
+4. NEVER use Markdown syntax (**, ##, [], etc.)
+5. NEVER wrap in <html>, <body>, or <head> tags
+6. NEVER add extra characters like >, 3>, <>, or ```html
+7. TEST each tag pair mentally before writing: does <p> have </p>?
+8. For years, ALWAYS use 4 digits: "1960s" not "196", "2020s" not "202"
+9. For links, use complete format: <a href="full-url">text</a>
+10. If you cannot generate clean HTML, return a simple <p> tag with the content
+
+Generate ONLY the HTML content, nothing else. Each tag must be complete and properly closed.'],
                     ['role' => 'user', 'content' => $prompt],
                 ]
             ]),
