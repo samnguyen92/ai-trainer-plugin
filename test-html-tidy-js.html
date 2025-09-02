@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Tidy JavaScript Integration Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-case { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .input { background: #f5f5f5; padding: 10px; margin: 10px 0; }
+        .output { background: #e8f5e8; padding: 10px; margin: 10px 0; }
+        .error { background: #ffe8e8; padding: 10px; margin: 10px 0; color: red; }
+        button { padding: 10px 20px; margin: 10px 0; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a87; }
+    </style>
+</head>
+<body>
+    <h1>HTML Tidy JavaScript Integration Test</h1>
+    <p>This page tests the HTML Tidy integration in your JavaScript code.</p>
+
+    <div class="test-case">
+        <h3>Test Case 1: Unclosed Tags</h3>
+        <div class="input">
+            <strong>Input:</strong><br>
+            <code>&lt;p&gt;This is a paragraph&lt;p&gt;Another paragraph&lt;/p&gt;</code>
+        </div>
+        <button onclick="testCase1()">Test Case 1</button>
+        <div id="output1" class="output" style="display:none;"></div>
+    </div>
+
+    <div class="test-case">
+        <h3>Test Case 2: Malformed Heading</h3>
+        <div class="input">
+            <strong>Input:</strong><br>
+            <code>&lt;h&lt; div=""&gt;Malformed heading&lt;/h3&gt;</code>
+        </div>
+        <button onclick="testCase2()">Test Case 2</button>
+        <div id="output2" class="output" style="display:none;"></div>
+    </div>
+
+    <div class="test-case">
+        <h3>Test Case 3: Script Injection</h3>
+        <div class="input">
+            <strong>Input:</strong><br>
+            <code>&lt;p&gt;Content&lt;/p&gt;&lt;script&gt;alert("xss")&lt;/script&gt;&lt;p&gt;More content&lt;/p&gt;</code>
+        </div>
+        <button onclick="testCase3()">Test Case 3</button>
+        <div id="output3" class="output" style="display:none;"></div>
+    </div>
+
+    <div class="test-case">
+        <h3>Test Case 4: Double Anchor Tags</h3>
+        <div class="input">
+            <strong>Input:</strong><br>
+            <code>&lt;a &lt;a href="http://example.com"&gt;Link&lt;/a&gt;</code>
+        </div>
+        <button onclick="testCase4()">Test Case 4</button>
+        <div id="output4" class="output" style="display:none;"></div>
+    </div>
+
+    <div class="test-case">
+        <h3>Test Case 5: Complex Malformed HTML</h3>
+        <div class="input">
+            <strong>Input:</strong><br>
+            <code>&lt;p&gt;Content&lt;p&gt;Unclosed&lt;script&gt;alert("xss")&lt;/script&gt;&lt;h&lt; div=""&gt;Malformed&lt;/h3&gt;</code>
+        </div>
+        <button onclick="testCase5()">Test Case 5</button>
+        <div id="output5" class="output" style="display:none;"></div>
+    </div>
+
+    <div id="results" class="test-case" style="display:none;">
+        <h3>Test Results Summary</h3>
+        <div id="summary"></div>
+    </div>
+
+    <script>
+        // Mock the functions that would normally be available in the WordPress environment
+        window.ajaxurl = '/wp-admin/admin-ajax.php';
+        window.ai_trainer_ajax = {
+            nonce: 'test-nonce-123'
+        };
+
+        // Mock fetch for testing
+        window.fetch = async function(url, options) {
+            // Simulate the HTML Tidy API response
+            const html = options.body.get('html');
+            
+            // Simple mock cleaning (in real implementation, this would call the server)
+            let cleaned = html
+                .replace(/<script[^>]*>.*?<\/script>/gi, '')
+                .replace(/<h<[^>]*>/g, '<h3>')
+                .replace(/<a\s+<a[^>]*>/g, '<a>')
+                .replace(/<p>([^<]*)<p>/g, '<p>$1</p><p>')
+                .replace(/<p>([^<]*)<\/p>/g, '<p>$1</p>');
+            
+            return {
+                json: async function() {
+                    return {
+                        success: true,
+                        data: {
+                            cleaned_html: cleaned,
+                            improvements: {
+                                unclosed_tags_fixed: 1,
+                                malformed_tags_fixed: 1,
+                                unsafe_elements_removed: 1
+                            }
+                        }
+                    };
+                }
+            };
+        };
+
+        // Include the sanitization functions from your exa.js file
+        // (This is a simplified version for testing)
+        
+        const REGEX_PATTERNS = {
+            hrefFix: /href="([^"]+)"\s?>\s?/g,
+            linkText: /<\/a>(\w)/g,
+            emptyLi: /<li>\s*<\/li>/g,
+            consecutiveUl: /<\/ul>\s*<ul>/g,
+            consecutiveOl: /<\/ol>\s*<ol>/g,
+            whitespace: />\s+</g,
+            htmlEntities: /(&lt;|&gt;|<>)|<!--.*?-->/gi,
+            ampersandFix: /&amp;/g,
+            brokenSentences: /(\w+)\s+in\s+the\s+s\s+and\s+(\d{4}s)/g,
+            missingSpaces: /(\w+)([A-Z][a-z]+)/g,
+            doubleSpaces: /\s{2,}/g,
+            lineBreaks: /\n\s*\n/g,
+            emptyParagraphs: /<p>\s*<\/p>/g
+        };
+
+        function escapeHtml(s) {
+            return String(s || '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        function fallbackSanitize(html) {
+            return html
+                .replace(/<script[^>]*>.*?<\/script>/gi, '')
+                .replace(/<style[^>]*>.*?<\/style>/gi, '')
+                .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '')
+                .replace(/javascript:/gi, '')
+                .replace(/on\w+\s*=/gi, '')
+                .trim();
+        }
+
+        function validateHTMLStructure(html) {
+            const issues = [];
+            
+            // Check for unclosed tags
+            const openTags = html.match(/<([a-zA-Z][a-zA-Z0-9]*)(?![^>]*\/>)/g) || [];
+            const closeTags = html.match(/<\/([a-zA-Z][a-zA-Z0-9]*)>/g) || [];
+            
+            const tagCounts = {};
+            
+            openTags.forEach(tag => {
+                const tagName = tag.replace(/[<>]/g, '');
+                tagCounts[tagName] = (tagCounts[tagName] || 0) + 1;
+            });
+            
+            closeTags.forEach(tag => {
+                const tagName = tag.replace(/[<>/]/g, '');
+                tagCounts[tagName] = (tagCounts[tagName] || 0) - 1;
+            });
+            
+            Object.entries(tagCounts).forEach(([tag, count]) => {
+                if (count > 0) {
+                    issues.push(`Unclosed <${tag}> tag`);
+                } else if (count < 0) {
+                    issues.push(`Orphaned </${tag}> tag`);
+                }
+            });
+            
+            return issues;
+        }
+
+        async function cleanWithTidyAPI(html) {
+            try {
+                console.log('Calling HTML Tidy API for complex HTML cleaning...');
+                
+                const response = await fetch(ajaxurl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'ai_clean_html',
+                        html: html,
+                        nonce: ai_trainer_ajax.nonce
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log('HTML Tidy API cleaning results:', data.data.improvements);
+                    return data.data.cleaned_html;
+                } else {
+                    console.warn('HTML Tidy API failed:', data.data.message);
+                    return html; // Return original if API fails
+                }
+            } catch (error) {
+                console.error('HTML Tidy API error:', error);
+                return html; // Return original if API fails
+            }
+        }
+
+        async function enhancedSanitizeHTML(html) {
+            if (!html || typeof html !== 'string') {
+                return '';
+            }
+
+            try {
+                // Simple local sanitization
+                let cleaned = html
+                    .replace(/<script[^>]*>.*?<\/script>/gi, '')
+                    .replace(/<style[^>]*>.*?<\/style>/gi, '')
+                    .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '')
+                    .replace(/javascript:/gi, '')
+                    .replace(/on\w+\s*=/gi, '')
+                    .replace(/<h<[^>]*>/g, '<h3>')
+                    .replace(/<a\s+<a[^>]*>/g, '<a>')
+                    .trim();
+                
+                // Check if there are still significant issues
+                const issues = validateHTMLStructure(cleaned);
+                const hasComplexIssues = issues.length > 2 || 
+                                       cleaned.includes('<h<') || 
+                                       cleaned.includes('<a <a') ||
+                                       cleaned.match(/<([a-zA-Z][a-zA-Z0-9]*)\s+<([a-zA-Z][a-zA-Z0-9]*)/);
+                
+                if (hasComplexIssues) {
+                    console.log('Complex HTML issues detected, using HTML Tidy API fallback');
+                    cleaned = await cleanWithTidyAPI(html);
+                    
+                    // Validate the API result
+                    const apiIssues = validateHTMLStructure(cleaned);
+                    if (apiIssues.length > 3) {
+                        console.warn('HTML Tidy API still has issues, using fallback sanitization');
+                        return fallbackSanitize(html);
+                    }
+                }
+                
+                return cleaned;
+            } catch (error) {
+                console.warn('Enhanced sanitization failed, using HTML Tidy API:', error);
+                return await cleanWithTidyAPI(html);
+            }
+        }
+
+        async function sanitizeHTML(html) {
+            return await enhancedSanitizeHTML(html);
+        }
+
+        async function testCase1() {
+            const input = '<p>This is a paragraph<p>Another paragraph</p>';
+            const output = await sanitizeHTML(input);
+            const issues = validateHTMLStructure(output);
+            
+            document.getElementById('output1').innerHTML = `
+                <strong>Output:</strong><br>
+                <code>${escapeHtml(output)}</code><br><br>
+                <strong>Issues Found:</strong> ${issues.length}<br>
+                <strong>Issues:</strong> ${issues.join(', ') || 'None'}
+            `;
+            document.getElementById('output1').style.display = 'block';
+        }
+
+        async function testCase2() {
+            const input = '<h< div="">Malformed heading</h3>';
+            const output = await sanitizeHTML(input);
+            const issues = validateHTMLStructure(output);
+            
+            document.getElementById('output2').innerHTML = `
+                <strong>Output:</strong><br>
+                <code>${escapeHtml(output)}</code><br><br>
+                <strong>Issues Found:</strong> ${issues.length}<br>
+                <strong>Issues:</strong> ${issues.join(', ') || 'None'}
+            `;
+            document.getElementById('output2').style.display = 'block';
+        }
+
+        async function testCase3() {
+            const input = '<p>Content</p><script>alert("xss")</script><p>More content</p>';
+            const output = await sanitizeHTML(input);
+            const issues = validateHTMLStructure(output);
+            
+            document.getElementById('output3').innerHTML = `
+                <strong>Output:</strong><br>
+                <code>${escapeHtml(output)}</code><br><br>
+                <strong>Issues Found:</strong> ${issues.length}<br>
+                <strong>Issues:</strong> ${issues.join(', ') || 'None'}
+            `;
+            document.getElementById('output3').style.display = 'block';
+        }
+
+        async function testCase4() {
+            const input = '<a <a href="http://example.com">Link</a>';
+            const output = await sanitizeHTML(input);
+            const issues = validateHTMLStructure(output);
+            
+            document.getElementById('output4').innerHTML = `
+                <strong>Output:</strong><br>
+                <code>${escapeHtml(output)}</code><br><br>
+                <strong>Issues Found:</strong> ${issues.length}<br>
+                <strong>Issues:</strong> ${issues.join(', ') || 'None'}
+            `;
+            document.getElementById('output4').style.display = 'block';
+        }
+
+        async function testCase5() {
+            const input = '<p>Content<p>Unclosed<script>alert("xss")</script><h< div="">Malformed</h3>';
+            const output = await sanitizeHTML(input);
+            const issues = validateHTMLStructure(output);
+            
+            document.getElementById('output5').innerHTML = `
+                <strong>Output:</strong><br>
+                <code>${escapeHtml(output)}</code><br><br>
+                <strong>Issues Found:</strong> ${issues.length}<br>
+                <strong>Issues:</strong> ${issues.join(', ') || 'None'}
+            `;
+            document.getElementById('output5').style.display = 'block';
+        }
+
+        // Run all tests
+        window.addEventListener('load', async function() {
+            console.log('HTML Tidy JavaScript Integration Test Loaded');
+            console.log('Test functions available: testCase1(), testCase2(), testCase3(), testCase4(), testCase5()');
+        });
+    </script>
+</body>
+</html>
