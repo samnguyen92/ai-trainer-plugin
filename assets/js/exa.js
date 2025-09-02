@@ -76,6 +76,7 @@ jQuery(document).ready(function($) {
 
 
     const moreSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>`;
+    const newSearchSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-search"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>`;
 
     // Pre-compile regex patterns for better performance
     const REGEX_PATTERNS = {
@@ -892,10 +893,10 @@ jQuery(document).ready(function($) {
     function addModernFeedbackSystem(block, chatlogId) {
         console.log('🎯 Adding modern feedback system for chatlog ID:', chatlogId);
         
-        // Create the modern feedback container with share button
+        // Create the modern feedback container with share and new search buttons
         const feedbackContainer = $(`
             <div class="modern-feedback-wrapper" style="margin-top: 20px;">
-                <div class="action-buttons" style="display: flex; justify-content: center; margin-bottom: 16px;">
+                <div class="action-buttons" style="display: flex; justify-content: center; gap: 12px; margin-bottom: 16px;">
                     <button class="share-btn modern" data-id="${chatlogId}" style="
                         display: flex;
                         align-items: center;
@@ -913,6 +914,24 @@ jQuery(document).ready(function($) {
                     ">
                         ${shareSVG}
                         <span>Share</span>
+                    </button>
+                    <button class="new-search-btn modern" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        padding: 8px 16px;
+                        border: 1.5px solid rgba(59, 178, 115, 0.3);
+                        border-radius: 10px;
+                        background: rgba(59, 178, 115, 0.1);
+                        color: #3bb273;
+                        font-size: 13px;
+                        font-weight: 500;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        backdrop-filter: blur(10px);
+                    ">
+                        ${newSearchSVG}
+                        <span>New Search</span>
                     </button>
                 </div>
                 </div>
@@ -956,6 +975,16 @@ jQuery(document).ready(function($) {
                 btn.find('span').text(originalText);
                 btn.css('border-color', 'rgba(255, 255, 255, 0.2)');
             }, 2000);
+        });
+        
+        // Add new search button functionality
+        feedbackContainer.find('.new-search-btn').on('click', function(e) {
+            console.log('New Search button clicked!');
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Open the Psybrary in a new tab
+            window.open('https://beta.psychedelics.com/#psybrary', '_blank');
         });
         
         console.log('✅ Modern feedback system initialized for chatlog:', chatlogId);
@@ -1830,11 +1859,12 @@ jQuery(document).ready(function($) {
      */
     function addReactionBar(block, chatlogId) {
         const reactionBar = $(`
-            <div class="answer-reaction-bar" style="margin-top:10px; display:flex; align-items:center; gap:12px;">
+            <div class="answer-reaction-bar" style="margin-top:10px; display:flex; align-items:center; gap:12px; justify-content:center;">
                 <span class="reaction-like" data-id="${chatlogId}" style="cursor:pointer;display:flex;align-items:center;gap:4px;">${likeSVG} <span style="margin-left:2px;">Helpful</span></span>
                 <span class="like-count" id="like-count-${chatlogId}" style="font-size:13px;color:#3bb273;margin-left:2px;">0</span>
                 <span class="reaction-dislike" data-id="${chatlogId}" style="cursor:pointer;display:flex;align-items:center;gap:4px;">${dislikeSVG} <span style="margin-left:2px;">Not Helpful</span></span>
                 <span class="dislike-count" id="dislike-count-${chatlogId}" style="font-size:13px;color:#e74c3c;margin-left:2px;">0</span>
+                <span class="reaction-share" data-id="${chatlogId}" style="cursor:pointer;display:flex;align-items:center;gap:4px;" title="Share">${shareSVG} Share</span>
                 <span class="reaction-more" data-id="${chatlogId}" style="cursor:pointer;display:flex;align-items:center;gap:4px;" title="More options">${moreSVG}</span>
                 <div class="reaction-options-container" style="display:none;position:absolute;z-index:10;"></div>
             </div>
@@ -2853,6 +2883,13 @@ jQuery(document).ready(function($) {
             const listItems = whereToLearnMore.querySelectorAll('li');
             listItems.forEach(li => {
                 li.style.color = '#3bb273';
+                
+                // Make sure links in "Where to Learn More" open in new tab
+                const links = li.querySelectorAll('a');
+                links.forEach(link => {
+                    link.setAttribute('target', '_blank');
+                    link.setAttribute('rel', 'noopener noreferrer');
+                });
             });
         }
         
@@ -2897,6 +2934,13 @@ jQuery(document).ready(function($) {
                                 const listItems = whereToLearnMore.querySelectorAll('li');
                                 listItems.forEach(li => {
                                     li.style.color = '#3bb273';
+                                    
+                                    // Make sure links in "Where to Learn More" open in new tab
+                                    const links = li.querySelectorAll('a');
+                                    links.forEach(link => {
+                                        link.setAttribute('target', '_blank');
+                                        link.setAttribute('rel', 'noopener noreferrer');
+                                    });
                                 });
                             }
                             
@@ -2912,6 +2956,15 @@ jQuery(document).ready(function($) {
                                 const listItems = node.querySelectorAll('li');
                                 listItems.forEach(li => {
                                     li.style.color = '#3bb273';
+                                    
+                                    // Make sure links in "Where to Learn More" open in new tab
+                                    if (node.classList.contains('section-where-to-learn-more')) {
+                                        const links = li.querySelectorAll('a');
+                                        links.forEach(link => {
+                                            link.setAttribute('target', '_blank');
+                                            link.setAttribute('rel', 'noopener noreferrer');
+                                        });
+                                    }
                                 });
                             }
                         }
@@ -5535,13 +5588,11 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
                     <div class="answer-block" id="answer-${chatlogId}" data-dynamic="1">
                         <h1 class="chatlog-question" style="font-weight:bold; color: #fff; margin-bottom:8px;">${q}</h1>
                         <div class="exa-answer-streaming space-owl-m">${a}</div>
-                        <div class="answer-reaction-bar" style="margin-top:10px;">
+                        <div class="answer-reaction-bar" style="margin-top:10px; display:flex; align-items:center; gap:12px; justify-content:center;">
                             <span class="reaction-like" data-id="${chatlogId}" style="cursor:pointer;">${likeSVG}</span>
                             <span class="like-count" id="like-count-${chatlogId}">0</span>
-                            &nbsp;&nbsp;
                             <span class="reaction-dislike" data-id="${chatlogId}" style="cursor:pointer;">${dislikeSVG}</span>
                             <span class="dislike-count" id="dislike-count-${chatlogId}">0</span>
-                            &nbsp;&nbsp;
                             <span class="reaction-share" data-id="${chatlogId}" style="cursor:pointer;" title="Share">${shareSVG} Share</span>
                         </div>
                     </div>
@@ -5755,6 +5806,24 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
             // Submit the search
             submitSearch();
         });
+        
+        // Ensure "Where to Learn More" links open in new tabs
+        $(document).on('click', '.section-where-to-learn-more a', function(e) {
+            const $link = $(this);
+            const href = $link.attr('href');
+            
+            // Skip if this is a placeholder link or empty href
+            if (!href || href === '#' || href.includes('<!--')) {
+                e.preventDefault();
+                return;
+            }
+            
+            // Ensure the link opens in a new tab
+            $link.attr('target', '_blank');
+            $link.attr('rel', 'noopener noreferrer');
+        });
+        
+
     });
 
 });

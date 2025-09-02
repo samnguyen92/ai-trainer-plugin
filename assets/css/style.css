@@ -1332,11 +1332,65 @@
     background-color: rgba(59, 178, 115, 0.1) !important;
     color: #4ddb8a !important;
     transform: translateY(-1px) !important;
+}
+
+/* Style "Where to Learn More" links to indicate they open in new tabs */
+.section-where-to-learn-more a {
+    position: relative !important;
+    transition: all 0.2s ease !important;
+}
+
+.section-where-to-learn-more a:hover {
+    color: #4ddb8a !important;
+    text-decoration: underline !important;
+}
+
+.section-where-to-learn-more a::after {
+    content: " ↗" !important;
+    font-size: 0.8em !important;
+    opacity: 0.7 !important;
+    margin-left: 2px !important;
 }  
 
 /* Legacy reaction bar styles for compatibility */
 .answer-reaction-bar {
     position: relative;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    padding: 10px 0 !important;
+}
+
+.answer-reaction-bar span {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    padding: 6px 8px !important;
+    border-radius: 6px !important;
+    color: #fff !important;
+}
+
+.answer-reaction-bar span:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Modern feedback system button styles */
+.modern-feedback-wrapper .new-search-btn:hover {
+    background: rgba(59, 178, 115, 0.2) !important;
+    border-color: #3bb273 !important;
+    color: #4ddb8a !important;
+    transform: translateY(-1px) !important;
+}
+
+.modern-feedback-wrapper .share-btn:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    transform: translateY(-1px) !important;
 }
 
 .answer-reaction-bar .reaction-options-container {
