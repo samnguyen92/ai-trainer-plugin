@@ -2053,6 +2053,30 @@ jQuery(document).ready(function($) {
     }
 
     /**
+     * Convert plain text headings to HTML headings
+     * 
+     * This function converts common heading patterns to proper HTML headings
+     * to ensure proper formatting and styling.
+     * 
+     * @param {string} html - HTML content that may contain plain text headings
+     * @returns {string} HTML with proper heading tags
+     */
+    function convertPlainTextHeadings(html) {
+        if (!html || typeof html !== 'string') {
+            return html;
+        }
+        
+        let converted = html.replace(/^(What it is:|How it works:|Potential benefits:|Key risks:|Legal status:|Safety Tips|Medications:|Mental health:|Physical health:|Set & Setting:|Classification & Origins|Type:|Origin:|Common Administration:|Additional Context or Considerations|Practical Advice|Where to Learn More|Related Questions):/gm, '<h4>$1</h4>');
+        
+        // Fix the specific issue with "Additional Context or Considerations" being bolded
+        // Remove any <strong> tags that might be wrapping the heading
+        converted = converted.replace(/<strong>\s*<h4>Additional Context or Considerations<\/h4>\s*<\/strong>/g, '<h4>Additional Context or Considerations</h4>');
+        converted = converted.replace(/<strong>\s*Additional Context or Considerations\s*<\/strong>/g, '<h4>Additional Context or Considerations</h4>');
+        
+        return converted;
+    }
+
+    /**
      * HTML escaper for safe text output
      * 
      * This function escapes HTML special characters to prevent XSS attacks
@@ -2148,6 +2172,184 @@ jQuery(document).ready(function($) {
         } catch (error) {
             console.warn('Enhanced sanitization failed, using fallback sanitization:', error);
             return fallbackSanitize(html);
+        }
+    }
+
+    /**
+     * Final formatting correction layer
+     * 
+     * This function applies a final layer of formatting corrections after
+     * the main sanitization is complete. It focuses on common formatting
+     * issues that may have been missed by the primary sanitization.
+     * 
+     * @param {string} html - HTML content that has already been sanitized
+     * @returns {Promise<string>} HTML with final formatting corrections applied
+     * 
+     * @example
+     * const finalHtml = await applyFinalFormattingCorrection(cleanedHtml);
+     * // Returns HTML with final formatting corrections
+     */
+    async function applyFinalFormattingCorrection(html) {
+        if (!html || typeof html !== 'string') {
+            return html;
+        }
+
+        try {
+            let corrected = html;
+            
+            // 1. Fix common paragraph formatting issues
+            corrected = corrected
+                // Fix paragraphs that are missing closing tags
+                .replace(/<p>([^<]*?)(?=<p>|<\/p>|$)/g, '<p>$1</p>')
+                // Fix paragraphs that are nested incorrectly
+                .replace(/<p>\s*<p>/g, '<p>')
+                .replace(/<\/p>\s*<\/p>/g, '</p>')
+                // Fix paragraphs with missing content
+                .replace(/<p>\s*<\/p>/g, '')
+                // Fix paragraphs that are too long (split them)
+                .replace(/<p>([^<]{500,})<\/p>/g, function(match, content) {
+                    const sentences = content.split(/(?<=[.!?])\s+/);
+                    const chunks = [];
+                    let currentChunk = '';
+                    
+                    for (const sentence of sentences) {
+                        if ((currentChunk + sentence).length > 300) {
+                            if (currentChunk) chunks.push(currentChunk.trim());
+                            currentChunk = sentence;
+                        } else {
+                            currentChunk += (currentChunk ? ' ' : '') + sentence;
+                        }
+                    }
+                    if (currentChunk) chunks.push(currentChunk.trim());
+                    
+                    return chunks.map(chunk => `<p>${chunk}</p>`).join('');
+                });
+
+            // 2. Fix list formatting issues
+            corrected = corrected
+                // Fix unclosed list items
+                .replace(/<li>([^<]*?)(?=<li>|<\/ul>|<\/ol>|$)/g, '<li>$1</li>')
+                // Fix lists that are missing proper structure
+                .replace(/<ul>\s*<ul>/g, '<ul>')
+                .replace(/<\/ul>\s*<\/ul>/g, '</ul>')
+                .replace(/<ol>\s*<ol>/g, '<ol>')
+                .replace(/<\/ol>\s*<\/ol>/g, '</ol>')
+                // Fix list items without proper list containers
+                .replace(/(?<!<[uo]l>)\s*<li>/g, '<ul><li>')
+                .replace(/<\/li>\s*(?!<\/[uo]l>)/g, '</li></ul>');
+
+            // 3. Fix heading formatting issues
+            corrected = corrected
+                // Fix malformed headings
+                .replace(/<h<[^>]*>/g, '<h3>')
+                .replace(/<h([1-6])>\s*<\/h\1>/g, '')
+                // Fix corrupted heading patterns like "3>Classificationamp; Origins" - more conservative
+                .replace(/(\d+)>([^<]+?)(?=<|$)/g, function(match, level, content) {
+                    // Only fix if it looks like a legitimate corrupted heading
+                    if (content.length > 3 && content.length < 100 && /^[a-zA-Z\s&;]+$/.test(content)) {
+                        const cleanedContent = content
+                            .replace(/amp;/g, '&')
+                            .replace(/([a-z])([A-Z])/g, '$1 $2') // Add spaces between camelCase
+                            .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2') // Add spaces between acronyms
+                            .trim();
+                        return `<h${level}>${cleanedContent}</h${level}>`;
+                    }
+                    return match; // Keep original if it doesn't look like a heading
+                })
+                // Fix headings that are too long
+                .replace(/<h([1-6])>([^<]{100,})<\/h\1>/g, function(match, level, content) {
+                    return `<h${level}>${content.substring(0, 80)}...</h${level}>`;
+                });
+
+            // 4. Fix link formatting issues
+            corrected = corrected
+                // Fix malformed links
+                .replace(/<a\s+<a[^>]*>/g, '<a>')
+                .replace(/<a[^>]*>\s*<\/a>/g, '')
+                // Fix links without proper href
+                .replace(/<a(?![^>]*href=)[^>]*>/g, '<a href="#">');
+
+            // 5. Fix bold and italic formatting
+            corrected = corrected
+                // Fix unclosed bold tags
+                .replace(/<strong>([^<]*?)(?=<strong>|<\/strong>|$)/g, '<strong>$1</strong>')
+                // Fix unclosed italic tags
+                .replace(/<em>([^<]*?)(?=<em>|<\/em>|$)/g, '<em>$1</em>')
+                // Fix nested bold/italic tags
+                .replace(/<strong>\s*<strong>/g, '<strong>')
+                .replace(/<\/strong>\s*<\/strong>/g, '</strong>')
+                .replace(/<em>\s*<em>/g, '<em>')
+                .replace(/<\/em>\s*<\/em>/g, '</em>');
+
+            // 6. Fix spacing and whitespace issues
+            corrected = corrected
+                // Remove excessive whitespace
+                .replace(/\s{2,}/g, ' ')
+                // Fix spacing around tags
+                .replace(/>\s+</g, '><')
+                .replace(/>\s+(\w)/g, '> $1')
+                .replace(/(\w)\s+</g, '$1 <')
+                // Fix line breaks
+                .replace(/\n\s*\n/g, '\n')
+                // Fix empty elements
+                .replace(/<([a-zA-Z][a-zA-Z0-9]*)[^>]*>\s*<\/\1>/g, '');
+
+            // 7. Fix table formatting issues
+            corrected = corrected
+                // Fix malformed table cells
+                .replace(/<td>([^<]*?)(?=<td>|<\/tr>|<\/table>|$)/g, '<td>$1</td>')
+                .replace(/<th>([^<]*?)(?=<th>|<\/tr>|<\/table>|$)/g, '<th>$1</th>')
+                // Fix table rows without proper structure
+                .replace(/<tr>\s*<tr>/g, '<tr>')
+                .replace(/<\/tr>\s*<\/tr>/g, '</tr>');
+
+            // 8. Fix corrupted HTML entities and malformed content
+            corrected = corrected
+                // Fix corrupted HTML entities - only in specific contexts
+                .replace(/&amp;/g, '&')  // Only fix proper HTML entities
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&apos;/g, "'")
+                // Fix the specific corrupted heading pattern we encountered - very conservative
+                .replace(/(\d+)>([a-zA-Z\s&;]+?)(?=<|$)/g, function(match, level, content) {
+                    // Only fix if it looks like a legitimate corrupted heading AND doesn't contain any HTML tags
+                    if (content.length > 3 && content.length < 100 && 
+                        !content.includes('<') && !content.includes('>') && 
+                        /^[a-zA-Z\s&;]+$/.test(content)) {
+                        const cleanedContent = content
+                            .replace(/amp;/g, '&')
+                            .replace(/([a-z])([A-Z])/g, '$1 $2')
+                            .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+                            .trim();
+                        return `<h${level}>${cleanedContent}</h${level}>`;
+                    }
+                    return match;
+                });
+
+            // 9. Final cleanup - remove any remaining malformed tags
+            corrected = corrected
+                .replace(/<([a-zA-Z][a-zA-Z0-9]*)\s+<([a-zA-Z][a-zA-Z0-9]*)/g, '<$1>')
+                .replace(/<\/([a-zA-Z][a-zA-Z0-9]*)\s+<\/([a-zA-Z][a-zA-Z0-9]*)/g, '</$1>');
+
+            // 9. If significant changes were made, try one more pass with HTML Tidy API
+            if (corrected !== html) {
+                console.log('🔧 Final formatting corrections applied, checking for additional improvements...');
+                try {
+                    const tidyResult = await cleanWithTidyAPI(corrected);
+                    if (tidyResult && tidyResult !== corrected) {
+                        console.log('✅ HTML Tidy API provided additional improvements');
+                        return tidyResult;
+                    }
+                } catch (error) {
+                    console.warn('HTML Tidy API call failed in final formatting, using corrected version:', error);
+                }
+            }
+
+            return corrected;
+        } catch (error) {
+            console.warn('Final formatting correction failed:', error);
+            return html; // Return original if correction fails
         }
     }
 
@@ -2709,6 +2911,13 @@ jQuery(document).ready(function($) {
                 i++;
                 setTimeout(streamStep, 180);
             } else {
+                // Convert plain text headings to HTML headings for local answers
+                const currentHTML = container.innerHTML;
+                const headingsFixedHTML = convertPlainTextHeadings(currentHTML);
+                if (headingsFixedHTML !== currentHTML) {
+                    container.innerHTML = headingsFixedHTML;
+                }
+                
                 // Make related questions clickable after streaming is complete
                 makeRelatedQuestionsClickable(container);
                 
@@ -3366,12 +3575,31 @@ jQuery(document).ready(function($) {
                         let cleanedHTML;
                         try {
                             cleanedHTML = await enhancedSanitizeHTML(buffer);
+                            // Convert plain text headings to HTML headings
+                            cleanedHTML = convertPlainTextHeadings(cleanedHTML);
                             container.innerHTML = cleanedHTML;
                         } catch (error) {
                             console.warn('Enhanced sanitization error:', error);
                             cleanedHTML = fallbackSanitize(buffer);
+                            cleanedHTML = convertPlainTextHeadings(cleanedHTML);
                             container.innerHTML = cleanedHTML;
                         }
+                        
+                        // Final formatting check and correction layer - TEMPORARILY DISABLED
+                        // try {
+                        //     console.log('🔧 Applying final formatting correction layer...');
+                        //     const finalFormattedHTML = await applyFinalFormattingCorrection(cleanedHTML);
+                        //     if (finalFormattedHTML !== cleanedHTML) {
+                        //         console.log('✅ Final formatting corrections applied');
+                        //         container.innerHTML = finalFormattedHTML;
+                        //         cleanedHTML = finalFormattedHTML; // Update for chatlog save
+                        //     } else {
+                        //         console.log('✅ No formatting corrections needed');
+                        //     }
+                        // } catch (error) {
+                        //     console.warn('Final formatting correction error:', error);
+                        //     // Continue with original cleanedHTML if formatting fails
+                        // }
                         
                         // Make related questions clickable after content is loaded
                         makeRelatedQuestionsClickable(container);
