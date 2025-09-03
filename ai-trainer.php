@@ -1901,6 +1901,12 @@ function ai_trainer_handle_get_reaction_counts() {
 
 add_action('wp_ajax_ai_get_chatlog_by_id', function() {
     global $wpdb;
+    
+    error_log("=== ai_get_chatlog_by_id AJAX CALL START ===");
+    error_log("POST data: " . print_r($_POST, true));
+    error_log("Request method: " . $_SERVER['REQUEST_METHOD']);
+    error_log("User agent: " . $_SERVER['HTTP_USER_AGENT']);
+    
     $id = intval($_POST['id']);
     
     error_log("ai_get_chatlog_by_id called with ID: " . $id);
@@ -1919,6 +1925,12 @@ add_action('wp_ajax_ai_get_chatlog_by_id', function() {
 });
 add_action('wp_ajax_nopriv_ai_get_chatlog_by_id', function() {
     global $wpdb;
+    
+    error_log("=== ai_get_chatlog_by_id (NOPRIV) AJAX CALL START ===");
+    error_log("POST data: " . print_r($_POST, true));
+    error_log("Request method: " . $_SERVER['REQUEST_METHOD']);
+    error_log("User agent: " . $_SERVER['HTTP_USER_AGENT']);
+    
     $id = intval($_POST['id']);
     
     error_log("ai_get_chatlog_by_id (nopriv) called with ID: " . $id);

@@ -114,6 +114,7 @@ function fallbackCopyToClipboard(text) {
 
 jQuery(document).ready(function($) {
 
+
     // Store frequently used DOM elements
     const $exaQuestion = $('#exa-question');
     const $ticketWrapper = $('#ticket-wrapper');
@@ -122,6 +123,210 @@ jQuery(document).ready(function($) {
     const $exaInput = $('#exa-input');
     const $psybrarianMainContent = $('.psybrarian-main-content .container');
     const $psySearchAiContainer = $('.psy-search-ai-container');
+
+    // Check for URL parameters to load shared chatlog
+    // Convert HTML to formatted plain text for copying
+    function convertHtmlToFormattedText(question, htmlContent) {
+        // Create a temporary div to parse HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        
+        // Function to process text content recursively
+        function processNode(node, level = 0) {
+            let result = '';
+            
+            // Handle different node types
+            if (node.nodeType === Node.TEXT_NODE) {
+                const text = node.textContent.trim();
+                if (text) {
+                    result += text + ' ';
+                }
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                const tagName = node.tagName.toLowerCase();
+                
+                switch (tagName) {
+                    case 'h1':
+                    case 'h2':
+                    case 'h3':
+                    case 'h4':
+                    case 'h5':
+                    case 'h6':
+                        result += '\n\n' + node.textContent.trim().toUpperCase() + '\n\n';
+                        break;
+                        
+                    case 'p':
+                        result += '\n\n' + node.textContent.trim() + '\n';
+                        break;
+                        
+                    case 'ul':
+                    case 'ol':
+                        result += '\n';
+                        for (let i = 0; i < node.children.length; i++) {
+                            result += processNode(node.children[i], level + 1);
+                        }
+                        break;
+                        
+                    case 'li':
+                        const liText = node.textContent.trim();
+                        if (liText) {
+                            result += '\n• ' + liText;
+                        }
+                        break;
+                        
+                    case 'strong':
+                    case 'b':
+                        result += '**' + node.textContent.trim() + '**';
+                        break;
+                        
+                    case 'em':
+                    case 'i':
+                        result += '*' + node.textContent.trim() + '*';
+                        break;
+                        
+                    case 'br':
+                        result += '\n';
+                        break;
+                        
+                    case 'hr':
+                        result += '\n' + '─'.repeat(50) + '\n';
+                        break;
+                        
+                    case 'a':
+                        const linkText = node.textContent.trim();
+                        const href = node.getAttribute('href');
+                        if (href && href !== '#') {
+                            result += linkText + ' (' + href + ')';
+                        } else {
+                            result += linkText;
+                        }
+                        break;
+                        
+                    case 'div':
+                    case 'section':
+                        // Process children
+                        for (let i = 0; i < node.children.length; i++) {
+                            result += processNode(node.children[i], level);
+                        }
+                        break;
+                        
+                    default:
+                        // For other tags, just get the text content
+                        result += node.textContent.trim() + ' ';
+                        break;
+                }
+            }
+            
+            return result;
+        }
+        
+        // Process the entire content
+        let formattedText = '';
+        
+        // Process the answer content (don't add duplicate title)
+        formattedText += processNode(tempDiv);
+        
+        // Clean up the text but preserve structure
+        formattedText = formattedText
+            .replace(/\n\s*\n\s*\n/g, '\n\n') // Remove excessive line breaks
+            .replace(/\n\s+/g, '\n') // Remove leading spaces after line breaks
+            .replace(/^\s*\n/, '') // Remove leading empty line
+            .trim();
+        
+        // Split into lines and clean up each line - improved formatting
+        const lines = formattedText.split('\n');
+        const cleanedLines = lines.map(line => line.trim()).filter(line => line.length > 0);
+        
+        return cleanedLines.join('\n\n');
+    }
+
+    // Simple copy button functionality
+    function addCopyButton(block, chatlogId) {
+        // Create a simple copy button
+        const copyButton = $(`
+            <button class="copy-answer-btn" style="
+                background: #3bb273;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                margin: 10px 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                transition: background 0.2s;
+            " onmouseover="this.style.background='#2a8f5a'" onmouseout="this.style.background='#3bb273'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                Copy Answer
+            </button>
+        `);
+        
+        // Add click handler
+        copyButton.on('click', function() {
+            // Get the question and answer content
+            const question = block.find('.chatlog-question').text() || 
+                           block.find('h1, h2, h3').first().text() || 
+                           'Question';
+            
+            const answerContent = block.find('.exa-answer-streaming').html() || 
+                                block.find('.answer-content').html() || 
+                                block.find('.exa-answer').html() || 
+                                '';
+            
+            // Convert HTML to formatted plain text
+            const formattedContent = convertHtmlToFormattedText(question, answerContent);
+            
+            // Copy to clipboard
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(formattedContent).then(() => {
+                    // Visual feedback
+                    const originalText = copyButton.html();
+                    copyButton.html(`
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20,6 9,17 4,12"></polyline>
+                        </svg>
+                        Copied!
+                    `);
+                    copyButton.css('background', '#2a8f5a');
+                    
+                    setTimeout(() => {
+                        copyButton.html(originalText);
+                        copyButton.css('background', '#3bb273');
+                    }, 2000);
+                });
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = formattedContent;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                // Visual feedback
+                const originalText = copyButton.html();
+                copyButton.html(`
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20,6 9,17 4,12"></polyline>
+                    </svg>
+                    Copied!
+                `);
+                copyButton.css('background', '#2a8f5a');
+                
+                setTimeout(() => {
+                    copyButton.html(originalText);
+                    copyButton.css('background', '#3bb273');
+                }, 2000);
+            }
+        });
+        
+        // Add the button to the block
+        block.append(copyButton);
+    }
 
     // SVG icons as constants
     const likeSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="none" class="tabler-icon tabler-icon-thumb-up-filled reaction-like-svg" style="vertical-align:middle;"><path d="M13 3a3 3 0 0 1 2.995 2.824l.005 .176v4h2a3 3 0 0 1 2.98 2.65l.015 .174l.005 .176l-.02 .196l-1.006 5.032c-.381 1.626 -1.502 2.796 -2.81 2.78l-.164 -.008h-8a1 1 0 0 1 -.993 -.883l-.007 -.117l.001 -9.536a1 1 0 0 1 .5 -.865a2.998 2.998 0 0 0 1.492 -2.397l.007 -.202v-1a3 3 0 0 1 3 -3z" fill="currentColor"></path><path d="M5 10a1 1 0 0 1 .993 .883l.007 .117v9a1 1 0 0 1 -.883 .993l-.117 .007h-1a2 2 0 0 1 -1.995 -1.85l-.005 -.15v-7a2 2 0 0 1 1.85 -1.995l.15 -.005h1z" fill="currentColor"></path></svg>`;
@@ -189,6 +394,8 @@ jQuery(document).ready(function($) {
     
     // Initialize console debugging
     initConsoleDebugging();
+
+    // Copy button functionality is now handled by addCopyButton function
 
     // Event handlers with performance optimizations
     $('#exa-submit').on('click', submitSearch);
@@ -965,7 +1172,7 @@ jQuery(document).ready(function($) {
                 <div class="action-buttons">
                     <button class="share-btn modern" data-id="${chatlogId}">
                         ${shareSVG}
-                        <span>Share</span>
+                        <span>Copy</span>
                     </button>
                     <button class="new-search-btn modern">
                         ${newSearchSVG}
@@ -982,37 +1189,61 @@ jQuery(document).ready(function($) {
         console.log('Using simple feedback system');
         addBasicFeedback(feedbackContainer, chatlogId);
         
-        // Add share button functionality
+        // Add copy button functionality
         feedbackContainer.find('.share-btn').on('click', function(e) {
-            console.log('Share button clicked!');
+            console.log('Copy button clicked!');
             e.preventDefault();
             e.stopPropagation();
             
             const answerBlock = $(this).closest('.answer-block');
-            const chatlogQuestion = answerBlock.find('.chatlog-question').text();
             
-            let questionTitle = chatlogQuestion || '';
+            // Get the question and answer content
+            const question = answerBlock.find('.chatlog-question').text() || 
+                           answerBlock.find('h1, h2, h3').first().text() || 
+                           'Question';
             
-            if (!questionTitle) {
-                questionTitle = $exaInput.val() || '';
-            }
+            const answerContent = answerBlock.find('.exa-answer-streaming').html() || 
+                                answerBlock.find('.answer-content').html() || 
+                                answerBlock.find('.exa-answer').html() || 
+                                '';
             
-            const shareUrl = window.location.origin + window.location.pathname + 
-                '?chatlog_id=' + chatlogId + '&title=' + encodeURIComponent(questionTitle);
+            // Convert HTML to formatted plain text
+            const formattedContent = convertHtmlToFormattedText(question, answerContent);
             
             // Copy to clipboard
-            copyToClipboard(shareUrl);
-            
-            // Visual feedback
-            const btn = $(this);
-            const originalText = btn.find('span').text();
-            btn.find('span').text('Copied!');
-            btn.css('border-color', '#3bb273');
-            
-            setTimeout(() => {
-                btn.find('span').text(originalText);
-                btn.css('border-color', 'rgba(255, 255, 255, 0.2)');
-            }, 2000);
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(formattedContent).then(() => {
+                    // Visual feedback
+                    const btn = $(this);
+                    const originalText = btn.find('span').text();
+                    btn.find('span').text('Copied!');
+                    btn.css('border-color', '#3bb273');
+                    
+                    setTimeout(() => {
+                        btn.find('span').text(originalText);
+                        btn.css('border-color', 'rgba(255, 255, 255, 0.2)');
+                    }, 2000);
+                });
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = formattedContent;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                // Visual feedback
+                const btn = $(this);
+                const originalText = btn.find('span').text();
+                btn.find('span').text('Copied!');
+                btn.css('border-color', '#3bb273');
+                
+                setTimeout(() => {
+                    btn.find('span').text(originalText);
+                    btn.css('border-color', 'rgba(255, 255, 255, 0.2)');
+                }, 2000);
+            }
         });
         
         // Add new search button functionality
@@ -1712,22 +1943,8 @@ jQuery(document).ready(function($) {
      * // Copies shareable link to clipboard
      */
     function copyAnswerLink(block, chatlogId) {
-        const url = window.location.origin + window.location.pathname + '?chatlog_id=' + chatlogId;
-        
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(url).then(() => {
-                showNotification('Link copied to clipboard!', 'success');
-            });
-        } else {
-            // Fallback for older browsers
-            const textArea = document.createElement('textarea');
-            textArea.value = url;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            showNotification('Link copied to clipboard!', 'success');
-        }
+        // Use the new copy button functionality
+        addCopyButton(block, chatlogId);
     }
 
     /**
@@ -1978,7 +2195,7 @@ jQuery(document).ready(function($) {
                 <span class="like-count" id="like-count-${chatlogId}" style="font-size:13px;color:#3bb273;margin-left:2px;">0</span>
                 <span class="reaction-dislike" data-id="${chatlogId}" style="cursor:pointer;display:flex;align-items:center;gap:4px;">${dislikeSVG} <span style="margin-left:2px;">Not Helpful</span></span>
                 <span class="dislike-count" id="dislike-count-${chatlogId}" style="font-size:13px;color:#e74c3c;margin-left:2px;">0</span>
-                <span class="reaction-share" data-id="${chatlogId}" style="cursor:pointer;display:flex;align-items:center;gap:4px;" title="Share">${shareSVG} Share</span>
+                                            <span class="reaction-share" data-id="${chatlogId}" style="cursor:pointer;display:flex;align-items:center;gap:4px;" title="Copy">${shareSVG} Copy</span>
                 <span class="reaction-more" data-id="${chatlogId}" style="cursor:pointer;display:flex;align-items:center;gap:4px;" title="More options">${moreSVG}</span>
                 <div class="reaction-options-container" style="display:none;position:absolute;z-index:10;"></div>
             </div>
@@ -6025,34 +6242,55 @@ function generateNoSourcesResponse() {
      * // Loads and displays the specified chatlog entry
      */
     function loadChatlogById(chatlogId, chatlogTitle) {
+        
+        
         $.post(exa_ajax.ajaxurl, {
             action: 'ai_get_chatlog_by_id',
             id: chatlogId
         }, function(resp) {
-            $exaAnswer.show();
+            // If $exaAnswer doesn't exist, create it
+            if (!$exaAnswer.length) {
+                $('body').append('<div id="exa-answer" style="padding: 20px; max-width: 800px; margin: 0 auto;"></div>');
+            }
+            
+            // Force show the element and ensure it's visible
+            $exaAnswer.show().css({
+                'display': 'block',
+                'visibility': 'visible',
+                'opacity': '1',
+                'position': 'static',
+                'z-index': 'auto'
+            });
             if (resp && resp.success && resp.data) {
                 $('#dynamic-chatlog-block').remove();
                 const q = resp.data.question || chatlogTitle || '';
                 const a = resp.data.answer || '';
                 
                 const html = `
-                    <div class="answer-block" id="answer-${chatlogId}" data-dynamic="1">
+                    <div class="answer-block" id="answer-${chatlogId}" data-dynamic="1" style="background: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0; color: #fff;">
                         <h1 class="chatlog-question" style="font-weight:bold; color: #fff; margin-bottom:8px;">${q}</h1>
-                        <div class="exa-answer-streaming space-owl-m">${a}</div>
+                        <div class="exa-answer-streaming space-owl-m" style="color: #fff;">${a}</div>
                         <div class="answer-reaction-bar" style="margin-top:10px; display:flex; align-items:center; gap:12px; justify-content:center;">
                             <span class="reaction-like" data-id="${chatlogId}" style="cursor:pointer;">${likeSVG}</span>
                             <span class="like-count" id="like-count-${chatlogId}">0</span>
                             <span class="reaction-dislike" data-id="${chatlogId}" style="cursor:pointer;">${dislikeSVG}</span>
                             <span class="dislike-count" id="dislike-count-${chatlogId}">0</span>
-                            <span class="reaction-share" data-id="${chatlogId}" style="cursor:pointer;" title="Share">${shareSVG} Share</span>
+                            <span class="reaction-share" data-id="${chatlogId}" style="cursor:pointer;" title="Copy">${shareSVG} Copy</span>
                         </div>
                     </div>
                 `;
                 
+
                 $exaAnswer.prepend(`<div id="dynamic-chatlog-block">${html}</div>`);
+                
+
+                
                 const block = $("#answer-" + chatlogId);
                 
+                console.log('🔍 Block created, length:', block.length);
                 if (block.length) {
+                    // Add copy button to the loaded content
+                    addCopyButton(block, chatlogId);
                     $('html, body').animate({ scrollTop: block.offset().top - 100 }, 600);
                 }
             } else {
@@ -6073,6 +6311,7 @@ function generateNoSourcesResponse() {
                 `);
             }
         }).fail(function(xhr, status, error) {
+            console.log('❌ AJAX request failed:', {xhr, status, error});
             $exaAnswer.prepend(`
                 <div id="dynamic-chatlog-block">
                     <div class="answer-block" style="color: #fff; padding: 20px; background: #2a2a2a; border-radius: 8px;">
