@@ -22,11 +22,11 @@ Thank you for your support.`;
         questionField.dispatchEvent(new Event('input', { bubbles: true }));
         questionField.dispatchEvent(new Event('change', { bubbles: true }));
         
-        // Scroll to the ticket form
-        const ticketWrapper = document.getElementById('ticket-wrapper');
-        if (ticketWrapper) {
-            ticketWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+        // Scroll to the ticket form - DISABLED to prevent unwanted scrolling
+        // const ticketWrapper = document.getElementById('ticket-wrapper');
+        // if (ticketWrapper) {
+        //     ticketWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // }
         
         // Log success (no user notification since it's automatic)
         console.log('Ticket form automatically populated with user query');
@@ -42,11 +42,11 @@ Thank you for your support.`;
             lastField.dispatchEvent(new Event('input', { bubbles: true }));
             lastField.dispatchEvent(new Event('change', { bubbles: true }));
             
-            // Scroll to the ticket form
-            const ticketWrapper = document.getElementById('ticket-wrapper');
-            if (ticketWrapper) {
-                ticketWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
+            // Scroll to the ticket form - DISABLED to prevent unwanted scrolling
+            // const ticketWrapper = document.getElementById('ticket-wrapper');
+            // if (ticketWrapper) {
+            //     ticketWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // }
             
             console.log('Ticket form automatically populated with user query (alternative method)');
         } else {
@@ -504,7 +504,7 @@ jQuery(document).ready(function($) {
         const offTopicBlock = $(`
             <div class="exa-answer-block off-topic-block" id="${questionID}">
                 <div class="exa-question-display">
-                    <h3>🔍 "${query}"</h3>
+                    <h3>🔍 You Entered: "${query}"</h3>
                 </div>
                 <div class="exa-answer-content off-topic-response">
                     ${data.answer}
@@ -532,6 +532,17 @@ jQuery(document).ready(function($) {
         
         $exaAnswer.append(offTopicBlock);
         $ticketWrapper.show();
+        
+        // Scroll to just above the question display
+        setTimeout(() => {
+            const questionDisplay = offTopicBlock.find('.exa-question-display h3').first();
+            if (questionDisplay.length) {
+                questionDisplay[0].scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }
+        }, 100); // Small delay to ensure the content is rendered
         
         // Automatically populate the ticket form with the user's query
         setTimeout(() => {

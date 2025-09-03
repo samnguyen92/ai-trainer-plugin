@@ -5083,6 +5083,13 @@ Respond with exactly one word: DRUG_RELATED or OFF_TOPIC";
                 </div>
             </div>
             
+            <div style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 14px; color: #a1a1aa; margin-top: 8px; line-height: 1.4; background: rgba(139, 92, 246, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(139, 92, 246, 0.2);">
+                    💡 <strong>Do you think the Psybrary should have answered this?</strong><br>
+                    Your question is in the ticket form below—just review and submit.
+                </p>
+            </div>
+            
             <div style="background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.1);">
                 <h3 style="color: white; margin: 0 0 16px 0; font-size: 16px; font-weight: 600; text-align: center; line-height: 1.3;">💡 How to Get the Best Psybrary Answer</h3>
                 <p style="margin: 0 0 16px 0; font-size: 14px; text-align: center; line-height: 1.4;">To get the most useful response here, try to:</p>
@@ -5138,13 +5145,6 @@ Respond with exactly one word: DRUG_RELATED or OFF_TOPIC";
                         <p style="margin: 0; font-size: 13px; line-height: 1.3; color: white;">What should I do to prepare for my first mushroom trip?</p>
                         <div style="position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #a855f7;">→</div>
                     </div>
-                </div>
-                
-                <div style="text-align: center; margin-top: 20px;">
-                    <p style="font-size: 14px; color: #a1a1aa; margin-top: 8px; line-height: 1.4; background: rgba(139, 92, 246, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(139, 92, 246, 0.2);">
-                        💡 <strong>Do you think the Psybrary should have answered this?</strong><br>
-                        Your question is already in the ticket form—just review and submit.
-                    </p>
                 </div>
                 
                 <div style="text-align: center;">
