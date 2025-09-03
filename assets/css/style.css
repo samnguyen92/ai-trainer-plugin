@@ -1164,8 +1164,8 @@
     line-height: 1.4;
   }
   
-  .exa-answer-streaming table tbody tr:hover {
-    background: #f8f9fa;
+  .exa-answer-streaming table tbody tr {
+    background: #ffffff;
   }
   
   .exa-answer-streaming table tbody tr:last-child td {
@@ -2124,28 +2124,29 @@
     width: 100%;
     border-collapse: collapse;
     margin: 1.5em 0;
-    background: rgba(255, 255, 255, 0.05);
+    background: #ffffff;
     border-radius: 8px;
     overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .exa-answer-streaming th {
-    background: rgba(59, 178, 115, 0.2);
-    color: #ffffff;
+    background: #f8f9fa;
+    color: #333333;
     font-weight: 600;
     padding: 12px;
     text-align: left;
-    border-bottom: 2px solid rgba(59, 178, 115, 0.3);
+    border-bottom: 2px solid #e9ecef;
 }
 
 .exa-answer-streaming td {
     padding: 10px 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    color: #ffffff;
+    border-bottom: 1px solid #e9ecef;
+    color: #555555;
 }
 
-.exa-answer-streaming tr:hover {
-    background: rgba(255, 255, 255, 0.05);
+.exa-answer-streaming tr {
+    background: #ffffff;
 }
 
 /* Enhanced blockquote styling */
