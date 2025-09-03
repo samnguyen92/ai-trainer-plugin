@@ -1822,6 +1822,10 @@ function ai_trainer_handle_chatlog_reaction() {
     
     error_log("Processing reaction: ID=$id, type=$reaction, single=$single");
     
+    // Check if frontend is sending updated counts
+    $updatedLikeCount = isset($_POST['like_count']) ? intval($_POST['like_count']) : null;
+    $updatedDislikeCount = isset($_POST['dislike_count']) ? intval($_POST['dislike_count']) : null;
+    
     $row = $wpdb->get_row($wpdb->prepare("SELECT reaction FROM {$wpdb->prefix}ai_chat_log WHERE id = %d", $id));
     error_log("Database row: " . print_r($row, true));
     
@@ -1833,7 +1837,11 @@ function ai_trainer_handle_chatlog_reaction() {
     
     error_log("Current counts: " . json_encode($counts));
     
-    if ($single) {
+    if ($single && $updatedLikeCount !== null && $updatedDislikeCount !== null) {
+        // Use the counts provided by the frontend (handles toggle behavior)
+        $counts = ['like' => $updatedLikeCount, 'dislike' => $updatedDislikeCount];
+    } else if ($single) {
+        // Fallback for single votes without updated counts
         $counts = ['like' => 0, 'dislike' => 0];
         $counts[$reaction] = 1;
     } else {

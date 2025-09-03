@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback System Test</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            background: #1a0024;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+        }
+        
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, rgba(42, 27, 61, 0.8) 0%, rgba(26, 0, 36, 0.9) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 20px;
+        }
+        
+        .feedback-system {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 24px;
+            padding: 20px 24px;
+            background: linear-gradient(135deg, rgba(42, 27, 61, 0.8) 0%, rgba(26, 0, 36, 0.9) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feedback-question {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 17px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feedback-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .feedback-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(59, 178, 115, 0.1);
+            border: 1.5px solid rgba(59, 178, 115, 0.3);
+            color: rgba(59, 178, 115, 0.9);
+            cursor: pointer;
+            padding: 12px 18px;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 15px;
+            font-weight: 600;
+            position: relative;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 8px rgba(59, 178, 115, 0.1);
+        }
+        
+        .feedback-btn.thumbs-down {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1.5px solid rgba(231, 76, 60, 0.3);
+            color: rgba(231, 76, 60, 0.9);
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.1);
+        }
+        
+        .feedback-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 178, 115, 0.25);
+        }
+        
+        .feedback-btn.thumbs-down:hover {
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.25);
+        }
+        
+        .feedback-btn.user-voted {
+            background: rgba(59, 178, 115, 0.2) !important;
+            border-color: #3bb273 !important;
+            color: #3bb273 !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 12px rgba(59, 178, 115, 0.3) !important;
+        }
+        
+        .feedback-btn.user-voted:hover {
+            background: rgba(59, 178, 115, 0.25) !important;
+            border-color: #3bb273 !important;
+            color: #3bb273 !important;
+        }
+        
+        .debug-info {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Feedback System Test</h1>
+        <p>This is a test response to demonstrate the feedback system with toggle behavior.</p>
+        
+        <div class="feedback-system" data-chatlog-id="test-123">
+            <div class="feedback-question">Did we answer your questions?</div>
+            
+            <div class="feedback-actions">
+                <button class="feedback-btn thumbs-up" data-type="like" data-id="test-123">
+                    <span style="font-size: 20px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));">👍</span>
+                    <span class="like-count" id="like-count-test-123" style="font-weight: 700; min-width: 16px; text-align: center;">0</span>
+                </button>
+                
+                <button class="feedback-btn thumbs-down" data-type="dislike" data-id="test-123">
+                    <span style="font-size: 20px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));">👎</span>
+                    <span class="dislike-count" id="dislike-count-test-123" style="font-weight: 700; min-width: 16px; text-align: center;">0</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="debug-info">
+            <h3>Debug Information:</h3>
+            <div id="debug-output"></div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            const chatlogId = 'test-123';
+            
+            // Load existing user vote
+            function loadUserVote() {
+                const userVoteKey = `user_vote_${chatlogId}`;
+                const currentUserVote = localStorage.getItem(userVoteKey);
+                
+                if (currentUserVote) {
+                    const votedButton = currentUserVote === 'like' ? 
+                        $(`.feedback-btn[data-type="like"][data-id="${chatlogId}"]`) :
+                        $(`.feedback-btn[data-type="dislike"][data-id="${chatlogId}"]`);
+                    
+                    votedButton.addClass('user-voted');
+                    updateDebugInfo();
+                }
+            }
+            
+            // Update debug information
+            function updateDebugInfo() {
+                const userVoteKey = `user_vote_${chatlogId}`;
+                const currentUserVote = localStorage.getItem(userVoteKey);
+                const likeCount = parseInt($(`#like-count-${chatlogId}`).text()) || 0;
+                const dislikeCount = parseInt($(`#dislike-count-${chatlogId}`).text()) || 0;
+                
+                $('#debug-output').html(`
+                    <p><strong>Current User Vote:</strong> ${currentUserVote || 'None'}</p>
+                    <p><strong>Like Count:</strong> ${likeCount}</p>
+                    <p><strong>Dislike Count:</strong> ${dislikeCount}</p>
+                    <p><strong>LocalStorage Key:</strong> ${userVoteKey}</p>
+                `);
+            }
+            
+            // Handle feedback button clicks
+            $('.feedback-btn').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const btn = $(this);
+                const type = btn.data('type');
+                const id = btn.data('id');
+                
+                // Check if user has already voted on this chatlog
+                const userVoteKey = `user_vote_${id}`;
+                const currentUserVote = localStorage.getItem(userVoteKey);
+                
+                // If user has already voted the same way, do nothing
+                if (currentUserVote === type) {
+                    console.log('User already voted this way');
+                    return;
+                }
+                
+                // Get current counts
+                const likeCount = parseInt($(`#like-count-${id}`).text()) || 0;
+                const dislikeCount = parseInt($(`#dislike-count-${id}`).text()) || 0;
+                
+                // Calculate new counts based on toggle behavior
+                let newLikeCount = likeCount;
+                let newDislikeCount = dislikeCount;
+                
+                if (type === 'like') {
+                    if (currentUserVote === 'dislike') {
+                        // User is switching from dislike to like
+                        newDislikeCount = Math.max(0, dislikeCount - 1);
+                        newLikeCount = likeCount + 1;
+                        console.log('Switching from dislike to like');
+                    } else {
+                        // User is voting like for the first time
+                        newLikeCount = likeCount + 1;
+                        console.log('First time voting like');
+                    }
+                } else if (type === 'dislike') {
+                    if (currentUserVote === 'like') {
+                        // User is switching from like to dislike
+                        newLikeCount = Math.max(0, likeCount - 1);
+                        newDislikeCount = dislikeCount + 1;
+                        console.log('Switching from like to dislike');
+                    } else {
+                        // User is voting dislike for the first time
+                        newDislikeCount = dislikeCount + 1;
+                        console.log('First time voting dislike');
+                    }
+                }
+                
+                // Update localStorage with new vote
+                localStorage.setItem(userVoteKey, type);
+                
+                // Update the UI immediately
+                $(`#like-count-${id}`).text(newLikeCount);
+                $(`#dislike-count-${id}`).text(newDislikeCount);
+                
+                // Update visual state of buttons
+                $('.feedback-btn').removeClass('user-voted');
+                btn.addClass('user-voted');
+                
+                // Update debug info
+                updateDebugInfo();
+                
+                // Show success message
+                btn.css('color', '#3bb273');
+                setTimeout(() => {
+                    btn.css('color', 'rgba(255, 255, 255, 0.7)');
+                }, 2000);
+                
+                console.log(`Vote submitted: ${type}, New counts - Like: ${newLikeCount}, Dislike: ${newDislikeCount}`);
+            });
+            
+            // Initialize
+            loadUserVote();
+            updateDebugInfo();
+        });
+    </script>
+</body>
+</html>

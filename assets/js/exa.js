@@ -1150,6 +1150,20 @@ jQuery(document).ready(function($) {
                     box-shadow: 0 6px 20px rgba(231, 76, 60, 0.25) !important;
                 }
                 
+                .feedback-btn.user-voted {
+                    background: rgba(59, 178, 115, 0.2) !important;
+                    border-color: #3bb273 !important;
+                    color: #3bb273 !important;
+                    transform: translateY(-1px) !important;
+                    box-shadow: 0 4px 12px rgba(59, 178, 115, 0.3) !important;
+                }
+                
+                .feedback-btn.user-voted:hover {
+                    background: rgba(59, 178, 115, 0.25) !important;
+                    border-color: #3bb273 !important;
+                    color: #3bb273 !important;
+                }
+                
 
                 
 
@@ -1258,6 +1272,54 @@ jQuery(document).ready(function($) {
             const type = btn.data('type');
             const id = btn.data('id');
             
+            // Check if user has already voted on this chatlog
+            const userVoteKey = `user_vote_${id}`;
+            const currentUserVote = localStorage.getItem(userVoteKey);
+            
+            // If user has already voted the same way, do nothing
+            if (currentUserVote === type) {
+                return;
+            }
+            
+            // Get current counts
+            const likeCount = parseInt($(`#like-count-${id}`).text()) || 0;
+            const dislikeCount = parseInt($(`#dislike-count-${id}`).text()) || 0;
+            
+            // Calculate new counts based on toggle behavior
+            let newLikeCount = likeCount;
+            let newDislikeCount = dislikeCount;
+            
+            if (type === 'like') {
+                if (currentUserVote === 'dislike') {
+                    // User is switching from dislike to like
+                    newDislikeCount = Math.max(0, dislikeCount - 1);
+                    newLikeCount = likeCount + 1;
+                } else {
+                    // User is voting like for the first time
+                    newLikeCount = likeCount + 1;
+                }
+            } else if (type === 'dislike') {
+                if (currentUserVote === 'like') {
+                    // User is switching from like to dislike
+                    newLikeCount = Math.max(0, likeCount - 1);
+                    newDislikeCount = dislikeCount + 1;
+                } else {
+                    // User is voting dislike for the first time
+                    newDislikeCount = dislikeCount + 1;
+                }
+            }
+            
+            // Update localStorage with new vote
+            localStorage.setItem(userVoteKey, type);
+            
+            // Update the UI immediately
+            $(`#like-count-${id}`).text(newLikeCount);
+            $(`#dislike-count-${id}`).text(newDislikeCount);
+            
+            // Update visual state of buttons
+            feedbackUI.find('.feedback-btn').removeClass('user-voted');
+            btn.addClass('user-voted');
+            
             // Show reason selection popup
             showReasonPopup(btn, type, id);
         });
@@ -1283,6 +1345,18 @@ jQuery(document).ready(function($) {
                 $(`#dislike-count-${chatlogId}`).text(response.data.dislike || 0);
             }
         });
+        
+        // Check if user has already voted and highlight the button
+        const userVoteKey = `user_vote_${chatlogId}`;
+        const currentUserVote = localStorage.getItem(userVoteKey);
+        
+        if (currentUserVote) {
+            const votedButton = currentUserVote === 'like' ? 
+                $(`.feedback-btn[data-type="like"][data-id="${chatlogId}"]`) :
+                $(`.feedback-btn[data-type="dislike"][data-id="${chatlogId}"]`);
+            
+            votedButton.addClass('user-voted');
+        }
     }
     
     /**
@@ -1516,12 +1590,12 @@ jQuery(document).ready(function($) {
         popup.find('.submit-reason').on('click', function() {
             const textFeedback = popup.find('.reason-text').val().trim();
             
-            // Submit feedback
-            submitFeedbackWithReason(chatlogId, type, selectedReason || 'Other', textFeedback);
+            // Get the updated counts that were already applied to the UI
+            const updatedLikeCount = parseInt($(`#like-count-${chatlogId}`).text()) || 0;
+            const updatedDislikeCount = parseInt($(`#dislike-count-${chatlogId}`).text()) || 0;
             
-            // Update count
-            const countEl = type === 'like' ? $(`#like-count-${chatlogId}`) : $(`#dislike-count-${chatlogId}`);
-            countEl.text(parseInt(countEl.text()) + 1);
+            // Submit feedback with updated counts
+            submitFeedbackWithReason(chatlogId, type, selectedReason || 'Other', textFeedback, updatedLikeCount, updatedDislikeCount);
             
             // Show success
             button.css('color', '#3bb273');
@@ -1549,7 +1623,7 @@ jQuery(document).ready(function($) {
     /**
      * Submit feedback with reason to server
      */
-    function submitFeedbackWithReason(chatlogId, type, reason, text) {
+    function submitFeedbackWithReason(chatlogId, type, reason, text, likeCount, dislikeCount) {
         // Format feedback data for proper display in admin table
         const feedbackData = {
             option: reason, // Use the expected 'option' field for display compatibility
@@ -1565,6 +1639,8 @@ jQuery(document).ready(function($) {
             id: chatlogId,
             reaction: type,
             single: 1,
+            like_count: likeCount,
+            dislike_count: dislikeCount,
             reaction_detail: JSON.stringify(feedbackData)
         }).done(function(response) {
             console.log('Feedback submitted successfully:', response);
@@ -4475,10 +4551,10 @@ function generateNoSourcesResponse() {
         {
           html: `
   <h3>Cardio Precautions</h3>
-          <ul>
-            <li><!-- Pre-check BP/HR if evidence-supported. --></li>
-            <li><!-- Avoid stimulants/MAOIs; hydration and temperature control. --></li>
-          </ul>`
+  <ul>
+    <li><!-- Pre-check BP/HR if evidence-supported. --></li>
+    <li><!-- Avoid stimulants/MAOIs; hydration and temperature control. --></li>
+  </ul>`
         },
         {
           html: `
