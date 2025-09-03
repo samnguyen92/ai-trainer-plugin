@@ -2073,7 +2073,91 @@ jQuery(document).ready(function($) {
         converted = converted.replace(/<strong>\s*<h4>Additional Context or Considerations<\/h4>\s*<\/strong>/g, '<h4>Additional Context or Considerations</h4>');
         converted = converted.replace(/<strong>\s*Additional Context or Considerations\s*<\/strong>/g, '<h4>Additional Context or Considerations</h4>');
         
+        // Fix malformed "Where to Learn More" and "Related Questions" sections
+        converted = fixMalformedSections(converted);
+        
         return converted;
+    }
+
+    /**
+     * Fix malformed "Where to Learn More" and "Related Questions" sections
+     * 
+     * This function fixes content where the AI has generated malformed sections
+     * that don't have proper HTML structure.
+     * 
+     * @param {string} html - HTML content that may have malformed sections
+     * @returns {string} HTML with properly formatted sections
+     */
+    function fixMalformedSections(html) {
+        if (!html || typeof html !== 'string') {
+            return html;
+        }
+        
+        let fixed = html;
+        
+        // Fix malformed "Where to Learn More" section
+        // Pattern: <h4>Where to Learn More</h4> followed by plain text links
+        fixed = fixed.replace(
+            /(<h4>Where to Learn More<\/h4>)\s*([^<]+?)(?=<h4>|$)/g,
+            function(match, heading, content) {
+                // Split content into lines and convert to proper links
+                const lines = content.trim().split('\n').filter(line => line.trim());
+                const links = lines.map(line => {
+                    const trimmed = line.trim();
+                    if (trimmed.includes(' - ')) {
+                        const [title, description] = trimmed.split(' - ');
+                        return `<li><a href="#" target="_blank" style="color: #3bb273; text-decoration: none;">${title.trim()}</a></li>`;
+                    } else if (trimmed.startsWith('What are') || trimmed.startsWith('Are there') || trimmed.startsWith('How does') || trimmed.startsWith('What research')) {
+                        // This is a related question, not a link
+                        return `<li>${trimmed}</li>`;
+                    } else {
+                        return `<li><a href="#" target="_blank" style="color: #3bb273; text-decoration: none;">${trimmed}</a></li>`;
+                    }
+                }).join('');
+                
+                return `${heading}<div class="section-where-to-learn-more"><ul>${links}</ul></div>`;
+            }
+        );
+        
+        // Fix malformed "Related Questions" section
+        // Look for question patterns that should be in a Related Questions section
+        fixed = fixed.replace(
+            /(<h4>Related Questions<\/h4>)\s*([^<]+?)(?=<h4>|$)/g,
+            function(match, heading, content) {
+                // Split content into lines and convert to proper list items
+                const lines = content.trim().split('\n').filter(line => line.trim());
+                const questions = lines.map(line => {
+                    const trimmed = line.trim();
+                    return `<li>${trimmed}</li>`;
+                }).join('');
+                
+                return `${heading}<div class="section-related-questions"><ul>${questions}</ul></div>`;
+            }
+        );
+        
+        // If there are questions after "Where to Learn More" that should be "Related Questions"
+        fixed = fixed.replace(
+            /(<div class="section-where-to-learn-more">[^<]*<\/div>)\s*([^<]+?)(?=<h4>|$)/g,
+            function(match, whereToLearnMore, content) {
+                // Check if the content contains questions
+                const lines = content.trim().split('\n').filter(line => line.trim());
+                const questions = lines.filter(line => {
+                    const trimmed = line.trim();
+                    return trimmed.startsWith('What are') || trimmed.startsWith('Are there') || 
+                           trimmed.startsWith('How does') || trimmed.startsWith('What research') ||
+                           trimmed.startsWith('Can') || trimmed.startsWith('Is') || trimmed.startsWith('Do');
+                });
+                
+                if (questions.length > 0) {
+                    const questionList = questions.map(q => `<li>${q.trim()}</li>`).join('');
+                    return `${whereToLearnMore}<h4>Related Questions</h4><div class="section-related-questions"><ul>${questionList}</ul></div>`;
+                }
+                
+                return match;
+            }
+        );
+        
+        return fixed;
     }
 
     /**
