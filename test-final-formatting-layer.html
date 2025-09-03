@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Formatting Layer Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #1a1a1a; 
+            color: #fff; 
+        }
+        .test-container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px; 
+        }
+        .test-case { 
+            background: rgba(255, 255, 255, 0.05); 
+            padding: 20px; 
+            border-radius: 12px; 
+            margin: 20px 0; 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+        }
+        .input { 
+            background: rgba(255, 255, 255, 0.1); 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+        }
+        .output { 
+            background: rgba(59, 178, 115, 0.1); 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+            border: 1px solid rgba(59, 178, 115, 0.3); 
+        }
+        .error { 
+            background: rgba(231, 76, 60, 0.1); 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+            border: 1px solid rgba(231, 76, 60, 0.3); 
+            color: #ff6b6b; 
+        }
+        button { 
+            padding: 10px 20px; 
+            margin: 10px 0; 
+            background: #3bb273; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 500; 
+        }
+        button:hover { 
+            background: #4ddb8a; 
+        }
+        .status { 
+            padding: 10px; 
+            border-radius: 5px; 
+            margin: 10px 0; 
+        }
+        .status.success { 
+            background: rgba(59, 178, 115, 0.2); 
+            border: 1px solid #3bb273; 
+            color: #4ddb8a; 
+        }
+        .status.info { 
+            background: rgba(52, 152, 219, 0.2); 
+            border: 1px solid #3498db; 
+            color: #74b9ff; 
+        }
+        .status.error { 
+            background: rgba(231, 76, 60, 0.2); 
+            border: 1px solid #e74c3c; 
+            color: #ff6b6b; 
+        }
+        .diff { 
+            background: rgba(243, 156, 18, 0.1); 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+            border: 1px solid rgba(243, 156, 18, 0.3); 
+            font-family: monospace; 
+            font-size: 12px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Final Formatting Layer Test</h1>
+        
+        <div class="test-case">
+            <h3>Test Case 1: Unclosed Paragraphs</h3>
+            <div class="input">
+                <strong>Input:</strong><br>
+                <code>&lt;p&gt;This is a paragraph&lt;p&gt;Another paragraph&lt;/p&gt;</code>
+            </div>
+            <button onclick="testCase1()">Test Case 1</button>
+            <div id="output1" class="output" style="display:none;"></div>
+        </div>
+
+        <div class="test-case">
+            <h3>Test Case 2: Malformed Lists</h3>
+            <div class="input">
+                <strong>Input:</strong><br>
+                <code>&lt;li&gt;Item 1&lt;li&gt;Item 2&lt;/ul&gt;</code>
+            </div>
+            <button onclick="testCase2()">Test Case 2</button>
+            <div id="output2" class="output" style="display:none;"></div>
+        </div>
+
+        <div class="test-case">
+            <h3>Test Case 3: Long Paragraphs</h3>
+            <div class="input">
+                <strong>Input:</strong><br>
+                <code>&lt;p&gt;This is a very long paragraph that should be split into multiple paragraphs because it contains more than 500 characters and should be broken up into smaller, more readable chunks. This helps with readability and makes the content easier to digest for users. The final formatting layer should detect this and automatically split it into multiple paragraphs based on sentence boundaries. This is especially important for mobile users who may have difficulty reading very long paragraphs on smaller screens.&lt;/p&gt;</code>
+            </div>
+            <button onclick="testCase3()">Test Case 3</button>
+            <div id="output3" class="output" style="display:none;"></div>
+        </div>
+
+        <div class="test-case">
+            <h3>Test Case 4: Malformed Links</h3>
+            <div class="input">
+                <strong>Input:</strong><br>
+                <code>&lt;a &lt;a href="http://example.com"&gt;Link&lt;/a&gt;</code>
+            </div>
+            <button onclick="testCase4()">Test Case 4</button>
+            <div id="output4" class="output" style="display:none;"></div>
+        </div>
+
+        <div class="test-case">
+            <h3>Test Case 5: Unclosed Bold Tags</h3>
+            <div class="input">
+                <strong>Input:</strong><br>
+                <code>&lt;p&gt;This has &lt;strong&gt;bold text&lt;p&gt;and more content&lt;/p&gt;</code>
+            </div>
+            <button onclick="testCase5()">Test Case 5</button>
+            <div id="output5" class="output" style="display:none;"></div>
+        </div>
+
+        <div class="test-case">
+            <h3>Test Case 6: Complex Mixed Issues</h3>
+            <div class="input">
+                <strong>Input:</strong><br>
+                <code>&lt;p&gt;Content&lt;p&gt;Unclosed&lt;strong&gt;bold&lt;p&gt;More&lt;li&gt;List item&lt;/ul&gt;</code>
+            </div>
+            <button onclick="testCase6()">Test Case 6</button>
+            <div id="output6" class="output" style="display:none;"></div>
+        </div>
+
+        <div class="test-case">
+            <h3>Test Case 7: Corrupted Heading (Real Issue)</h3>
+            <div class="input">
+                <strong>Input:</strong><br>
+                <code>3&gt;Classificationamp; Origins</code>
+            </div>
+            <button onclick="testCase7()">Test Case 7</button>
+            <div id="output7" class="output" style="display:none;"></div>
+        </div>
+
+        <div class="test-case">
+            <h3>Test Case 8: Corrupted HTML Entities</h3>
+            <div class="input">
+                <strong>Input:</strong><br>
+                <code>&lt;p&gt;This has amp; symbols and lt;gt; tags&lt;/p&gt;</code>
+            </div>
+            <button onclick="testCase8()">Test Case 8</button>
+            <div id="output8" class="output" style="display:none;"></div>
+        </div>
+
+        <div class="test-case">
+            <h3>Test Case 9: Content That Should NOT Be Fixed</h3>
+            <div class="input">
+                <strong>Input:</strong><br>
+                <code>MDMA for Dogs&lt;MDMA is a powerful psychoactive substance...</code>
+            </div>
+            <button onclick="testCase9()">Test Case 9</button>
+            <div id="output9" class="output" style="display:none;"></div>
+        </div>
+
+        <div id="results" class="test-case" style="display:none;">
+            <h3>Test Results Summary</h3>
+            <div id="summary"></div>
+        </div>
+    </div>
+
+    <script>
+        // Mock the functions that would normally be available in the WordPress environment
+        window.ajaxurl = '/wp-admin/admin-ajax.php';
+        window.ai_trainer_nonce = 'test-nonce-123';
+
+        // Mock the HTML Tidy API
+        async function cleanWithTidyAPI(html) {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    // Simple mock cleaning
+                    let cleaned = html
+                        .replace(/<script[^>]*>.*?<\/script>/gi, '')
+                        .replace(/<h<[^>]*>/g, '<h3>')
+                        .replace(/<a\s+<a[^>]*>/g, '<a>')
+                        .replace(/<p>([^<]*)<p>/g, '<p>$1</p><p>');
+                    
+                    resolve(cleaned);
+                }, 500);
+            });
+        }
+
+        // Final formatting correction layer (copied from the main implementation)
+        async function applyFinalFormattingCorrection(html) {
+            if (!html || typeof html !== 'string') {
+                return html;
+            }
+
+            try {
+                let corrected = html;
+                
+                // 1. Fix common paragraph formatting issues
+                corrected = corrected
+                    // Fix paragraphs that are missing closing tags
+                    .replace(/<p>([^<]*?)(?=<p>|<\/p>|$)/g, '<p>$1</p>')
+                    // Fix paragraphs that are nested incorrectly
+                    .replace(/<p>\s*<p>/g, '<p>')
+                    .replace(/<\/p>\s*<\/p>/g, '</p>')
+                    // Fix paragraphs with missing content
+                    .replace(/<p>\s*<\/p>/g, '')
+                    // Fix paragraphs that are too long (split them)
+                    .replace(/<p>([^<]{500,})<\/p>/g, function(match, content) {
+                        const sentences = content.split(/(?<=[.!?])\s+/);
+                        const chunks = [];
+                        let currentChunk = '';
+                        
+                        for (const sentence of sentences) {
+                            if ((currentChunk + sentence).length > 300) {
+                                if (currentChunk) chunks.push(currentChunk.trim());
+                                currentChunk = sentence;
+                            } else {
+                                currentChunk += (currentChunk ? ' ' : '') + sentence;
+                            }
+                        }
+                        if (currentChunk) chunks.push(currentChunk.trim());
+                        
+                        return chunks.map(chunk => `<p>${chunk}</p>`).join('');
+                    });
+
+                // 2. Fix list formatting issues
+                corrected = corrected
+                    // Fix unclosed list items
+                    .replace(/<li>([^<]*?)(?=<li>|<\/ul>|<\/ol>|$)/g, '<li>$1</li>')
+                    // Fix lists that are missing proper structure
+                    .replace(/<ul>\s*<ul>/g, '<ul>')
+                    .replace(/<\/ul>\s*<\/ul>/g, '</ul>')
+                    .replace(/<ol>\s*<ol>/g, '<ol>')
+                    .replace(/<\/ol>\s*<\/ol>/g, '</ol>')
+                    // Fix list items without proper list containers
+                    .replace(/(?<!<[uo]l>)\s*<li>/g, '<ul><li>')
+                    .replace(/<\/li>\s*(?!<\/[uo]l>)/g, '</li></ul>');
+
+                // 3. Fix heading formatting issues
+                corrected = corrected
+                    // Fix malformed headings
+                    .replace(/<h<[^>]*>/g, '<h3>')
+                    .replace(/<h([1-6])>\s*<\/h\1>/g, '')
+                    // Fix corrupted heading patterns like "3>Classificationamp; Origins" - more conservative
+                    .replace(/(\d+)>([^<]+?)(?=<|$)/g, function(match, level, content) {
+                        // Only fix if it looks like a legitimate corrupted heading
+                        if (content.length > 3 && content.length < 100 && /^[a-zA-Z\s&;]+$/.test(content)) {
+                            const cleanedContent = content
+                                .replace(/amp;/g, '&')
+                                .replace(/([a-z])([A-Z])/g, '$1 $2') // Add spaces between camelCase
+                                .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2'); // Add spaces between acronyms
+                            return `<h${level}>${cleanedContent}</h${level}>`;
+                        }
+                        return match; // Keep original if it doesn't look like a heading
+                    })
+                    // Fix headings that are too long
+                    .replace(/<h([1-6])>([^<]{100,})<\/h\1>/g, function(match, level, content) {
+                        return `<h${level}>${content.substring(0, 80)}...</h${level}>`;
+                    });
+
+                // 4. Fix link formatting issues
+                corrected = corrected
+                    // Fix malformed links
+                    .replace(/<a\s+<a[^>]*>/g, '<a>')
+                    .replace(/<a[^>]*>\s*<\/a>/g, '')
+                    // Fix links without proper href
+                    .replace(/<a(?![^>]*href=)[^>]*>/g, '<a href="#">');
+
+                // 5. Fix bold and italic formatting
+                corrected = corrected
+                    // Fix unclosed bold tags
+                    .replace(/<strong>([^<]*?)(?=<strong>|<\/strong>|$)/g, '<strong>$1</strong>')
+                    // Fix unclosed italic tags
+                    .replace(/<em>([^<]*?)(?=<em>|<\/em>|$)/g, '<em>$1</em>')
+                    // Fix nested bold/italic tags
+                    .replace(/<strong>\s*<strong>/g, '<strong>')
+                    .replace(/<\/strong>\s*<\/strong>/g, '</strong>')
+                    .replace(/<em>\s*<em>/g, '<em>')
+                    .replace(/<\/em>\s*<\/em>/g, '</em>');
+
+                // 6. Fix spacing and whitespace issues
+                corrected = corrected
+                    // Remove excessive whitespace
+                    .replace(/\s{2,}/g, ' ')
+                    // Fix spacing around tags
+                    .replace(/>\s+</g, '><')
+                    .replace(/>\s+(\w)/g, '> $1')
+                    .replace(/(\w)\s+</g, '$1 <')
+                    // Fix line breaks
+                    .replace(/\n\s*\n/g, '\n')
+                    // Fix empty elements
+                    .replace(/<([a-zA-Z][a-zA-Z0-9]*)[^>]*>\s*<\/\1>/g, '');
+
+                // 7. Fix table formatting issues
+                corrected = corrected
+                    // Fix malformed table cells
+                    .replace(/<td>([^<]*?)(?=<td>|<\/tr>|<\/table>|$)/g, '<td>$1</td>')
+                    .replace(/<th>([^<]*?)(?=<th>|<\/tr>|<\/table>|$)/g, '<th>$1</th>')
+                    // Fix table rows without proper structure
+                    .replace(/<tr>\s*<tr>/g, '<tr>')
+                    .replace(/<\/tr>\s*<\/tr>/g, '</tr>');
+
+                // 8. Fix corrupted HTML entities and malformed content
+                corrected = corrected
+                    // Fix corrupted HTML entities - only in specific contexts
+                    .replace(/&amp;/g, '&')  // Only fix proper HTML entities
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&quot;/g, '"')
+                    .replace(/&apos;/g, "'")
+                    // Fix the specific corrupted heading pattern we encountered
+                    .replace(/(\d+)>([a-zA-Z\s&;]+?)(?=<|$)/g, function(match, level, content) {
+                        // Only fix if it looks like a legitimate corrupted heading
+                        if (content.length > 3 && content.length < 100 && /^[a-zA-Z\s&;]+$/.test(content)) {
+                            const cleanedContent = content
+                                .replace(/amp;/g, '&')
+                                .replace(/([a-z])([A-Z])/g, '$1 $2')
+                                .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+                                .trim();
+                            return `<h${level}>${cleanedContent}</h${level}>`;
+                        }
+                        return match;
+                    });
+
+                // 9. Final cleanup - remove any remaining malformed tags
+                corrected = corrected
+                    .replace(/<([a-zA-Z][a-zA-Z0-9]*)\s+<([a-zA-Z][a-zA-Z0-9]*)/g, '<$1>')
+                    .replace(/<\/([a-zA-Z][a-zA-Z0-9]*)\s+<\/([a-zA-Z][a-zA-Z0-9]*)/g, '</$1>');
+
+                // 9. If significant changes were made, try one more pass with HTML Tidy API
+                if (corrected !== html) {
+                    console.log('🔧 Final formatting corrections applied, checking for additional improvements...');
+                    try {
+                        const tidyResult = await cleanWithTidyAPI(corrected);
+                        if (tidyResult && tidyResult !== corrected) {
+                            console.log('✅ HTML Tidy API provided additional improvements');
+                            return tidyResult;
+                        }
+                    } catch (error) {
+                        console.warn('HTML Tidy API call failed in final formatting, using corrected version:', error);
+                    }
+                }
+
+                return corrected;
+            } catch (error) {
+                console.warn('Final formatting correction failed:', error);
+                return html; // Return original if correction fails
+            }
+        }
+
+        // Test functions
+        async function testCase1() {
+            const input = '<p>This is a paragraph<p>Another paragraph</p>';
+            const output = await applyFinalFormattingCorrection(input);
+            showResult('output1', input, output, 'Should close unclosed p tag');
+        }
+
+        async function testCase2() {
+            const input = '<li>Item 1<li>Item 2</ul>';
+            const output = await applyFinalFormattingCorrection(input);
+            showResult('output2', input, output, 'Should fix list structure');
+        }
+
+        async function testCase3() {
+            const input = '<p>This is a very long paragraph that should be split into multiple paragraphs because it contains more than 500 characters and should be broken up into smaller, more readable chunks. This helps with readability and makes the content easier to digest for users. The final formatting layer should detect this and automatically split it into multiple paragraphs based on sentence boundaries. This is especially important for mobile users who may have difficulty reading very long paragraphs on smaller screens.</p>';
+            const output = await applyFinalFormattingCorrection(input);
+            showResult('output3', input, output, 'Should split long paragraph into multiple paragraphs');
+        }
+
+        async function testCase4() {
+            const input = '<a <a href="http://example.com">Link</a>';
+            const output = await applyFinalFormattingCorrection(input);
+            showResult('output4', input, output, 'Should fix malformed link');
+        }
+
+        async function testCase5() {
+            const input = '<p>This has <strong>bold text<p>and more content</p>';
+            const output = await applyFinalFormattingCorrection(input);
+            showResult('output5', input, output, 'Should close unclosed bold tag');
+        }
+
+        async function testCase6() {
+            const input = '<p>Content<p>Unclosed<strong>bold<p>More<li>List item</ul>';
+            const output = await applyFinalFormattingCorrection(input);
+            showResult('output6', input, output, 'Should fix multiple formatting issues');
+        }
+
+        async function testCase7() {
+            const input = '3>Classificationamp; Origins';
+            const output = await applyFinalFormattingCorrection(input);
+            showResult('output7', input, output, 'Should fix corrupted heading to <h3>Classification & Origins</h3>');
+        }
+
+        async function testCase8() {
+            const input = '<p>This has amp; symbols and lt;gt; tags</p>';
+            const output = await applyFinalFormattingCorrection(input);
+            showResult('output8', input, output, 'Should convert HTML entities back to proper characters');
+        }
+
+        async function testCase9() {
+            const input = 'MDMA for Dogs<MDMA is a powerful psychoactive substance...';
+            const output = await applyFinalFormattingCorrection(input);
+            showResult('output9', input, output, 'Should NOT create false HTML tags from content');
+        }
+
+        function showResult(outputId, input, output, expected) {
+            const outputDiv = document.getElementById(outputId);
+            outputDiv.innerHTML = `
+                <strong>Expected:</strong> ${expected}<br><br>
+                <strong>Input:</strong><br>
+                <div class="diff">${escapeHtml(input)}</div>
+                <strong>Output:</strong><br>
+                <div class="diff">${escapeHtml(output)}</div>
+                <strong>Rendered Output:</strong><br>
+                <div class="diff">${output}</div>
+            `;
+            outputDiv.style.display = 'block';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        console.log('Final Formatting Layer Test Loaded');
+    </script>
+</body>
+</html>

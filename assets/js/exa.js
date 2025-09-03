@@ -1,5 +1,60 @@
 // Global functions - must be defined before DOM is ready
 
+// Global function for populating the ticket form with user query
+function populateTicketForm(userQuery) {
+    console.log('Populating ticket form with query:', userQuery);
+    
+    // Construct the message as specified
+    const ticketMessage = `I attempted to ask: "${userQuery}"
+The system responded that this was outside its scope.
+I believe this is a relevant question and would like the team to review it for inclusion.
+Thank you for your support.`;
+    
+    // Find the FluentForm question field
+    // Try multiple selectors to find the question field
+    const questionField = document.querySelector('input[name="question"], input[name="your_question"], textarea[name="question"], textarea[name="your_question"], .fluentform input[placeholder*="Question"], .fluentform textarea[placeholder*="Question"]');
+    
+    if (questionField) {
+        console.log('Found question field:', questionField);
+        questionField.value = ticketMessage;
+        
+        // Trigger input event to update any listeners
+        questionField.dispatchEvent(new Event('input', { bubbles: true }));
+        questionField.dispatchEvent(new Event('change', { bubbles: true }));
+        
+        // Scroll to the ticket form - DISABLED to prevent unwanted scrolling
+        // const ticketWrapper = document.getElementById('ticket-wrapper');
+        // if (ticketWrapper) {
+        //     ticketWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // }
+        
+        // Log success (no user notification since it's automatic)
+        console.log('Ticket form automatically populated with user query');
+    } else {
+        console.log('Question field not found, trying alternative approach');
+        
+        // Alternative approach: try to find any textarea or input in the form
+        const formFields = document.querySelectorAll('.fluentform textarea, .fluentform input[type="text"]');
+        if (formFields.length > 0) {
+            // Use the last textarea or input (likely the question field)
+            const lastField = formFields[formFields.length - 1];
+            lastField.value = ticketMessage;
+            lastField.dispatchEvent(new Event('input', { bubbles: true }));
+            lastField.dispatchEvent(new Event('change', { bubbles: true }));
+            
+            // Scroll to the ticket form - DISABLED to prevent unwanted scrolling
+            // const ticketWrapper = document.getElementById('ticket-wrapper');
+            // if (ticketWrapper) {
+            //     ticketWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // }
+            
+            console.log('Ticket form automatically populated with user query (alternative method)');
+        } else {
+            console.error('No form fields found - ticket form could not be automatically populated');
+        }
+    }
+}
+
 // Global function for starting a new search from off-topic responses
 function startNewSearch() {
     console.log('🔍 Starting new search - reloading page');
@@ -59,6 +114,7 @@ function fallbackCopyToClipboard(text) {
 
 jQuery(document).ready(function($) {
 
+
     // Store frequently used DOM elements
     const $exaQuestion = $('#exa-question');
     const $ticketWrapper = $('#ticket-wrapper');
@@ -68,6 +124,210 @@ jQuery(document).ready(function($) {
     const $psybrarianMainContent = $('.psybrarian-main-content .container');
     const $psySearchAiContainer = $('.psy-search-ai-container');
 
+    // Check for URL parameters to load shared chatlog
+    // Convert HTML to formatted plain text for copying
+    function convertHtmlToFormattedText(question, htmlContent) {
+        // Create a temporary div to parse HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        
+        // Function to process text content recursively
+        function processNode(node, level = 0) {
+            let result = '';
+            
+            // Handle different node types
+            if (node.nodeType === Node.TEXT_NODE) {
+                const text = node.textContent.trim();
+                if (text) {
+                    result += text + ' ';
+                }
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                const tagName = node.tagName.toLowerCase();
+                
+                switch (tagName) {
+                    case 'h1':
+                    case 'h2':
+                    case 'h3':
+                    case 'h4':
+                    case 'h5':
+                    case 'h6':
+                        result += '\n\n' + node.textContent.trim().toUpperCase() + '\n\n';
+                        break;
+                        
+                    case 'p':
+                        result += '\n\n' + node.textContent.trim() + '\n';
+                        break;
+                        
+                    case 'ul':
+                    case 'ol':
+                        result += '\n';
+                        for (let i = 0; i < node.children.length; i++) {
+                            result += processNode(node.children[i], level + 1);
+                        }
+                        break;
+                        
+                    case 'li':
+                        const liText = node.textContent.trim();
+                        if (liText) {
+                            result += '\n• ' + liText;
+                        }
+                        break;
+                        
+                    case 'strong':
+                    case 'b':
+                        result += '**' + node.textContent.trim() + '**';
+                        break;
+                        
+                    case 'em':
+                    case 'i':
+                        result += '*' + node.textContent.trim() + '*';
+                        break;
+                        
+                    case 'br':
+                        result += '\n';
+                        break;
+                        
+                    case 'hr':
+                        result += '\n' + '─'.repeat(50) + '\n';
+                        break;
+                        
+                    case 'a':
+                        const linkText = node.textContent.trim();
+                        const href = node.getAttribute('href');
+                        if (href && href !== '#') {
+                            result += linkText + ' (' + href + ')';
+                        } else {
+                            result += linkText;
+                        }
+                        break;
+                        
+                    case 'div':
+                    case 'section':
+                        // Process children
+                        for (let i = 0; i < node.children.length; i++) {
+                            result += processNode(node.children[i], level);
+                        }
+                        break;
+                        
+                    default:
+                        // For other tags, just get the text content
+                        result += node.textContent.trim() + ' ';
+                        break;
+                }
+            }
+            
+            return result;
+        }
+        
+        // Process the entire content
+        let formattedText = '';
+        
+        // Process the answer content (don't add duplicate title)
+        formattedText += processNode(tempDiv);
+        
+        // Clean up the text but preserve structure
+        formattedText = formattedText
+            .replace(/\n\s*\n\s*\n/g, '\n\n') // Remove excessive line breaks
+            .replace(/\n\s+/g, '\n') // Remove leading spaces after line breaks
+            .replace(/^\s*\n/, '') // Remove leading empty line
+            .trim();
+        
+        // Split into lines and clean up each line - improved formatting
+        const lines = formattedText.split('\n');
+        const cleanedLines = lines.map(line => line.trim()).filter(line => line.length > 0);
+        
+        return cleanedLines.join('\n\n');
+    }
+
+    // Simple copy button functionality
+    function addCopyButton(block, chatlogId) {
+        // Create a simple copy button
+        const copyButton = $(`
+            <button class="copy-answer-btn" style="
+                background: #3bb273;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                margin: 10px 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                transition: background 0.2s;
+            " onmouseover="this.style.background='#2a8f5a'" onmouseout="this.style.background='#3bb273'">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                Copy Answer
+            </button>
+        `);
+        
+        // Add click handler
+        copyButton.on('click', function() {
+            // Get the question and answer content
+            const question = block.find('.chatlog-question').text() || 
+                           block.find('h1, h2, h3').first().text() || 
+                           'Question';
+            
+            const answerContent = block.find('.exa-answer-streaming').html() || 
+                                block.find('.answer-content').html() || 
+                                block.find('.exa-answer').html() || 
+                                '';
+            
+            // Convert HTML to formatted plain text
+            const formattedContent = convertHtmlToFormattedText(question, answerContent);
+            
+            // Copy to clipboard
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(formattedContent).then(() => {
+                    // Visual feedback
+                    const originalText = copyButton.html();
+                    copyButton.html(`
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20,6 9,17 4,12"></polyline>
+                        </svg>
+                        Copied!
+                    `);
+                    copyButton.css('background', '#2a8f5a');
+                    
+                    setTimeout(() => {
+                        copyButton.html(originalText);
+                        copyButton.css('background', '#3bb273');
+                    }, 2000);
+                });
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = formattedContent;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                // Visual feedback
+                const originalText = copyButton.html();
+                copyButton.html(`
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20,6 9,17 4,12"></polyline>
+                    </svg>
+                    Copied!
+                `);
+                copyButton.css('background', '#2a8f5a');
+                
+                setTimeout(() => {
+                    copyButton.html(originalText);
+                    copyButton.css('background', '#3bb273');
+                }, 2000);
+            }
+        });
+        
+        // Add the button to the block
+        block.append(copyButton);
+    }
+
     // SVG icons as constants
     const likeSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="none" class="tabler-icon tabler-icon-thumb-up-filled reaction-like-svg" style="vertical-align:middle;"><path d="M13 3a3 3 0 0 1 2.995 2.824l.005 .176v4h2a3 3 0 0 1 2.98 2.65l.015 .174l.005 .176l-.02 .196l-1.006 5.032c-.381 1.626 -1.502 2.796 -2.81 2.78l-.164 -.008h-8a1 1 0 0 1 -.993 -.883l-.007 -.117l.001 -9.536a1 1 0 0 1 .5 -.865a2.998 2.998 0 0 0 1.492 -2.397l.007 -.202v-1a3 3 0 0 1 3 -3z" fill="currentColor"></path><path d="M5 10a1 1 0 0 1 .993 .883l.007 .117v9a1 1 0 0 1 -.883 .993l-.117 .007h-1a2 2 0 0 1 -1.995 -1.85l-.005 -.15v-7a2 2 0 0 1 1.85 -1.995l.15 -.005h1z" fill="currentColor"></path></svg>`;
     const dislikeSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="none" class="tabler-icon tabler-icon-thumb-down-filled reaction-dislike-svg" style="vertical-align:middle;transform:scaleY(-1);"><path d="M13 3a3 3 0 0 1 2.995 2.824l.005 .176v4h2a3 3 0 0 1 2.98 2.65l.015 .174l.005 .176l-.02 .196l-1.006 5.032c-.381 1.626 -1.502 2.796 -2.81 2.78l-.164 -.008h-8a1 1 0 0 1 -.993 -.883l-.007 -.117l.001 -9.536a1 1 0 0 1 .5 -.865a2.998 2.998 0 0 0 1.492 -2.397l.007 -.202v-1a3 3 0 0 1 3 -3z" fill="currentColor"></path><path d="M5 10a1 1 0 0 1 .993 .883l.007 .117v9a1 1 0 0 1 -.883 .993l-.117 .007h-1a2 2 0 0 1 -1.995 -1.85l-.005 -.15v-7a2 2 0 0 1 1.85 -1.995l.15 -.005h1z" fill="currentColor"></path></svg>`;
@@ -76,6 +336,7 @@ jQuery(document).ready(function($) {
 
 
     const moreSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>`;
+    const newSearchSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-search"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>`;
 
     // Pre-compile regex patterns for better performance
     const REGEX_PATTERNS = {
@@ -133,6 +394,8 @@ jQuery(document).ready(function($) {
     
     // Initialize console debugging
     initConsoleDebugging();
+
+    // Copy button functionality is now handled by addCopyButton function
 
     // Event handlers with performance optimizations
     $('#exa-submit').on('click', submitSearch);
@@ -241,7 +504,7 @@ jQuery(document).ready(function($) {
         const offTopicBlock = $(`
             <div class="exa-answer-block off-topic-block" id="${questionID}">
                 <div class="exa-question-display">
-                    <h3>🔍 "${query}"</h3>
+                    <h3>🔍 You Entered: "${query}"</h3>
                 </div>
                 <div class="exa-answer-content off-topic-response">
                     ${data.answer}
@@ -260,8 +523,8 @@ jQuery(document).ready(function($) {
         offTopicBlock.find('.related-questions-list li').on('click', function() {
             const suggestedQuery = $(this).text();
             $exaInput.val(suggestedQuery);
-            // Trigger search with the suggested query
-            $('#exa-form').trigger('submit');
+            // Submit search with the suggested query
+            submitSearch();
         });
         
         // Ensure the new search button is properly bound
@@ -269,6 +532,22 @@ jQuery(document).ready(function($) {
         
         $exaAnswer.append(offTopicBlock);
         $ticketWrapper.show();
+        
+        // Scroll to just above the question display
+        setTimeout(() => {
+            const questionDisplay = offTopicBlock.find('.exa-question-display h3').first();
+            if (questionDisplay.length) {
+                questionDisplay[0].scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }
+        }, 100); // Small delay to ensure the content is rendered
+        
+        // Automatically populate the ticket form with the user's query
+        setTimeout(() => {
+            populateTicketForm(query);
+        }, 500); // Small delay to ensure the form is rendered
         
         // Log performance
         if (data.performance) {
@@ -813,7 +1092,10 @@ jQuery(document).ready(function($) {
             // Setup previous button functionality
             if (prevBtn && wrapper) {
                 prevBtn.addEventListener('click', () => {
-                    const scrollAmount = -1280; // Scroll left by 1280px
+                    // Calculate scroll amount for one card (200px card + 16px gap = 216px)
+                    const cardWidth = 200;
+                    const gap = 16;
+                    const scrollAmount = -(cardWidth + gap);
                     wrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                 });
             }
@@ -821,7 +1103,10 @@ jQuery(document).ready(function($) {
             // Setup next button functionality
             if (nextBtn && wrapper) {
                 nextBtn.addEventListener('click', () => {
-                    const scrollAmount = 1280; // Scroll right by 1280px
+                    // Calculate scroll amount for one card (200px card + 16px gap = 216px)
+                    const cardWidth = 200;
+                    const gap = 16;
+                    const scrollAmount = cardWidth + gap;
                     wrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                 });
             }
@@ -892,27 +1177,17 @@ jQuery(document).ready(function($) {
     function addModernFeedbackSystem(block, chatlogId) {
         console.log('🎯 Adding modern feedback system for chatlog ID:', chatlogId);
         
-        // Create the modern feedback container with share button
+        // Create the modern feedback container with share and new search buttons
         const feedbackContainer = $(`
             <div class="modern-feedback-wrapper" style="margin-top: 20px;">
-                <div class="action-buttons" style="display: flex; justify-content: center; margin-bottom: 16px;">
-                    <button class="share-btn modern" data-id="${chatlogId}" style="
-                        display: flex;
-                        align-items: center;
-                        gap: 6px;
-                        padding: 8px 16px;
-                        border: 1.5px solid rgba(255, 255, 255, 0.2);
-                        border-radius: 10px;
-                        background: rgba(255, 255, 255, 0.05);
-                        color: rgba(255, 255, 255, 0.8);
-                        font-size: 13px;
-                        font-weight: 500;
-                        cursor: pointer;
-                        transition: all 0.2s ease;
-                        backdrop-filter: blur(10px);
-                    ">
+                <div class="action-buttons">
+                    <button class="share-btn modern" data-id="${chatlogId}">
                         ${shareSVG}
-                        <span>Share</span>
+                        <span>Copy</span>
+                    </button>
+                    <button class="new-search-btn modern">
+                        ${newSearchSVG}
+                        <span>New Search</span>
                     </button>
                 </div>
                 </div>
@@ -925,37 +1200,71 @@ jQuery(document).ready(function($) {
         console.log('Using simple feedback system');
         addBasicFeedback(feedbackContainer, chatlogId);
         
-        // Add share button functionality
+        // Add copy button functionality
         feedbackContainer.find('.share-btn').on('click', function(e) {
-            console.log('Share button clicked!');
+            console.log('Copy button clicked!');
             e.preventDefault();
             e.stopPropagation();
             
             const answerBlock = $(this).closest('.answer-block');
-            const chatlogQuestion = answerBlock.find('.chatlog-question').text();
             
-            let questionTitle = chatlogQuestion || '';
+            // Get the question and answer content
+            const question = answerBlock.find('.chatlog-question').text() || 
+                           answerBlock.find('h1, h2, h3').first().text() || 
+                           'Question';
             
-            if (!questionTitle) {
-                questionTitle = $exaInput.val() || '';
-            }
+            const answerContent = answerBlock.find('.exa-answer-streaming').html() || 
+                                answerBlock.find('.answer-content').html() || 
+                                answerBlock.find('.exa-answer').html() || 
+                                '';
             
-            const shareUrl = window.location.origin + window.location.pathname + 
-                '?chatlog_id=' + chatlogId + '&title=' + encodeURIComponent(questionTitle);
+            // Convert HTML to formatted plain text
+            const formattedContent = convertHtmlToFormattedText(question, answerContent);
             
             // Copy to clipboard
-            copyToClipboard(shareUrl);
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(formattedContent).then(() => {
+                    // Visual feedback
+                    const btn = $(this);
+                    const originalText = btn.find('span').text();
+                    btn.find('span').text('Copied!');
+                    btn.css('border-color', '#3bb273');
+                    
+                    setTimeout(() => {
+                        btn.find('span').text(originalText);
+                        btn.css('border-color', 'rgba(255, 255, 255, 0.2)');
+                    }, 2000);
+                });
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = formattedContent;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                // Visual feedback
+                const btn = $(this);
+                const originalText = btn.find('span').text();
+                btn.find('span').text('Copied!');
+                btn.css('border-color', '#3bb273');
+                
+                setTimeout(() => {
+                    btn.find('span').text(originalText);
+                    btn.css('border-color', 'rgba(255, 255, 255, 0.2)');
+                }, 2000);
+            }
+        });
+        
+        // Add new search button functionality
+        feedbackContainer.find('.new-search-btn').on('click', function(e) {
+            console.log('New Search button clicked!');
+            e.preventDefault();
+            e.stopPropagation();
             
-            // Visual feedback
-            const btn = $(this);
-            const originalText = btn.find('span').text();
-            btn.find('span').text('Copied!');
-            btn.css('border-color', '#3bb273');
-            
-            setTimeout(() => {
-                btn.find('span').text(originalText);
-                btn.css('border-color', 'rgba(255, 255, 255, 0.2)');
-            }, 2000);
+            // Open the Psybrary in a new tab
+            window.open('https://beta.psychedelics.com/#psybrary', '_blank');
         });
         
         console.log('✅ Modern feedback system initialized for chatlog:', chatlogId);
@@ -1083,6 +1392,20 @@ jQuery(document).ready(function($) {
                     box-shadow: 0 6px 20px rgba(231, 76, 60, 0.25) !important;
                 }
                 
+                .feedback-btn.user-voted {
+                    background: rgba(59, 178, 115, 0.2) !important;
+                    border-color: #3bb273 !important;
+                    color: #3bb273 !important;
+                    transform: translateY(-1px) !important;
+                    box-shadow: 0 4px 12px rgba(59, 178, 115, 0.3) !important;
+                }
+                
+                .feedback-btn.user-voted:hover {
+                    background: rgba(59, 178, 115, 0.25) !important;
+                    border-color: #3bb273 !important;
+                    color: #3bb273 !important;
+                }
+                
 
                 
 
@@ -1191,6 +1514,54 @@ jQuery(document).ready(function($) {
             const type = btn.data('type');
             const id = btn.data('id');
             
+            // Check if user has already voted on this chatlog
+            const userVoteKey = `user_vote_${id}`;
+            const currentUserVote = localStorage.getItem(userVoteKey);
+            
+            // If user has already voted the same way, do nothing
+            if (currentUserVote === type) {
+                return;
+            }
+            
+            // Get current counts
+            const likeCount = parseInt($(`#like-count-${id}`).text()) || 0;
+            const dislikeCount = parseInt($(`#dislike-count-${id}`).text()) || 0;
+            
+            // Calculate new counts based on toggle behavior
+            let newLikeCount = likeCount;
+            let newDislikeCount = dislikeCount;
+            
+            if (type === 'like') {
+                if (currentUserVote === 'dislike') {
+                    // User is switching from dislike to like
+                    newDislikeCount = Math.max(0, dislikeCount - 1);
+                    newLikeCount = likeCount + 1;
+                } else {
+                    // User is voting like for the first time
+                    newLikeCount = likeCount + 1;
+                }
+            } else if (type === 'dislike') {
+                if (currentUserVote === 'like') {
+                    // User is switching from like to dislike
+                    newLikeCount = Math.max(0, likeCount - 1);
+                    newDislikeCount = dislikeCount + 1;
+                } else {
+                    // User is voting dislike for the first time
+                    newDislikeCount = dislikeCount + 1;
+                }
+            }
+            
+            // Update localStorage with new vote
+            localStorage.setItem(userVoteKey, type);
+            
+            // Update the UI immediately
+            $(`#like-count-${id}`).text(newLikeCount);
+            $(`#dislike-count-${id}`).text(newDislikeCount);
+            
+            // Update visual state of buttons
+            feedbackUI.find('.feedback-btn').removeClass('user-voted');
+            btn.addClass('user-voted');
+            
             // Show reason selection popup
             showReasonPopup(btn, type, id);
         });
@@ -1216,6 +1587,18 @@ jQuery(document).ready(function($) {
                 $(`#dislike-count-${chatlogId}`).text(response.data.dislike || 0);
             }
         });
+        
+        // Check if user has already voted and highlight the button
+        const userVoteKey = `user_vote_${chatlogId}`;
+        const currentUserVote = localStorage.getItem(userVoteKey);
+        
+        if (currentUserVote) {
+            const votedButton = currentUserVote === 'like' ? 
+                $(`.feedback-btn[data-type="like"][data-id="${chatlogId}"]`) :
+                $(`.feedback-btn[data-type="dislike"][data-id="${chatlogId}"]`);
+            
+            votedButton.addClass('user-voted');
+        }
     }
     
     /**
@@ -1449,12 +1832,12 @@ jQuery(document).ready(function($) {
         popup.find('.submit-reason').on('click', function() {
             const textFeedback = popup.find('.reason-text').val().trim();
             
-            // Submit feedback
-            submitFeedbackWithReason(chatlogId, type, selectedReason || 'Other', textFeedback);
+            // Get the updated counts that were already applied to the UI
+            const updatedLikeCount = parseInt($(`#like-count-${chatlogId}`).text()) || 0;
+            const updatedDislikeCount = parseInt($(`#dislike-count-${chatlogId}`).text()) || 0;
             
-            // Update count
-            const countEl = type === 'like' ? $(`#like-count-${chatlogId}`) : $(`#dislike-count-${chatlogId}`);
-            countEl.text(parseInt(countEl.text()) + 1);
+            // Submit feedback with updated counts
+            submitFeedbackWithReason(chatlogId, type, selectedReason || 'Other', textFeedback, updatedLikeCount, updatedDislikeCount);
             
             // Show success
             button.css('color', '#3bb273');
@@ -1482,7 +1865,7 @@ jQuery(document).ready(function($) {
     /**
      * Submit feedback with reason to server
      */
-    function submitFeedbackWithReason(chatlogId, type, reason, text) {
+    function submitFeedbackWithReason(chatlogId, type, reason, text, likeCount, dislikeCount) {
         // Format feedback data for proper display in admin table
         const feedbackData = {
             option: reason, // Use the expected 'option' field for display compatibility
@@ -1498,6 +1881,8 @@ jQuery(document).ready(function($) {
             id: chatlogId,
             reaction: type,
             single: 1,
+            like_count: likeCount,
+            dislike_count: dislikeCount,
             reaction_detail: JSON.stringify(feedbackData)
         }).done(function(response) {
             console.log('Feedback submitted successfully:', response);
@@ -1569,22 +1954,8 @@ jQuery(document).ready(function($) {
      * // Copies shareable link to clipboard
      */
     function copyAnswerLink(block, chatlogId) {
-        const url = window.location.origin + window.location.pathname + '?chatlog_id=' + chatlogId;
-        
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(url).then(() => {
-                showNotification('Link copied to clipboard!', 'success');
-            });
-        } else {
-            // Fallback for older browsers
-            const textArea = document.createElement('textarea');
-            textArea.value = url;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            showNotification('Link copied to clipboard!', 'success');
-        }
+        // Use the new copy button functionality
+        addCopyButton(block, chatlogId);
     }
 
     /**
@@ -1830,11 +2201,12 @@ jQuery(document).ready(function($) {
      */
     function addReactionBar(block, chatlogId) {
         const reactionBar = $(`
-            <div class="answer-reaction-bar" style="margin-top:10px; display:flex; align-items:center; gap:12px;">
+            <div class="answer-reaction-bar" style="margin-top:10px; display:flex; align-items:center; gap:12px; justify-content:center;">
                 <span class="reaction-like" data-id="${chatlogId}" style="cursor:pointer;display:flex;align-items:center;gap:4px;">${likeSVG} <span style="margin-left:2px;">Helpful</span></span>
                 <span class="like-count" id="like-count-${chatlogId}" style="font-size:13px;color:#3bb273;margin-left:2px;">0</span>
                 <span class="reaction-dislike" data-id="${chatlogId}" style="cursor:pointer;display:flex;align-items:center;gap:4px;">${dislikeSVG} <span style="margin-left:2px;">Not Helpful</span></span>
                 <span class="dislike-count" id="dislike-count-${chatlogId}" style="font-size:13px;color:#e74c3c;margin-left:2px;">0</span>
+                                            <span class="reaction-share" data-id="${chatlogId}" style="cursor:pointer;display:flex;align-items:center;gap:4px;" title="Copy">${shareSVG} Copy</span>
                 <span class="reaction-more" data-id="${chatlogId}" style="cursor:pointer;display:flex;align-items:center;gap:4px;" title="More options">${moreSVG}</span>
                 <div class="reaction-options-container" style="display:none;position:absolute;z-index:10;"></div>
             </div>
@@ -1985,6 +2357,114 @@ jQuery(document).ready(function($) {
     }
 
     /**
+     * Convert plain text headings to HTML headings
+     * 
+     * This function converts common heading patterns to proper HTML headings
+     * to ensure proper formatting and styling.
+     * 
+     * @param {string} html - HTML content that may contain plain text headings
+     * @returns {string} HTML with proper heading tags
+     */
+    function convertPlainTextHeadings(html) {
+        if (!html || typeof html !== 'string') {
+            return html;
+        }
+        
+        let converted = html.replace(/^(What it is:|How it works:|Potential benefits:|Key risks:|Legal status:|Safety Tips|Medications:|Mental health:|Physical health:|Set & Setting:|Classification & Origins|Type:|Origin:|Common Administration:|Additional Context or Considerations|Practical Advice|Where to Learn More|Related Questions):/gm, '<h4>$1</h4>');
+        
+        // Fix the specific issue with "Additional Context or Considerations" being bolded
+        // Remove any <strong> tags that might be wrapping the heading
+        converted = converted.replace(/<strong>\s*<h4>Additional Context or Considerations<\/h4>\s*<\/strong>/g, '<h4>Additional Context or Considerations</h4>');
+        converted = converted.replace(/<strong>\s*Additional Context or Considerations\s*<\/strong>/g, '<h4>Additional Context or Considerations</h4>');
+        
+        // Fix malformed "Where to Learn More" and "Related Questions" sections
+        converted = fixMalformedSections(converted);
+        
+        return converted;
+    }
+
+    /**
+     * Fix malformed "Where to Learn More" and "Related Questions" sections
+     * 
+     * This function fixes content where the AI has generated malformed sections
+     * that don't have proper HTML structure.
+     * 
+     * @param {string} html - HTML content that may have malformed sections
+     * @returns {string} HTML with properly formatted sections
+     */
+    function fixMalformedSections(html) {
+        if (!html || typeof html !== 'string') {
+            return html;
+        }
+        
+        let fixed = html;
+        
+        // Fix malformed "Where to Learn More" section
+        // Pattern: <h4>Where to Learn More</h4> followed by plain text links
+        fixed = fixed.replace(
+            /(<h4>Where to Learn More<\/h4>)\s*([^<]+?)(?=<h4>|$)/g,
+            function(match, heading, content) {
+                // Split content into lines and convert to proper links
+                const lines = content.trim().split('\n').filter(line => line.trim());
+                const links = lines.map(line => {
+                    const trimmed = line.trim();
+                    if (trimmed.includes(' - ')) {
+                        const [title, description] = trimmed.split(' - ');
+                        return `<li><a href="#" target="_blank" style="color: #3bb273; text-decoration: none;">${title.trim()}</a></li>`;
+                    } else if (trimmed.startsWith('What are') || trimmed.startsWith('Are there') || trimmed.startsWith('How does') || trimmed.startsWith('What research')) {
+                        // This is a related question, not a link
+                        return `<li>${trimmed}</li>`;
+                    } else {
+                        return `<li><a href="#" target="_blank" style="color: #3bb273; text-decoration: none;">${trimmed}</a></li>`;
+                    }
+                }).join('');
+                
+                return `${heading}<div class="section-where-to-learn-more"><ul>${links}</ul></div>`;
+            }
+        );
+        
+        // Fix malformed "Related Questions" section
+        // Look for question patterns that should be in a Related Questions section
+        fixed = fixed.replace(
+            /(<h4>Related Questions<\/h4>)\s*([^<]+?)(?=<h4>|$)/g,
+            function(match, heading, content) {
+                // Split content into lines and convert to proper list items
+                const lines = content.trim().split('\n').filter(line => line.trim());
+                const questions = lines.map(line => {
+                    const trimmed = line.trim();
+                    return `<li>${trimmed}</li>`;
+                }).join('');
+                
+                return `${heading}<div class="section-related-questions"><ul>${questions}</ul></div>`;
+            }
+        );
+        
+        // If there are questions after "Where to Learn More" that should be "Related Questions"
+        fixed = fixed.replace(
+            /(<div class="section-where-to-learn-more">[^<]*<\/div>)\s*([^<]+?)(?=<h4>|$)/g,
+            function(match, whereToLearnMore, content) {
+                // Check if the content contains questions
+                const lines = content.trim().split('\n').filter(line => line.trim());
+                const questions = lines.filter(line => {
+                    const trimmed = line.trim();
+                    return trimmed.startsWith('What are') || trimmed.startsWith('Are there') || 
+                           trimmed.startsWith('How does') || trimmed.startsWith('What research') ||
+                           trimmed.startsWith('Can') || trimmed.startsWith('Is') || trimmed.startsWith('Do');
+                });
+                
+                if (questions.length > 0) {
+                    const questionList = questions.map(q => `<li>${q.trim()}</li>`).join('');
+                    return `${whereToLearnMore}<h4>Related Questions</h4><div class="section-related-questions"><ul>${questionList}</ul></div>`;
+                }
+                
+                return match;
+            }
+        );
+        
+        return fixed;
+    }
+
+    /**
      * HTML escaper for safe text output
      * 
      * This function escapes HTML special characters to prevent XSS attacks
@@ -2055,7 +2535,7 @@ jQuery(document).ready(function($) {
      * @param {string} html - Raw HTML content to sanitize
      * @returns {Promise<string>} Cleaned HTML content
      */
-    async function enhancedSanitizeHTML(html) {
+    function enhancedSanitizeHTML(html) {
         if (!html || typeof html !== 'string') {
             return '';
         }
@@ -2072,21 +2552,192 @@ jQuery(document).ready(function($) {
                                    cleaned.match(/<([a-zA-Z][a-zA-Z0-9]*)\s+<([a-zA-Z][a-zA-Z0-9]*)/);
             
             if (hasComplexIssues) {
-                console.log('Complex HTML issues detected, using HTML Tidy API fallback');
-                cleaned = await cleanWithTidyAPI(html);
-                
-                // Validate the API result
-                const apiIssues = validateHTMLStructure(cleaned);
-                if (apiIssues.length > 3) {
-                    console.warn('HTML Tidy API still has issues, using fallback sanitization');
-                    return fallbackSanitize(html);
-                }
+                console.log('Complex HTML issues detected, using fallback sanitization');
+                return fallbackSanitize(html);
             }
             
             return cleaned;
         } catch (error) {
-            console.warn('Enhanced sanitization failed, using HTML Tidy API:', error);
-            return await cleanWithTidyAPI(html);
+            console.warn('Enhanced sanitization failed, using fallback sanitization:', error);
+            return fallbackSanitize(html);
+        }
+    }
+
+    /**
+     * Final formatting correction layer
+     * 
+     * This function applies a final layer of formatting corrections after
+     * the main sanitization is complete. It focuses on common formatting
+     * issues that may have been missed by the primary sanitization.
+     * 
+     * @param {string} html - HTML content that has already been sanitized
+     * @returns {Promise<string>} HTML with final formatting corrections applied
+     * 
+     * @example
+     * const finalHtml = await applyFinalFormattingCorrection(cleanedHtml);
+     * // Returns HTML with final formatting corrections
+     */
+    async function applyFinalFormattingCorrection(html) {
+        if (!html || typeof html !== 'string') {
+            return html;
+        }
+
+        try {
+            let corrected = html;
+            
+            // 1. Fix common paragraph formatting issues
+            corrected = corrected
+                // Fix paragraphs that are missing closing tags
+                .replace(/<p>([^<]*?)(?=<p>|<\/p>|$)/g, '<p>$1</p>')
+                // Fix paragraphs that are nested incorrectly
+                .replace(/<p>\s*<p>/g, '<p>')
+                .replace(/<\/p>\s*<\/p>/g, '</p>')
+                // Fix paragraphs with missing content
+                .replace(/<p>\s*<\/p>/g, '')
+                // Fix paragraphs that are too long (split them)
+                .replace(/<p>([^<]{500,})<\/p>/g, function(match, content) {
+                    const sentences = content.split(/(?<=[.!?])\s+/);
+                    const chunks = [];
+                    let currentChunk = '';
+                    
+                    for (const sentence of sentences) {
+                        if ((currentChunk + sentence).length > 300) {
+                            if (currentChunk) chunks.push(currentChunk.trim());
+                            currentChunk = sentence;
+                        } else {
+                            currentChunk += (currentChunk ? ' ' : '') + sentence;
+                        }
+                    }
+                    if (currentChunk) chunks.push(currentChunk.trim());
+                    
+                    return chunks.map(chunk => `<p>${chunk}</p>`).join('');
+                });
+
+            // 2. Fix list formatting issues
+            corrected = corrected
+                // Fix unclosed list items
+                .replace(/<li>([^<]*?)(?=<li>|<\/ul>|<\/ol>|$)/g, '<li>$1</li>')
+                // Fix lists that are missing proper structure
+                .replace(/<ul>\s*<ul>/g, '<ul>')
+                .replace(/<\/ul>\s*<\/ul>/g, '</ul>')
+                .replace(/<ol>\s*<ol>/g, '<ol>')
+                .replace(/<\/ol>\s*<\/ol>/g, '</ol>')
+                // Fix list items without proper list containers
+                .replace(/(?<!<[uo]l>)\s*<li>/g, '<ul><li>')
+                .replace(/<\/li>\s*(?!<\/[uo]l>)/g, '</li></ul>');
+
+            // 3. Fix heading formatting issues
+            corrected = corrected
+                // Fix malformed headings
+                .replace(/<h<[^>]*>/g, '<h3>')
+                .replace(/<h([1-6])>\s*<\/h\1>/g, '')
+                // Fix corrupted heading patterns like "3>Classificationamp; Origins" - more conservative
+                .replace(/(\d+)>([^<]+?)(?=<|$)/g, function(match, level, content) {
+                    // Only fix if it looks like a legitimate corrupted heading
+                    if (content.length > 3 && content.length < 100 && /^[a-zA-Z\s&;]+$/.test(content)) {
+                        const cleanedContent = content
+                            .replace(/amp;/g, '&')
+                            .replace(/([a-z])([A-Z])/g, '$1 $2') // Add spaces between camelCase
+                            .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2') // Add spaces between acronyms
+                            .trim();
+                        return `<h${level}>${cleanedContent}</h${level}>`;
+                    }
+                    return match; // Keep original if it doesn't look like a heading
+                })
+                // Fix headings that are too long
+                .replace(/<h([1-6])>([^<]{100,})<\/h\1>/g, function(match, level, content) {
+                    return `<h${level}>${content.substring(0, 80)}...</h${level}>`;
+                });
+
+            // 4. Fix link formatting issues
+            corrected = corrected
+                // Fix malformed links
+                .replace(/<a\s+<a[^>]*>/g, '<a>')
+                .replace(/<a[^>]*>\s*<\/a>/g, '')
+                // Fix links without proper href
+                .replace(/<a(?![^>]*href=)[^>]*>/g, '<a href="#">');
+
+            // 5. Fix bold and italic formatting
+            corrected = corrected
+                // Fix unclosed bold tags
+                .replace(/<strong>([^<]*?)(?=<strong>|<\/strong>|$)/g, '<strong>$1</strong>')
+                // Fix unclosed italic tags
+                .replace(/<em>([^<]*?)(?=<em>|<\/em>|$)/g, '<em>$1</em>')
+                // Fix nested bold/italic tags
+                .replace(/<strong>\s*<strong>/g, '<strong>')
+                .replace(/<\/strong>\s*<\/strong>/g, '</strong>')
+                .replace(/<em>\s*<em>/g, '<em>')
+                .replace(/<\/em>\s*<\/em>/g, '</em>');
+
+            // 6. Fix spacing and whitespace issues
+            corrected = corrected
+                // Remove excessive whitespace
+                .replace(/\s{2,}/g, ' ')
+                // Fix spacing around tags
+                .replace(/>\s+</g, '><')
+                .replace(/>\s+(\w)/g, '> $1')
+                .replace(/(\w)\s+</g, '$1 <')
+                // Fix line breaks
+                .replace(/\n\s*\n/g, '\n')
+                // Fix empty elements
+                .replace(/<([a-zA-Z][a-zA-Z0-9]*)[^>]*>\s*<\/\1>/g, '');
+
+            // 7. Fix table formatting issues
+            corrected = corrected
+                // Fix malformed table cells
+                .replace(/<td>([^<]*?)(?=<td>|<\/tr>|<\/table>|$)/g, '<td>$1</td>')
+                .replace(/<th>([^<]*?)(?=<th>|<\/tr>|<\/table>|$)/g, '<th>$1</th>')
+                // Fix table rows without proper structure
+                .replace(/<tr>\s*<tr>/g, '<tr>')
+                .replace(/<\/tr>\s*<\/tr>/g, '</tr>');
+
+            // 8. Fix corrupted HTML entities and malformed content
+            corrected = corrected
+                // Fix corrupted HTML entities - only in specific contexts
+                .replace(/&amp;/g, '&')  // Only fix proper HTML entities
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&apos;/g, "'")
+                // Fix the specific corrupted heading pattern we encountered - very conservative
+                .replace(/(\d+)>([a-zA-Z\s&;]+?)(?=<|$)/g, function(match, level, content) {
+                    // Only fix if it looks like a legitimate corrupted heading AND doesn't contain any HTML tags
+                    if (content.length > 3 && content.length < 100 && 
+                        !content.includes('<') && !content.includes('>') && 
+                        /^[a-zA-Z\s&;]+$/.test(content)) {
+                        const cleanedContent = content
+                            .replace(/amp;/g, '&')
+                            .replace(/([a-z])([A-Z])/g, '$1 $2')
+                            .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+                            .trim();
+                        return `<h${level}>${cleanedContent}</h${level}>`;
+                    }
+                    return match;
+                });
+
+            // 9. Final cleanup - remove any remaining malformed tags
+            corrected = corrected
+                .replace(/<([a-zA-Z][a-zA-Z0-9]*)\s+<([a-zA-Z][a-zA-Z0-9]*)/g, '<$1>')
+                .replace(/<\/([a-zA-Z][a-zA-Z0-9]*)\s+<\/([a-zA-Z][a-zA-Z0-9]*)/g, '</$1>');
+
+            // 9. If significant changes were made, try one more pass with HTML Tidy API
+            if (corrected !== html) {
+                console.log('🔧 Final formatting corrections applied, checking for additional improvements...');
+                try {
+                    const tidyResult = await cleanWithTidyAPI(corrected);
+                    if (tidyResult && tidyResult !== corrected) {
+                        console.log('✅ HTML Tidy API provided additional improvements');
+                        return tidyResult;
+                    }
+                } catch (error) {
+                    console.warn('HTML Tidy API call failed in final formatting, using corrected version:', error);
+                }
+            }
+
+            return corrected;
+        } catch (error) {
+            console.warn('Final formatting correction failed:', error);
+            return html; // Return original if correction fails
         }
     }
 
@@ -2648,6 +3299,13 @@ jQuery(document).ready(function($) {
                 i++;
                 setTimeout(streamStep, 180);
             } else {
+                // Convert plain text headings to HTML headings for local answers
+                const currentHTML = container.innerHTML;
+                const headingsFixedHTML = convertPlainTextHeadings(currentHTML);
+                if (headingsFixedHTML !== currentHTML) {
+                    container.innerHTML = headingsFixedHTML;
+                }
+                
                 // Make related questions clickable after streaming is complete
                 makeRelatedQuestionsClickable(container);
                 
@@ -2689,6 +3347,13 @@ jQuery(document).ready(function($) {
                 const listItems = whereToLearnMore.querySelectorAll('li');
                 listItems.forEach(li => {
                     li.style.color = '#3bb273';
+                });
+                
+                // Also style the anchor tags directly
+                const links = whereToLearnMore.querySelectorAll('a');
+                links.forEach(link => {
+                    link.style.color = '#3bb273';
+                    link.style.textDecoration = 'none';
                 });
             }
             
@@ -2853,6 +3518,13 @@ jQuery(document).ready(function($) {
             const listItems = whereToLearnMore.querySelectorAll('li');
             listItems.forEach(li => {
                 li.style.color = '#3bb273';
+                
+                // Make sure links in "Where to Learn More" open in new tab
+                const links = li.querySelectorAll('a');
+                links.forEach(link => {
+                    link.setAttribute('target', '_blank');
+                    link.setAttribute('rel', 'noopener noreferrer');
+                });
             });
         }
         
@@ -2897,6 +3569,13 @@ jQuery(document).ready(function($) {
                                 const listItems = whereToLearnMore.querySelectorAll('li');
                                 listItems.forEach(li => {
                                     li.style.color = '#3bb273';
+                                    
+                                    // Make sure links in "Where to Learn More" open in new tab
+                                    const links = li.querySelectorAll('a');
+                                    links.forEach(link => {
+                                        link.setAttribute('target', '_blank');
+                                        link.setAttribute('rel', 'noopener noreferrer');
+                                    });
                                 });
                             }
                             
@@ -2912,6 +3591,15 @@ jQuery(document).ready(function($) {
                                 const listItems = node.querySelectorAll('li');
                                 listItems.forEach(li => {
                                     li.style.color = '#3bb273';
+                                    
+                                    // Make sure links in "Where to Learn More" open in new tab
+                                    if (node.classList.contains('section-where-to-learn-more')) {
+                                        const links = li.querySelectorAll('a');
+                                        links.forEach(link => {
+                                            link.setAttribute('target', '_blank');
+                                            link.setAttribute('rel', 'noopener noreferrer');
+                                        });
+                                    }
                                 });
                             }
                         }
@@ -3267,20 +3955,39 @@ jQuery(document).ready(function($) {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             
-            function readStream() {
-                return reader.read().then(({ done, value }) => {
+            async function readStream() {
+                return reader.read().then(async ({ done, value }) => {
                     if (done) {
-                        // Stream complete - apply final unified sanitization
+                        // Stream complete - apply enhanced sanitization
                         performance.measure('stream_complete', PERFORMANCE_MARK);
                         let cleanedHTML;
                         try {
-                            cleanedHTML = unifiedSanitizeHTML(buffer);
+                            cleanedHTML = await enhancedSanitizeHTML(buffer);
+                            // Convert plain text headings to HTML headings
+                            cleanedHTML = convertPlainTextHeadings(cleanedHTML);
                             container.innerHTML = cleanedHTML;
                         } catch (error) {
-                            console.warn('Final HTML sanitization error:', error);
+                            console.warn('Enhanced sanitization error:', error);
                             cleanedHTML = fallbackSanitize(buffer);
+                            cleanedHTML = convertPlainTextHeadings(cleanedHTML);
                             container.innerHTML = cleanedHTML;
                         }
+                        
+                        // Final formatting check and correction layer - TEMPORARILY DISABLED
+                        // try {
+                        //     console.log('🔧 Applying final formatting correction layer...');
+                        //     const finalFormattedHTML = await applyFinalFormattingCorrection(cleanedHTML);
+                        //     if (finalFormattedHTML !== cleanedHTML) {
+                        //         console.log('✅ Final formatting corrections applied');
+                        //         container.innerHTML = finalFormattedHTML;
+                        //         cleanedHTML = finalFormattedHTML; // Update for chatlog save
+                        //     } else {
+                        //         console.log('✅ No formatting corrections needed');
+                        //     }
+                        // } catch (error) {
+                        //     console.warn('Final formatting correction error:', error);
+                        //     // Continue with original cleanedHTML if formatting fails
+                        // }
                         
                         // Make related questions clickable after content is loaded
                         makeRelatedQuestionsClickable(container);
@@ -3360,10 +4067,10 @@ jQuery(document).ready(function($) {
                                     lastUpdate = now;
                                 }
                             } else if (data === '[DONE]') {
-                                // Only sanitize when streaming is complete
+                                // Only apply enhanced sanitization when streaming is complete
                                 let cleanedHTML;
                                 try {
-                                    cleanedHTML = unifiedSanitizeHTML(buffer);
+                                    cleanedHTML = await enhancedSanitizeHTML(buffer);
                                     container.innerHTML = cleanedHTML;
                                 } catch (error) {
                                     console.warn('HTML sanitization error on completion:', error);
@@ -3453,8 +4160,86 @@ jQuery(document).ready(function($) {
 function buildPrompt(query, sources, block, contextBlock, opts = {}) {
     const safeSources = String(sources || '').trim();
     if (safeSources.length < 3) {
-      return `<h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>
-      
+        return generateNoSourcesResponse();
+    }
+    
+    const safeBlock = String(block || '').trim();
+    const safeContext = contextBlock ? String(contextBlock) : '';
+    
+    // Determine template + render body
+    const type = (opts.type || detectType(query)).toLowerCase();
+    const render = TEMPLATES[type] || TEMPLATES['overview'];
+    const body = render();
+    const title = deriveTitle(query);
+    
+    // Clean, focused prompt
+    const promptHeader = `
+You are the Psybrarian — an evidence-first, harm-reduction librarian for psychedelic topics.
+
+Provide a concise, trustworthy answer using only the trusted sources listed below. Use clear, neutral language suitable for a broad audience.
+
+${safeContext ? ('Previous context:\n' + safeContext) : ''}
+
+Question: "${query}"
+Trusted Sources: ${safeSources}
+Blocked Domains: ${safeBlock}
+
+RESPONSE FORMAT:
+- Use only valid HTML with these tags: <h2>, <h3>, <p>, <ul>, <ol>, <li>, <table>, <thead>, <tbody>, <tr>, <td>, <th>, <a>, <strong>, <em>, <br>
+- Always close every tag you open
+- Include exactly 5 related questions at the end
+- For step-by-step guidance, use numbered lists with clear safety warnings
+- Use 4-digit years (1960s not 196s)
+- If you include a "Where to Learn More" section, format it as: <h3>Where to Learn More</h3><div class="section-where-to-learn-more"><ul><li><a href="URL" target="_blank" style="color: #3bb273; text-decoration: none;">Title</a></li><li><a href="URL" target="_blank" style="color: #3bb273; text-decoration: none;">Title</a></li></ul></div>
+- Each list item must be on its own line with proper <li> tags
+- Ensure each <li> element is properly closed and separated
+- Use a single <ul> container for all list items in "Where to Learn More"
+- Format each source as: <li><a href="URL" target="_blank">Source Name</a></li>
+
+If sources are insufficient, respond with:
+<h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>
+`.trim();
+    
+    // Simplified, functional HTML structure
+    const htmlSkeleton = `
+<h2>${escapeHtml(title)}</h2>
+
+<p>[Provide a clear, direct 2-3 sentence answer to the question]</p>
+
+<h3>Key Information</h3>
+<ul>
+${body.glance}
+</ul>
+
+${body.extra || ''}
+
+<h3>Where to Learn More</h3>
+<div class="section-where-to-learn-more">
+<ul>
+<li><a href="#" target="_blank" style="color: #3bb273; text-decoration: none;">[Include relevant source from trusted sources]</a></li>
+<li><a href="#" target="_blank" style="color: #3bb273; text-decoration: none;">[Include relevant source from trusted sources]</a></li>
+<li><a href="#" target="_blank" style="color: #3bb273; text-decoration: none;">[Include relevant source from trusted sources]</a></li>
+</ul>
+</div>
+
+<h3>Related Questions</h3>
+<div class="section-related-questions">
+<ul>
+<li><a href="#" style="color: #3bb273; text-decoration: none;">[Generate specific follow-up question]</a></li>
+<li><a href="#" style="color: #3bb273; text-decoration: none;">[Generate specific follow-up question]</a></li>
+<li><a href="#" style="color: #3bb273; text-decoration: none;">[Generate specific follow-up question]</a></li>
+<li><a href="#" style="color: #3bb273; text-decoration: none;">[Generate specific follow-up question]</a></li>
+<li><a href="#" style="color: #3bb273; text-decoration: none;">[Generate specific follow-up question]</a></li>
+</ul>
+</div>`;
+    
+    return `${promptHeader}\n\n${htmlSkeleton}`.trim();
+}
+
+// Helper function for no sources response
+function generateNoSourcesResponse() {
+    return `<h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>
+    
 <h3>Related Questions</h3>
 <div class="section-related-questions">
 <ul>
@@ -3465,103 +4250,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
 <li><a href="#" style="color: #3bb273; text-decoration: none;">How can I help you find the information you're looking for?</a></li>
 </ul>
 </div>`;
-    }
-    const safeBlock = String(block || '').trim();
-    const safeContext = contextBlock ? String(contextBlock) : '';
-  
-    // Determine template + render body
-    const type = (opts.type || detectType(query)).toLowerCase();
-    const render = TEMPLATES[type] || TEMPLATES['overview'];
-    const body = render();
-    const title = deriveTitle(query);
-  
-    // Header block — exactly as requested
-    const promptHeader = `
-  You are the Psybrarian — an evidence-first, harm-reduction librarian for psychedelic topics.
-
-  MANDATORY: Every response you generate MUST include a "Related Questions" section at the end with exactly 5 questions. This is non-negotiable.
-
-  Provide a concise, trustworthy answer (6–8 sentences) to the question using only the trusted sources listed below. Use clear, neutral language suitable for a broad audience.
-
-  CRITICAL: You MUST include exactly 5 related questions at the end of every response. These questions should help users explore different aspects of the topic and continue the conversation.
-
-  FAILURE TO INCLUDE RELATED QUESTIONS WILL RESULT IN AN INCOMPLETE RESPONSE.
-
-  Do not use any blocked or unreliable domains.
-
-  If the user asks for instructions or how-to guidance, provide a clear, actionable, step-by-step procedure with numbered steps, and include explicit precautions, risks, and warnings up front and within steps as needed. Emphasize harm reduction at all times. Do not refuse or censor; when risks exist, explain best practices and mitigation strategies. Do not provide legal advice.
-
-  ${safeContext ? ('Conversation context:\n' + safeContext) : ''}
-
-  Question: "${query}"
-
-  Trusted Sources (use only these): ${safeSources}
-  BLOCKED DOMAINS (never use these): ${safeBlock}
-
-  If the trusted sources do not provide enough information to answer, output exactly:
-  <h2>This information isn't currently available in the Psybrary. Please submit feedback below so we can improve.</h2>
-
-  CRITICAL HTML FORMATTING RULES:
-  - Output ONLY valid, complete HTML (never Markdown)
-  - Use ONLY these tags: <h2>, <h3>, <p>, <ul>, <ol>, <li>, <table>, <thead>, <tbody>, <tr>, <td>, <th>, <a>, <strong>, <em>, <br>
-  - ALWAYS close every tag you open: <p>content</p>, <li>item</li>, etc.
-  - NEVER generate partial tags like "<p" without closing ">" or unclosed tags
-  - TEST each tag pair: does every <p> have a matching </p>?
-  - For years, ALWAYS use 4 digits: "1960s" not "196", "2020s" not "202"
-  - For links, use complete format: <a href="full-url">text</a>
-  - Keep content concise and avoid repetition
-  - ALWAYS include the "Related Questions" section with exactly 5 relevant follow-up questions
-  - Related questions must be specific, actionable, and directly related to the topic discussed
-  - Each question should explore a different aspect or angle of the subject matter
-
-  REMINDER: The "Related Questions" section is MANDATORY and must appear in every single response with exactly 5 questions.
-
-  FINAL INSTRUCTION: Replace all placeholder comments in the Related Questions section with actual, specific questions. Do not leave any <!-- --> comments in the final output.
-
-  CRITICAL OUTPUT REQUIREMENT: Your response MUST end with the Related Questions section. If you do not include this section, your response is incomplete and will be rejected.
-
-  DEBUG: If you see this instruction, you must include the Related Questions section. Failure to do so means you are not following instructions.
-
-  FINAL WARNING: Your response will be considered incomplete and rejected if it does not end with the Related Questions section. This is your last chance to follow instructions.
-  `.trim();
-  
-    // Standardized HTML skeleton (template-specific content slotted in)
-    // IMPORTANT: The Related Questions section below is MANDATORY and must be filled with actual questions, not placeholder comments
-    
-    // CRITICAL: The AI MUST replace all placeholder comments with actual questions. The Related Questions section is REQUIRED.
-    const htmlSkeleton = `
-  <h2>${escapeHtml(title)}</h2>
-  
-  <h3>Question Summary</h3>
-  <p><!-- Restate the question in your own words, clarifying focus and scope. --></p>
-  
-  <h3>Quick Overview</h3>
-  <p><!-- A 2–3 sentence direct answer, including a key takeaway and why it matters. --></p>
-
-  <h3>Why It Matters</h3>
-  <p><!-- 1–2 sentences on the significance or real-world context of this topic. --></p>
-  
-  <h3>What to Know at a Glance</h3>
-  <ul>
-  ${body.glance}
-  </ul>
-  
-  ${body.extra || ''}
-  
-  <h3>Related Questions</h3>
-  <div class="section-related-questions">
-    <p><strong>MANDATORY: You MUST replace all placeholder comments below with actual questions. This section is required.</strong></p>
-    <ul>
-      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></a></li>
-      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></a></li>
-      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></a></li>
-      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></a></li>
-      <li><a href="#" style="color: #3bb273; text-decoration: none;"><!-- Generate a specific, actionable follow-up question that explores a different aspect of this topic --></a></li>
-    </ul>
-  </div>`;
-  
-    return `${promptHeader}\n\n${htmlSkeleton}`.trim();
-  }
+}
   
   /* ============================ Templates ============================ */
   /**
@@ -4090,10 +4779,10 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         {
           html: `
   <h3>Cardio Precautions</h3>
-          <ul>
-            <li><!-- Pre-check BP/HR if evidence-supported. --></li>
-            <li><!-- Avoid stimulants/MAOIs; hydration and temperature control. --></li>
-          </ul>`
+  <ul>
+    <li><!-- Pre-check BP/HR if evidence-supported. --></li>
+    <li><!-- Avoid stimulants/MAOIs; hydration and temperature control. --></li>
+  </ul>`
         },
         {
           html: `
@@ -5029,6 +5718,18 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
           
           // STEP 6: Validate and clean nodes
           validateAndCleanNodes(doc.body.firstChild);
+          
+          // STEP 6.5: Preserve list items that might be incorrectly marked as empty
+          doc.querySelectorAll('li').forEach(li => {
+              // If a list item appears empty but contains whitespace or special characters, preserve it
+              if (li.textContent.trim() === '' && li.innerHTML.includes('&nbsp;')) {
+                  li.innerHTML = '&nbsp;'; // Preserve non-breaking space
+              }
+              // If a list item has only a > character or similar, preserve it with content
+              if (li.textContent.trim() === '>' || li.textContent.trim() === '') {
+                  li.innerHTML = '&nbsp;'; // Add non-breaking space to preserve the item
+              }
+          });
 
           // STEP 7: Extract clean HTML
           let safe = doc.body.firstChild.innerHTML;
@@ -5036,15 +5737,33 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
           // STEP 8: Apply regex fixes in dependency order (most critical change)
           safe = safe
               .replace(REGEX_PATTERNS.whitespace, '><')                    // First: clean whitespace
-              .replace(REGEX_PATTERNS.htmlEntities, '')                    // Then: remove entities
-              .replace(REGEX_PATTERNS.hrefFix, '<a href="$1">')           // Then: fix href attributes
+              // More targeted HTML entity removal - only remove actual entities, not valid HTML attributes
+              .replace(/&lt;/g, '<')                                       // Convert &lt; back to <
+              .replace(/&gt;/g, '>')                                       // Convert &gt; back to >
+              .replace(/<!--.*?-->/g, '')                                 // Remove HTML comments
+              // Remove hrefFix pattern that was causing malformed HTML
+              // .replace(REGEX_PATTERNS.hrefFix, '<a href="$1">')           // Then: fix href attributes
               .replace(REGEX_PATTERNS.linkText, '</a> $1')                // Then: fix link text spacing
-              .replace(REGEX_PATTERNS.emptyLi, '')                        // Then: remove empty list items
+              // Only remove truly empty list items, not those with whitespace or content
+              .replace(/<li>\s*<\/li>/g, '')                              // Remove only completely empty list items
+              // Preserve list items that might contain invisible content
+              .replace(/<li>\s*(&nbsp;|\u00A0)\s*<\/li>/g, '<li>&nbsp;</li>')  // Preserve non-breaking spaces
               .replace(REGEX_PATTERNS.consecutiveUl, '')                  // Then: merge consecutive lists
               .replace(REGEX_PATTERNS.consecutiveOl, '')                  // Then: merge consecutive ordered lists
               .replace(REGEX_PATTERNS.ampersandFix, '&')                  // Then: fix double-encoded ampersands
               .replace(REGEX_PATTERNS.brokenSentences, '$1 in the 1980s and $2')  // Then: fix broken decade references
               .replace(REGEX_PATTERNS.missingSpaces, '$1 $2')             // Finally: add missing spaces between words
+              // Fix raw HTML attributes that are displayed as text
+              .replace(/href="#"\s+style="([^"]+)"/g, 'style="$1"')       // Fix malformed href attributes
+              .replace(/style="([^"]+)"([^>]*>)/g, 'style="$1"$2')        // Ensure style attributes are properly closed
+              // Fix the specific pattern from the image where href and style attributes are displayed as text
+              .replace(/href="#" style="([^"]+)"([^>]*>)/g, 'style="$1"$2')  // Fix href="#" style="..." pattern
+              .replace(/([^>])href="#" style="([^"]+)"/g, '$1 style="$2"')     // Fix href="#" style="..." when not at start
+              // More comprehensive fix for raw HTML attributes displayed as text
+              .replace(/href="#" style="([^"]+)"([^<]*?)(?=<)/g, 'style="$1"$2')  // Fix href="#" style="..." followed by content
+              .replace(/([^<])href="#" style="([^"]+)"/g, '$1 style="$2"')        // Fix href="#" style="..." in any context
+              // Fix orphaned > characters that might be left after HTML stripping
+              .replace(/>\s*([^<]*?)\s*</g, '>$1<')                           // Clean up orphaned > characters
               .trim();
 
           // STEP 9: Truncate if needed (only for display, not for chatlog storage)
@@ -5061,7 +5780,8 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
           // STEP 12: Fix specific common AI errors
           safe = safe
               .replace(/\b(li|ul|ol|div|span)\b(?![^<]*>)/g, '')  // Remove stray tag names not in tags
-              .replace(/<li>\s*<\/li>/g, '')                       // Remove empty list items
+              // Don't remove empty list items here - let them be preserved
+              // .replace(/<li>\s*<\/li>/g, '')                       // Remove empty list items
               .replace(/(<\/[^>]+>)\s*\1/g, '$1')                 // Remove duplicate closing tags
               .replace(/^[^<]*?(<[^>]+>)/g, '$1')                 // Remove text before first tag
               .replace(/(<\/[^>]+>)[^<]*?$/g, '$1');              // Remove text after last tag
@@ -5075,6 +5795,18 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
 
           // Log final HTML issues
           logHTMLIssues(safe, 'post-unified-sanitization');
+
+          // FINAL STEP: Post-process to fix remaining issues
+          safe = safe
+              // Fix any remaining raw HTML attributes that are displayed as text
+              .replace(/href="#" style="([^"]+)"/g, 'style="$1"')
+              .replace(/style="([^"]+)"([^>]*>)/g, 'style="$1"$2')
+              // Fix empty list items that might have been stripped
+              .replace(/<li>\s*>\s*<\/li>/g, '<li>&nbsp;</li>')  // Fix list items with only >
+              .replace(/<li>\s*<\/li>/g, '<li>&nbsp;</li>')      // Fix completely empty list items
+              // Clean up any remaining malformed HTML
+              .replace(/>\s*([^<]*?)\s*</g, '>$1<')             // Clean up orphaned characters
+              .trim();
 
           return safe;
       } catch (e) {
@@ -5457,6 +6189,45 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
         }
         
         if (!$relatedQuestionsList.length) return;
+        
+        // Add click handlers to each related question
+        $relatedQuestionsList.find('li').each(function() {
+            const $li = $(this);
+            let questionText = $li.text().trim();
+            
+            // Check if there's a link inside the li element
+            const $link = $li.find('a');
+            if ($link.length > 0) {
+                questionText = $link.text().trim();
+                // Remove the href to prevent navigation
+                $link.removeAttr('href');
+            }
+            
+            // Skip if this is empty or contains informational content
+            if (!questionText || questionText.includes('What it is:') || 
+                questionText.includes('How it works:') || questionText.includes('Potential benefits:') ||
+                questionText.includes('MANDATORY:') || questionText.includes('<!--')) {
+                return;
+            }
+            
+            // Add cursor pointer and click handler
+            $li.css('cursor', 'pointer');
+            $li.addClass('related-question-clickable');
+            
+            $li.off('click').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Populate the input field with the question
+                $exaInput.val(questionText);
+                
+                // Focus on the input field
+                $exaInput.focus();
+                
+                // Submit the search
+                submitSearch();
+            });
+        });
     }
 
 
@@ -5482,36 +6253,55 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
      * // Loads and displays the specified chatlog entry
      */
     function loadChatlogById(chatlogId, chatlogTitle) {
+        
+        
         $.post(exa_ajax.ajaxurl, {
             action: 'ai_get_chatlog_by_id',
             id: chatlogId
         }, function(resp) {
-            $exaAnswer.show();
+            // If $exaAnswer doesn't exist, create it
+            if (!$exaAnswer.length) {
+                $('body').append('<div id="exa-answer" style="padding: 20px; max-width: 800px; margin: 0 auto;"></div>');
+            }
+            
+            // Force show the element and ensure it's visible
+            $exaAnswer.show().css({
+                'display': 'block',
+                'visibility': 'visible',
+                'opacity': '1',
+                'position': 'static',
+                'z-index': 'auto'
+            });
             if (resp && resp.success && resp.data) {
                 $('#dynamic-chatlog-block').remove();
                 const q = resp.data.question || chatlogTitle || '';
                 const a = resp.data.answer || '';
                 
                 const html = `
-                    <div class="answer-block" id="answer-${chatlogId}" data-dynamic="1">
+                    <div class="answer-block" id="answer-${chatlogId}" data-dynamic="1" style="background: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0; color: #fff;">
                         <h1 class="chatlog-question" style="font-weight:bold; color: #fff; margin-bottom:8px;">${q}</h1>
-                        <div class="exa-answer-streaming space-owl-m">${a}</div>
-                        <div class="answer-reaction-bar" style="margin-top:10px;">
+                        <div class="exa-answer-streaming space-owl-m" style="color: #fff;">${a}</div>
+                        <div class="answer-reaction-bar" style="margin-top:10px; display:flex; align-items:center; gap:12px; justify-content:center;">
                             <span class="reaction-like" data-id="${chatlogId}" style="cursor:pointer;">${likeSVG}</span>
                             <span class="like-count" id="like-count-${chatlogId}">0</span>
-                            &nbsp;&nbsp;
                             <span class="reaction-dislike" data-id="${chatlogId}" style="cursor:pointer;">${dislikeSVG}</span>
                             <span class="dislike-count" id="dislike-count-${chatlogId}">0</span>
-                            &nbsp;&nbsp;
-                            <span class="reaction-share" data-id="${chatlogId}" style="cursor:pointer;" title="Share">${shareSVG} Share</span>
+                            <span class="reaction-share" data-id="${chatlogId}" style="cursor:pointer;" title="Copy">${shareSVG} Copy</span>
                         </div>
                     </div>
                 `;
                 
+
                 $exaAnswer.prepend(`<div id="dynamic-chatlog-block">${html}</div>`);
+                
+
+                
                 const block = $("#answer-" + chatlogId);
                 
+                console.log('🔍 Block created, length:', block.length);
                 if (block.length) {
+                    // Add copy button to the loaded content
+                    addCopyButton(block, chatlogId);
                     $('html, body').animate({ scrollTop: block.offset().top - 100 }, 600);
                 }
             } else {
@@ -5532,6 +6322,7 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
                 `);
             }
         }).fail(function(xhr, status, error) {
+            console.log('❌ AJAX request failed:', {xhr, status, error});
             $exaAnswer.prepend(`
                 <div id="dynamic-chatlog-block">
                     <div class="answer-block" style="color: #fff; padding: 20px; background: #2a2a2a; border-radius: 8px;">
@@ -5685,6 +6476,55 @@ function buildPrompt(query, sources, block, contextBlock, opts = {}) {
                 setTimeout(formatAllReactionDetails, 100);
             }
         });
+        
+        // Global event handler for related questions that might be added dynamically
+        $(document).on('click', '.section-related-questions li', function(e) {
+            const $li = $(this);
+            let questionText = $li.text().trim();
+            
+            // Check if there's a link inside the li element
+            const $link = $li.find('a');
+            if ($link.length > 0) {
+                questionText = $link.text().trim();
+            }
+            
+            // Skip if this is empty or contains informational content
+            if (!questionText || questionText.includes('What it is:') || 
+                questionText.includes('How it works:') || questionText.includes('Potential benefits:') ||
+                questionText.includes('MANDATORY:') || questionText.includes('<!--')) {
+                return;
+            }
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Populate the input field with the question
+            $exaInput.val(questionText);
+            
+            // Focus on the input field
+            $exaInput.focus();
+            
+            // Submit the search
+            submitSearch();
+        });
+        
+        // Ensure "Where to Learn More" links open in new tabs
+        $(document).on('click', '.section-where-to-learn-more a', function(e) {
+            const $link = $(this);
+            const href = $link.attr('href');
+            
+            // Skip if this is a placeholder link or empty href
+            if (!href || href === '#' || href.includes('<!--')) {
+                e.preventDefault();
+                return;
+            }
+            
+            // Ensure the link opens in a new tab
+            $link.attr('target', '_blank');
+            $link.attr('rel', 'noopener noreferrer');
+        });
+        
+
     });
 
 });

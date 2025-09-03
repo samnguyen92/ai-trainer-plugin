@@ -203,6 +203,19 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->safeLoad();
 
+// Add custom KSES configuration to allow style attributes on anchor tags
+add_filter('wp_kses_allowed_html', function($allowed_tags, $context) {
+    if ($context === 'post') {
+        // Add style attribute to anchor tags
+        if (isset($allowed_tags['a'])) {
+            $allowed_tags['a']['style'] = true;
+        } else {
+            $allowed_tags['a'] = ['style' => true];
+        }
+    }
+    return $allowed_tags;
+}, 10, 2);
+
 // Define API keys from environment variables with fallbacks
 define('EXA_API_KEY', isset($_ENV['EXA_API_KEY']) ? $_ENV['EXA_API_KEY'] : '');
 define('OPENAI_API_KEY', isset($_ENV['OPENAI_API_KEY']) ? $_ENV['OPENAI_API_KEY'] : '');
@@ -1809,6 +1822,10 @@ function ai_trainer_handle_chatlog_reaction() {
     
     error_log("Processing reaction: ID=$id, type=$reaction, single=$single");
     
+    // Check if frontend is sending updated counts
+    $updatedLikeCount = isset($_POST['like_count']) ? intval($_POST['like_count']) : null;
+    $updatedDislikeCount = isset($_POST['dislike_count']) ? intval($_POST['dislike_count']) : null;
+    
     $row = $wpdb->get_row($wpdb->prepare("SELECT reaction FROM {$wpdb->prefix}ai_chat_log WHERE id = %d", $id));
     error_log("Database row: " . print_r($row, true));
     
@@ -1820,7 +1837,11 @@ function ai_trainer_handle_chatlog_reaction() {
     
     error_log("Current counts: " . json_encode($counts));
     
-    if ($single) {
+    if ($single && $updatedLikeCount !== null && $updatedDislikeCount !== null) {
+        // Use the counts provided by the frontend (handles toggle behavior)
+        $counts = ['like' => $updatedLikeCount, 'dislike' => $updatedDislikeCount];
+    } else if ($single) {
+        // Fallback for single votes without updated counts
         $counts = ['like' => 0, 'dislike' => 0];
         $counts[$reaction] = 1;
     } else {
@@ -1880,6 +1901,12 @@ function ai_trainer_handle_get_reaction_counts() {
 
 add_action('wp_ajax_ai_get_chatlog_by_id', function() {
     global $wpdb;
+    
+    error_log("=== ai_get_chatlog_by_id AJAX CALL START ===");
+    error_log("POST data: " . print_r($_POST, true));
+    error_log("Request method: " . $_SERVER['REQUEST_METHOD']);
+    error_log("User agent: " . $_SERVER['HTTP_USER_AGENT']);
+    
     $id = intval($_POST['id']);
     
     error_log("ai_get_chatlog_by_id called with ID: " . $id);
@@ -1898,6 +1925,12 @@ add_action('wp_ajax_ai_get_chatlog_by_id', function() {
 });
 add_action('wp_ajax_nopriv_ai_get_chatlog_by_id', function() {
     global $wpdb;
+    
+    error_log("=== ai_get_chatlog_by_id (NOPRIV) AJAX CALL START ===");
+    error_log("POST data: " . print_r($_POST, true));
+    error_log("Request method: " . $_SERVER['REQUEST_METHOD']);
+    error_log("User agent: " . $_SERVER['HTTP_USER_AGENT']);
+    
     $id = intval($_POST['id']);
     
     error_log("ai_get_chatlog_by_id (nopriv) called with ID: " . $id);
@@ -2489,7 +2522,7 @@ Generate ONLY the HTML content, nothing else. Each tag must be complete and prop
         $memory_start = memory_get_usage();
         
         try {
-            error_log('DEBUG: handle_exa_ajax started for query: ' . ($_POST['query'] ?? 'none'));
+            error_log('DEBUG: handle_exa_ajax started for query: ' . ($_POST['query'] ?? 'none') . ' at ' . date('Y-m-d H:i:s'));
             
             // Basic validation
             if (empty($_POST['query'])) {
@@ -2507,7 +2540,11 @@ Generate ONLY the HTML content, nothing else. Each tag must be complete and prop
             error_log('DEBUG: Conversation history: ' . print_r($conversation_history, true));
             
             // OFF-TOPIC DETECTION: Check if query is related to drugs/substances
-            if (!$this->is_psychedelic_related_query($query)) {
+            error_log('DEBUG: About to check if query is psychedelic-related: ' . $query);
+            $is_psychedelic = $this->is_psychedelic_related_query($query);
+            error_log('DEBUG: is_psychedelic_related_query returned: ' . ($is_psychedelic ? 'TRUE' : 'FALSE'));
+            
+            if (!$is_psychedelic) {
                 error_log('DEBUG: Off-topic query detected: ' . $query);
                 
                 // Log the off-topic query for analytics
@@ -4708,6 +4745,10 @@ Generate ONLY the HTML content, nothing else. Each tag must be complete and prop
         
         // Debug logging for off-topic detection
         error_log('DEBUG: OpenAI-powered off-topic detection for query: ' . $query_lower);
+                error_log('DEBUG: Query contains peyote: ' . (strpos($query_lower, 'peyote') !== false ? 'YES' : 'NO'));
+        error_log('DEBUG: Query contains LSD: ' . (strpos($query_lower, 'lsd') !== false ? 'YES' : 'NO'));
+        error_log('DEBUG: Query contains psychedelic: ' . (strpos($query_lower, 'psychedelic') !== false ? 'YES' : 'NO'));
+        error_log('DEBUG: Query contains synthetic: ' . (strpos($query_lower, 'synthetic') !== false ? 'YES' : 'NO'));
         
         // Step 1: Quick check for nonsensical or malicious queries (keep this simple check)
         if ($this->is_nonsensical_query($query_lower) !== false) {
@@ -4715,7 +4756,19 @@ Generate ONLY the HTML content, nothing else. Each tag must be complete and prop
             return false;
         }
         
-        // Step 2: Use OpenAI to classify the query intent
+        // Step 2: Quick check for obvious psychedelic terms before calling OpenAI
+        $psychedelic_terms = ['peyote', 'lsd', 'psilocybin', 'mdma', 'dmt', 'ayahuasca', 'mescaline', 'mushroom', 'psychedelic', 'hallucinogen', 'entheogen'];
+        error_log('DEBUG: Checking for psychedelic terms in query: ' . $query_lower);
+        foreach ($psychedelic_terms as $term) {
+            $found = strpos($query_lower, $term) !== false;
+            error_log('DEBUG: Checking term "' . $term . '": ' . ($found ? 'FOUND' : 'not found'));
+            if ($found) {
+                error_log('DEBUG: Found psychedelic term "' . $term . '" in query, classifying as DRUG_RELATED');
+                return true;
+            }
+        }
+        
+        // Step 3: Use OpenAI to classify the query intent
         return $this->openai_classify_query_intent($query);
     }
 
@@ -4740,7 +4793,7 @@ Generate ONLY the HTML content, nothing else. Each tag must be complete and prop
 Classify this user query as either DRUG_RELATED or OFF_TOPIC:
 
 DRUG_RELATED queries are about:
-- Psychedelic substances (psilocybin, LSD, MDMA, DMT, ayahuasca, mescaline, etc.)
+- Psychedelic substances (psilocybin, LSD, MDMA, DMT, ayahuasca, mescaline, peyote, psilocybe mushrooms, magic mushrooms, etc.)
 - Stimulants (cocaine, amphetamines, methamphetamine, caffeine, etc.)
 - Depressants (alcohol, benzodiazepines, barbiturates, opioids, etc.)
 - Cannabis and cannabinoids (THC, CBD, marijuana, hemp, etc.)
@@ -4772,6 +4825,8 @@ OFF_TOPIC queries are about:
 - Any other non-drug/substance topics
 
 Query: \"$query\"
+
+Important: If the query mentions ANY psychedelic substances (including peyote, LSD, psilocybin, etc.) or compares different drugs/substances, it should be classified as DRUG_RELATED.
 
 Respond with exactly one word: DRUG_RELATED or OFF_TOPIC";
 
@@ -4874,7 +4929,7 @@ Respond with exactly one word: DRUG_RELATED or OFF_TOPIC";
             '/\bif\s*\(|\bfor\s*\(|\bwhile\s*\(/', // Control structures
             '/\bvar\s+|\blet\s+|\bconst\s+/', // Variable declarations
             '/\bclass\s+|\bdef\s+/',         // Class/function definitions
-            '/\bimport\s+|\bfrom\s+/',       // Import statements
+            '/\bimport\s+[a-zA-Z][a-zA-Z0-9_]*\s*;?$|\bfrom\s+[a-zA-Z][a-zA-Z0-9_.]*\s+import\s+[a-zA-Z]|\bimport\s*\([^)]+\)/',       // Import statements (very specific)
             '/\breturn\s+|\bprint\s*\(/',    // Common code keywords
             '/\$[a-zA-Z_]/',                 // PHP variables
             '/\<\?php|\?\>/',                // PHP tags
@@ -4929,9 +4984,9 @@ Respond with exactly one word: DRUG_RELATED or OFF_TOPIC";
             '/\btoken\s+limit|\bcontext\s+window/', // Technical AI terms
             '/\btemperature\s*=|\btop_p\s*=/', // AI parameters
             '/\bmax_tokens\s*=|\bstop\s+sequence/', // Generation parameters  
-            '/\bmodel\s+weights|\bfine.?tun/', // Model manipulation
+            // '/\bmodel\s+weights|\bfine.?tun/', // Model manipulation - disabled due to regex error
             '/\bprompt\s+engineering|\bchain\s+of\s+thought/', // Advanced prompting
-            '/\bfew.?shot\s+learning|\bzero.?shot/', // Learning techniques
+            // '/\bfew.?shot\s+learning|\bzero.?shot/', // Learning techniques - disabled due to regex error
             
             // Common hacking terms
             '/\bexploit\s+|\bpayload\s+|\bshellcode/', // Exploit terms
@@ -4981,52 +5036,186 @@ Respond with exactly one word: DRUG_RELATED or OFF_TOPIC";
      * @return string HTML formatted response for off-topic queries
      */
     private function get_off_topic_response() {
+        // Get the user's original query from the current request
+        $user_query = isset($_POST['query']) ? sanitize_text_field($_POST['query']) : '';
+        
         return '
-        <div class="off-topic-response">
-            <h2>🔬 Psybrary Scope Notice</h2>
-            <p>The Psybrary is a specialized knowledge base dedicated to <strong>drugs, substances, psychedelics, and related medicine and research</strong>.</p>
+        <div class="off-topic-response" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius: 16px; padding: clamp(16px, 3vw, 32px); margin: 20px 0; color: white; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); max-width: min(100%, 800px); margin-left: auto; margin-right: auto; overflow: hidden;">
+            <h2 style="text-align: center; margin-bottom: clamp(16px, 3vw, 24px); font-size: clamp(18px, 4vw, 28px); color: white; line-height: 1.3;">🔬 Psybrary Scope Notice</h2>
+            <p style="font-size: clamp(14px, 2.5vw, 18px); margin-bottom: clamp(12px, 2.5vw, 20px); text-align: center; line-height: 1.4;">It looks like your question may be outside The Psybrary\'s expertise.</p>
             
-            <p>Your query appears outside our scope or may not contain a clear question. For reliable information, we recommend:</p>
+            <div style="background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: clamp(16px, 3vw, 24px); margin-bottom: clamp(16px, 3vw, 24px); border: 1px solid rgba(255, 255, 255, 0.1);">
+                <p style="font-size: clamp(14px, 2.5vw, 18px); margin-bottom: clamp(12px, 2.5vw, 20px); text-align: center; line-height: 1.4;">The Psybrary is a specialized knowledge base focused on <strong style="color: #a855f7;">psychedelics, substances, and related research</strong>.</p>
+                
+                <p style="font-size: clamp(14px, 2.5vw, 18px); margin-bottom: clamp(12px, 2.5vw, 20px); font-weight: 500; text-align: center; line-height: 1.4;">For other reliable info, you might try:</p>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: clamp(8px, 1.5vw, 16px);">
+                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: clamp(10px, 2vw, 16px); text-align: center;">
+                        <h4 style="color: #a855f7; margin: 0 0 clamp(4px, 1vw, 8px) 0; font-size: clamp(12px, 2vw, 16px); font-weight: 600;">General knowledge</h4>
+                        <div style="font-size: clamp(11px, 1.8vw, 14px); display: flex; flex-direction: column; gap: clamp(3px, 0.8vw, 6px);">
+                            <a href="https://www.google.com" target="_blank" style="color: #60a5fa; text-decoration: none;">Google</a>
+                            <a href="https://www.wikipedia.org" target="_blank" style="color: #60a5fa; text-decoration: none;">Wikipedia</a>
+                        </div>
+                    </div>
+                    
+                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: clamp(10px, 2vw, 16px); text-align: center;">
+                        <h4 style="color: #a855f7; margin: 0 0 clamp(4px, 1vw, 8px) 0; font-size: clamp(12px, 2vw, 16px); font-weight: 600;">Health & medicine</h4>
+                        <div style="font-size: clamp(11px, 1.8vw, 14px); display: flex; flex-direction: column; gap: clamp(3px, 0.8vw, 6px);">
+                            <a href="https://www.mayoclinic.org" target="_blank" style="color: #60a5fa; text-decoration: none;">Mayo Clinic</a>
+                            <a href="https://medlineplus.gov" target="_blank" style="color: #60a5fa; text-decoration: none;">MedlinePlus</a>
+                        </div>
+                    </div>
+                    
+                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: clamp(10px, 2vw, 16px); text-align: center;">
+                        <h4 style="color: #a855f7; margin: 0 0 clamp(4px, 1vw, 8px) 0; font-size: clamp(12px, 2vw, 16px); font-weight: 600;">Academic research</h4>
+                        <div style="font-size: clamp(11px, 1.8vw, 14px); display: flex; flex-direction: column; gap: clamp(3px, 0.8vw, 6px);">
+                            <a href="https://scholar.google.com" target="_blank" style="color: #60a5fa; text-decoration: none;">Google Scholar</a>
+                            <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank" style="color: #60a5fa; text-decoration: none;">PubMed</a>
+                        </div>
+                    </div>
+                    
+                    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: clamp(10px, 2vw, 16px); text-align: center;">
+                        <h4 style="color: #a855f7; margin: 0 0 clamp(4px, 1vw, 8px) 0; font-size: clamp(12px, 2vw, 16px); font-weight: 600;">Tech support</h4>
+                        <div style="font-size: clamp(11px, 1.8vw, 14px); display: flex; flex-direction: column; gap: clamp(3px, 0.8vw, 6px);">
+                            <a href="https://stackoverflow.com" target="_blank" style="color: #60a5fa; text-decoration: none;">Stack Overflow</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
-            <ul>
-                <li><strong>General knowledge:</strong> <a href="https://www.google.com" target="_blank">Google</a>, <a href="https://www.wikipedia.org" target="_blank">Wikipedia</a></li>
-                <li><strong>Medical advice:</strong> <a href="https://www.mayoclinic.org" target="_blank">Mayo Clinic</a>, <a href="https://medlineplus.gov" target="_blank">MedlinePlus</a></li>
-                <li><strong>Academic research:</strong> <a href="https://scholar.google.com" target="_blank">Google Scholar</a>, <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank">PubMed</a></li>
-                <li><strong>Technical support:</strong> <a href="https://stackoverflow.com" target="_blank">Stack Overflow</a></li>
-            </ul>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <p style="font-size: 14px; color: #a1a1aa; margin-top: 8px; line-height: 1.4; background: rgba(139, 92, 246, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(139, 92, 246, 0.2);">
+                    💡 <strong>Do you think the Psybrary should have answered this?</strong><br>
+                    Your question is in the ticket form below—just review and submit.
+                </p>
+            </div>
             
-            <hr style="border: none; border-top: 1px solid rgba(156, 39, 176, 0.3); margin: 25px 0;">
+            <div style="background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                <h3 style="color: white; margin: 0 0 16px 0; font-size: 16px; font-weight: 600; text-align: center; line-height: 1.3;">💡 How to Get the Best Psybrary Answer</h3>
+                <p style="margin: 0 0 16px 0; font-size: 14px; text-align: center; line-height: 1.4;">To get the most useful response here, try to:</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; width: 100%; max-width: 280px; justify-content: center;">
+                        <span style="background: #a855f7; color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; flex-shrink: 0;">1</span>
+                        <span style="font-size: 13px; text-align: center; line-height: 1.3;"><strong>Write in clear, complete sentences</strong></span>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; width: 100%; max-width: 280px; justify-content: center;">
+                        <span style="background: #a855f7; color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; flex-shrink: 0;">2</span>
+                        <span style="font-size: 13px; text-align: center; line-height: 1.3;"><strong>Include psychedelic-related terms:</strong> psilocybin, LSD, MDMA, microdosing</span>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; width: 100%; max-width: 280px; justify-content: center;">
+                        <span style="background: #a855f7; color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; flex-shrink: 0;">3</span>
+                        <span style="font-size: 13px; text-align: center; line-height: 1.3;"><strong>Be specific:</strong> effects, safety, research, legality, etc.</span>
+                    </div>
+                </div>
+            </div>
             
-            <h3>How to Get the Best Psybrary Answer</h3>
-            <p>When asking about psychedelics, please:</p>
-            <ul>
-                <li><strong>Use clear, complete sentences</strong></li>
-                <li><strong>Include psychedelic-related terms</strong> (e.g., psilocybin, LSD, MDMA, microdosing)</li>
-                <li><strong>Be specific</strong> (e.g., effects, safety, current research, legality)</li>
-            </ul>
-            
-            <hr style="border: none; border-top: 1px solid rgba(156, 39, 176, 0.3); margin: 25px 0;">
-            
-            <div class="related-questions-section">
-                <h3>🌿 Example Psychedelic Questions You Can Ask</h3>
-                <ul class="related-questions-list">
-                    <li>What are the therapeutic benefits of psilocybin for mental health?</li>
-                    <li>How does microdosing work and what does research say so far?</li>
-                    <li>What is the current legal status of psychedelic medicine?</li>
-                    <li>How do psychedelics affect the brain and consciousness?</li>
-                    <li>What safety considerations should I know before use?</li>
-                </ul>
-                <div class="off-topic-actions">
-                    <button class="new-search-btn" onclick="startNewSearch()">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <path d="m21 21-4.35-4.35"></path>
-                        </svg>
-                        Start a New Psychedelic Search
+            <div style="background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 16px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                <h3 style="color: white; margin: 0 0 16px 0; font-size: 16px; font-weight: 600; text-align: center; line-height: 1.3;">🌿 Example Psychedelic Questions You Can Ask</h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-bottom: 16px;">
+                    <div class="example-question" onclick="askFollowupQuestion(\'What\\\'s a typical microdosing schedule people follow?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
+                        <p style="margin: 0; font-size: 13px; line-height: 1.3; color: white;">What\'s a typical microdosing schedule people follow?</p>
+                        <div style="position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #a855f7;">→</div>
+                    </div>
+                    
+                    <div class="example-question" onclick="askFollowupQuestion(\'How long does an LSD trip usually last?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
+                        <p style="margin: 0; font-size: 13px; line-height: 1.3; color: white;">How long does an LSD trip usually last?</p>
+                        <div style="position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #a855f7;">→</div>
+                    </div>
+                    
+                    <div class="example-question" onclick="askFollowupQuestion(\'Is it safe to mix psilocybin with antidepressants?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
+                        <p style="margin: 0; font-size: 13px; line-height: 1.3; color: white;">Is it safe to mix psilocybin with antidepressants?</p>
+                        <div style="position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #a855f7;">→</div>
+                    </div>
+                    
+                    <div class="example-question" onclick="askFollowupQuestion(\'What\\\'s the difference between MDMA and Molly?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
+                        <p style="margin: 0; font-size: 13px; line-height: 1.3; color: white;">What\'s the difference between MDMA and Molly?</p>
+                        <div style="position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #a855f7;">→</div>
+                    </div>
+                    
+                    <div class="example-question" onclick="askFollowupQuestion(\'Can psychedelics help with anxiety or depression?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
+                        <p style="margin: 0; font-size: 13px; line-height: 1.3; color: white;">Can psychedelics help with anxiety or depression?</p>
+                        <div style="position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #a855f7;">→</div>
+                    </div>
+                    
+                    <div class="example-question" onclick="askFollowupQuestion(\'What should I do to prepare for my first mushroom trip?\')" style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative;">
+                        <p style="margin: 0; font-size: 13px; line-height: 1.3; color: white;">What should I do to prepare for my first mushroom trip?</p>
+                        <div style="position: absolute; top: 6px; right: 6px; width: 14px; height: 14px; background: rgba(168, 85, 247, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #a855f7;">→</div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center;">
+                    <button class="new-search-btn" onclick="startNewSearch()" style="background: linear-gradient(45deg, #10b981, #34d399); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3); width: 100%; max-width: 280px;">
+                        🔍 Start a New Psychedelic Search
                     </button>
                 </div>
             </div>
-        </div>';
+        </div>
+        
+        <script>
+        function startNewSearch() {
+            // Navigate to the homepage
+            window.location.href = \'http://localpsybrary.local/\';
+        }
+        
+        function askFollowupQuestion(question) {
+            console.log(\'Attempting to ask question:\', question);
+            
+            // Target the specific exa-input field
+            const chatInput = document.getElementById(\'exa-input\');
+            
+            if (chatInput) {
+                console.log(\'Found exa-input:\', chatInput);
+                // Set the question as the input value
+                chatInput.value = question;
+                // Trigger input event to update any listeners
+                chatInput.dispatchEvent(new Event(\'input\', { bubbles: true }));
+                // Focus the input
+                chatInput.focus();
+                
+                // Find the exa-submit button
+                const sendButton = document.getElementById(\'exa-submit\');
+                
+                if (sendButton) {
+                    console.log(\'Found exa-submit button, clicking:\', sendButton);
+                    sendButton.click();
+                } else {
+                    console.log(\'No exa-submit button found, question ready to send:\', question);
+                }
+            } else {
+                // Fallback: show the question in an alert or console
+                console.log(\'No exa-input found. Question to ask:\', question);
+                alert(\'Please copy this question and paste it into the chat: \' + question);
+            }
+        }
+        
+        // Add hover effects for better UX
+        document.addEventListener(\'DOMContentLoaded\', function() {
+            const questions = document.querySelectorAll(\'.example-question\');
+            questions.forEach(function(question) {
+                question.addEventListener(\'mouseenter\', function() {
+                    this.style.background = \'rgba(0, 0, 0, 0.6)\';
+                    this.style.transform = \'translateY(-2px)\';
+                    this.style.boxShadow = \'0 4px 12px rgba(168, 85, 247, 0.3)\';
+                });
+                
+                question.addEventListener(\'mouseleave\', function() {
+                    this.style.background = \'rgba(0, 0, 0, 0.4)\';
+                    this.style.transform = \'translateY(0)\';
+                    this.style.boxShadow = \'none\';
+                });
+                
+                // Prevent event bubbling to avoid conflicts with other forms
+                question.addEventListener(\'click\', function(e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                });
+            });
+        });
+        </script>';
     }
 }
 
@@ -5464,8 +5653,7 @@ function ai_trainer_tidy_clean($raw_html) {
             'newline' => 'LF',
             'tidy-mark' => false,
             'drop-empty-elements' => false,  // Don't drop empty elements to preserve structure
-            'drop-empty-paras' => false,    // Don't drop empty paragraphs
-            'fix-bad-comments' => true,
+            'drop-empty-paras' => false,    // Don't drop empty paragraphs            'fix-bad-comments' => true,
             'fix-uri' => true,
             'join-styles' => false,         // Don't join styles to preserve formatting
             'join-classes' => false,        // Don't join classes to preserve styling
@@ -5633,7 +5821,7 @@ function ai_trainer_filter_allowed_tags($html) {
         'ul' => [],
         'ol' => [],
         'li' => [],
-        'a' => ['href', 'target'],
+        'a' => ['href', 'target', 'style'],
         'strong' => [],
         'em' => [],
         'br' => [],
@@ -5755,13 +5943,14 @@ function ai_trainer_enhance_ai_content($raw_html) {
     $cleaned = ai_trainer_html_tidy_clean($raw_html);
     
     // Apply AI-specific fixes
-    $enhanced = $cleaned
+    $enhanced = $cleaned;
+    
         // Fix common AI formatting issues
-        .replace('/\b(li|ul|ol|div|span)\b(?![^<]*>)/g', '')  // Remove stray tag names
-        .replace('/<li>\s*<\/li>/g', '')                       // Remove empty list items
-        .replace('/(<\/[^>]+>)\s*\1/g', '$1')                 // Remove duplicate closing tags
-        .replace('/^[^<]*?(<[^>]+>)/g', '$1')                 // Remove text before first tag
-        .replace('/(<\/[^>]+>)[^<]*?$/g', '$1');              // Remove text after last tag
+    $enhanced = preg_replace('/\b(li|ul|ol|div|span)\b(?![^<]*>)/', '', $enhanced);  // Remove stray tag names
+    $enhanced = preg_replace('/<li>\s*<\/li>/', '', $enhanced);                       // Remove empty list items
+    $enhanced = preg_replace('/(<\/[^>]+>)\s*\1/', '$1', $enhanced);                 // Remove duplicate closing tags
+    $enhanced = preg_replace('/^[^<]*?(<[^>]+>)/', '$1', $enhanced);                 // Remove text before first tag
+    $enhanced = preg_replace('/(<\/[^>]+>)[^<]*?$/', '$1', $enhanced);              // Remove text after last tag
     
     // Fix truncated years (common AI issue)
     $enhanced = preg_replace('/\b(\d{3})s\b/', '$1s', $enhanced); // Fix "196s" -> "1960s"
@@ -5773,3 +5962,5 @@ function ai_trainer_enhance_ai_content($raw_html) {
 }
 
 // ... existing code ...
+
+
