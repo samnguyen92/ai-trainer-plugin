@@ -814,6 +814,17 @@ HTML;
      * @since 1.0
      */
     public static function force_template($template) {
+        // Only apply template forcing to the specific Psybrarian page
+        if (is_page() && is_singular()) {
+            global $post;
+            if ($post && 
+                $post->post_type === 'page' && 
+                $post->post_name === self::PAGE_SLUG && 
+                $post->post_title === self::PAGE_TITLE) {
+                // Let the get_page_template_override method handle the template assignment
+                return $template;
+            }
+        }
         return $template;
     }
     
@@ -851,7 +862,12 @@ HTML;
      * @since 1.0
      */
     public static function get_page_template_override($template, $post) {
-        if ($post && $post->post_name === self::PAGE_SLUG) {
+        // Only apply to the specific Psybrarian page
+        if ($post && 
+            $post->post_type === 'page' && 
+            $post->post_name === self::PAGE_SLUG && 
+            $post->post_title === self::PAGE_TITLE) {
+            
             $assigned_template = get_post_meta($post->ID, '_wp_page_template', true);
             if ($assigned_template && $assigned_template === self::TEMPLATE_SLUG) {
                 $theme = get_stylesheet();
